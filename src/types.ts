@@ -1,4 +1,4 @@
-export type ErrorMetadata = Record<string, unknown>
+export type ErrorMetadata = Record<string, any>
 
 export enum ErrorUIMode {
   MODAL = 'modal',
