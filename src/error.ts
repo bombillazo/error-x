@@ -520,18 +520,35 @@ export class ErrorX extends Error {
    * ```
    */
   public toJSON(): SerializableError {
+    // Handle metadata serialization with circular reference protection
+    let safeMetadata: ErrorMetadata
+    try {
+      JSON.stringify(this.metadata)
+      safeMetadata = this.metadata
+    } catch {
+      // Handle circular references in metadata
+      safeMetadata = { error: 'Circular reference in metadata' }
+    }
+
     const serialized: SerializableError = {
       name: this.name,
       message: this.message,
       code: this.code,
       uiMessage: this.uiMessage,
-      metadata: this.metadata,
+      metadata: safeMetadata,
       timestamp: this.timestamp.toISOString(),
     }
 
     // Include handlingOptions if present
     if (Object.keys(this.handlingOptions).length > 0) {
-      serialized.handlingOptions = this.handlingOptions
+      try {
+        // Test if handlingOptions can be serialized
+        JSON.stringify(this.handlingOptions)
+        serialized.handlingOptions = this.handlingOptions
+      } catch {
+        // Handle circular references in handlingOptions
+        serialized.handlingOptions = {} as ErrorHandlingOptions
+      }
     }
 
     // Include stack if available
