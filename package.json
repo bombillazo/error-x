@@ -13,18 +13,23 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "lint": "biome lint .",
     "format": "biome format --write .",
     "check": "biome check .",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "pnpm run build && pnpm run test && pnpm run check"
+    "prepublishOnly": "pnpm run build && pnpm run test && pnpm run check",
+    "prepare": "husky",
+    "commit": "cz",
+    "commit:lint": "commitlint --edit"
   },
   "keywords": [
     "error",
@@ -39,8 +44,14 @@
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "^1.8.3",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@commitlint/cz-commitlint": "^19.8.1",
     "@types/node": "^20.14.10",
     "@vitest/coverage-v8": "^2.0.3",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
+    "husky": "^9.1.7",
     "tsup": "^8.1.0",
     "typescript": "^5.5.3",
     "vitest": "^2.0.3"
@@ -48,5 +59,16 @@
   "engines": {
     "node": ">=18"
   },
-  "packageManager": "pnpm@9.5.0"
+  "packageManager": "pnpm@9.5.0",
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog",
+      "skipQuestions": [
+        "scope"
+      ],
+      "maxHeaderWidth": 100,
+      "maxLineWidth": 100,
+      "disableSubjectLowerCase": true
+    }
+  }
 }
