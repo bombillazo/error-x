@@ -46,11 +46,10 @@
     "@biomejs/biome": "^1.8.3",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
-    "@commitlint/cz-commitlint": "^19.8.1",
     "@types/node": "^20.14.10",
     "@vitest/coverage-v8": "^2.0.3",
     "commitizen": "^4.3.1",
-    "cz-conventional-changelog": "^3.3.0",
+    "cz-customizable": "^7.4.0",
     "husky": "^9.1.7",
     "tsup": "^8.1.0",
     "typescript": "^5.5.3",
@@ -62,13 +61,10 @@
   "packageManager": "pnpm@9.5.0",
   "config": {
     "commitizen": {
-      "path": "cz-conventional-changelog",
-      "skipQuestions": [
-        "scope"
-      ],
-      "maxHeaderWidth": 100,
-      "maxLineWidth": 100,
-      "disableSubjectLowerCase": true
+      "path": "cz-customizable"
+    },
+    "cz-customizable": {
+      "config": ".cz-config.cjs"
     }
   }
 }
