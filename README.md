@@ -60,7 +60,15 @@ const error = new ErrorX({
 })
 ```
 
-## API Reference
+## Documentation
+
+### API Reference
+
+For complete API documentation with detailed descriptions, examples, and type information, see:
+
+- **[📖 Complete API Documentation](docs/api/error-x.md)** - Full API reference with examples
+- **[🏗️ ErrorX Class](docs/api/error-x.errorx.md)** - Main ErrorX class documentation
+- **[🔧 Types](docs/api/error-x.md#type-aliases)** - All available types and interfaces
 
 ### Constructor
 
@@ -311,7 +319,7 @@ The `ErrorAction` type uses a discriminated union based on the `action` property
 **The Problem:** If `ErrorAction` allowed any string as the action type, TypeScript would default to the most permissive payload type (`{ ...any }`) for all actions, causing type definition to leak between different action types.
 
 ```typescript
-// ❌ Don't do this - breaks discriminated union
+// ❌ Cannot be done - breaks discriminated union
 const error = new ErrorX({
   actions: [
     { action: 'analytics', payload: { event: 'error' } }, // Loses type safety

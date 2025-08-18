@@ -18,6 +18,8 @@ import safeStringify from 'safe-stringify';
  *   metadata: { userId: 123, loginAttempt: 3 }
  * })
  * ```
+ * 
+ * @public
  */
 export class ErrorX extends Error {
   /** Error identifier code, auto-generated from name if not provided */
@@ -440,7 +442,9 @@ export class ErrorX extends Error {
         code: this.code,
         uiMessage: this.uiMessage,
         cause: this.cause,
-        metadata: this.metadata,
+      }
+      if (this.metadata !== undefined) {
+        options.metadata = this.metadata
       }
       if (this.actions) {
         options.actions = this.actions
@@ -602,7 +606,9 @@ export class ErrorX extends Error {
       name: serialized.name,
       code: serialized.code,
       uiMessage: serialized.uiMessage,
-      metadata: serialized.metadata,
+    }
+    if (serialized.metadata !== undefined) {
+      options.metadata = serialized.metadata
     }
 
     if (serialized.actions && serialized.actions.length > 0) {

@@ -10,12 +10,16 @@
  *   retryCount: 3
  * }
  * ```
+ * 
+ * @public
  */
 export type ErrorMetadata = Record<string, any>
 
 /**
  * Predefined display targets for error notifications and UI feedback.
  * These enum values provide consistent, type-safe options for where errors should be displayed.
+ * 
+ * @public
  */
 export enum HandlingTargets {
   MODAL = 'modal',
@@ -42,6 +46,8 @@ export enum HandlingTargets {
  * // Mixing both
  * targets: [HandlingTargets.MODAL, 'custom-popup', HandlingTargets.CONSOLE]
  * ```
+ * 
+ * @public
  */
 export type HandlingTarget = HandlingTargets | string
 
@@ -60,6 +66,8 @@ export type HandlingTarget = HandlingTargets | string
  *   }
  * }
  * ```
+ * 
+ * @public
  */
 export type NotifyAction = {
   action: 'notify'
@@ -83,6 +91,8 @@ export type NotifyAction = {
  *   }
  * }
  * ```
+ * 
+ * @public
  */
 export type LogoutAction = {
   action: 'logout'
@@ -106,6 +116,8 @@ export type LogoutAction = {
  *   }
  * }
  * ```
+ * 
+ * @public
  */
 export type RedirectAction = {
   action: 'redirect'
@@ -142,6 +154,8 @@ export type RedirectAction = {
  *   }
  * }
  * ```
+ * 
+ * @public
  */
 export type CustomAction = {
   action: 'custom'
@@ -152,12 +166,16 @@ export type CustomAction = {
  * Union type of all possible error actions.
  * Includes predefined actions (NotifyAction, LogoutAction, RedirectAction) 
  * and CustomAction for application-specific actions.
+ * 
+ * @public
  */
 export type ErrorAction = NotifyAction | LogoutAction | RedirectAction | CustomAction
 
 /**
  * Configuration options for creating an ErrorX instance.
  * All properties are optional with sensible defaults.
+ * 
+ * @public
  */
 export type ErrorXOptions = {
   /** Technical error message (default: 'An error occurred') */
@@ -201,6 +219,8 @@ export type ErrorXOptions = {
  *   }
  * }
  * ```
+ * 
+ * @public
  */
 export type SerializableError = {
   /** Error type/name */
