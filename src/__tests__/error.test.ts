@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { type ErrorMetadata, ErrorX, type SerializableError, ErrorUIMode, type ErrorHandlingOptions } from '../index.js'
+import { type ErrorMetadata, ErrorX, type SerializableError, HandlingTargets, type ErrorHandlingOptions } from '../index.js'
 
 describe('ErrorX', () => {
   let mockDate: Date
@@ -29,7 +29,7 @@ describe('ErrorX', () => {
       expect(error.message).toBe('Test error.')
       expect(error.name).toBe('Error')
       expect(error.code).toBe('ERROR')
-      expect(error.uiMessage).toBe('Something went wrong. Please try again.')
+      expect(error.uiMessage).toBeUndefined()
       expect(error.metadata).toEqual({})
       expect(error.timestamp).toEqual(mockDate)
       expect(error).toBeInstanceOf(Error)
@@ -76,7 +76,7 @@ describe('ErrorX', () => {
       const handlingOptions: ErrorHandlingOptions = {
         logout: true,
         redirect: '/login',
-        ui_mode: ErrorUIMode.MODAL
+        targets: [HandlingTargets.MODAL]
       }
 
       const error = new ErrorX({
@@ -92,15 +92,45 @@ describe('ErrorX', () => {
       expect(error.handlingOptions).toEqual(handlingOptions)
     })
 
+    it('should create error with mixed display targets (enum + custom strings)', () => {
+      const handlingOptions: ErrorHandlingOptions = {
+        logout: false,
+        redirect: '/dashboard',
+        targets: [
+          HandlingTargets.TOAST,
+          'custom-sidebar',
+          HandlingTargets.CONSOLE,
+          'analytics-tracker'
+        ]
+      }
+
+      const error = new ErrorX({
+        message: 'Mixed display targets test',
+        name: 'MixedError',
+        code: 'MIXED_TARGETS',
+        handlingOptions
+      })
+
+      expect(error.message).toBe('Mixed display targets test.')
+      expect(error.name).toBe('MixedError')
+      expect(error.code).toBe('MIXED_TARGETS')
+      expect(error.handlingOptions?.targets).toEqual([
+        HandlingTargets.TOAST,
+        'custom-sidebar',
+        HandlingTargets.CONSOLE,
+        'analytics-tracker'
+      ])
+    })
+
     it('should create error with no options', () => {
       const error = new ErrorX()
 
       expect(error.message).toBe('An error occurred')
       expect(error.name).toBe('Error')
       expect(error.code).toBe('ERROR')
-      expect(error.uiMessage).toBe('Something went wrong. Please try again.')
+      expect(error.uiMessage).toBeUndefined()
       expect(error.metadata).toEqual({})
-      expect(error.handlingOptions).toEqual({})
+      expect(error.handlingOptions).toBeUndefined()
       expect(error.timestamp).toEqual(mockDate)
       expect(error).toBeInstanceOf(Error)
       expect(error).toBeInstanceOf(ErrorX)
@@ -112,9 +142,9 @@ describe('ErrorX', () => {
       expect(error.message).toBe('An error occurred')
       expect(error.name).toBe('Error')
       expect(error.code).toBe('ERROR')
-      expect(error.uiMessage).toBe('Something went wrong. Please try again.')
+      expect(error.uiMessage).toBeUndefined()
       expect(error.metadata).toEqual({})
-      expect(error.handlingOptions).toEqual({})
+      expect(error.handlingOptions).toBeUndefined()
       expect(error.timestamp).toEqual(mockDate)
     })
 
@@ -124,9 +154,9 @@ describe('ErrorX', () => {
       expect(error.message).toBe('An error occurred')
       expect(error.name).toBe('CustomError')
       expect(error.code).toBe('CUSTOM_ERROR')
-      expect(error.uiMessage).toBe('Something went wrong. Please try again.')
+      expect(error.uiMessage).toBeUndefined()
       expect(error.metadata).toEqual({})
-      expect(error.handlingOptions).toEqual({})
+      expect(error.handlingOptions).toBeUndefined()
     })
 
     it('should format messages correctly', () => {
@@ -204,7 +234,7 @@ describe('ErrorX', () => {
 
     it('should use correct default UI message', () => {
       const error = new ErrorX({ message: 'test' })
-      expect(error.uiMessage).toBe('Something went wrong. Please try again.')
+      expect(error.uiMessage).toBeUndefined()
     })
 
     it('should generate default code when no name provided', () => {
@@ -307,7 +337,7 @@ describe('ErrorX', () => {
           handlingOptions: {
             logout: true,
             redirect: '/login',
-            ui_mode: ErrorUIMode.TOAST
+            targets: [HandlingTargets.TOAST]
           }
         }
 
@@ -569,7 +599,7 @@ describe('ErrorX', () => {
         const handlingOptions: ErrorHandlingOptions = {
           logout: true,
           redirect: '/dashboard',
-          ui_mode: ErrorUIMode.BANNER
+          targets: [HandlingTargets.BANNER]
         }
 
         const error = new ErrorX({
@@ -668,7 +698,7 @@ describe('ErrorX', () => {
         const handlingOptions: ErrorHandlingOptions = {
           logout: false,
           redirect: '/error',
-          ui_mode: ErrorUIMode.INLINE
+          targets: [HandlingTargets.INLINE]
         }
 
         const serialized: SerializableError = {

@@ -31,7 +31,7 @@ export async function complexAsyncErrorChain(): Promise<void> {
     throw new ErrorX({
       message: 'Complex async error chain from complex-scenarios.ts',
       cause: error,
-      handlingOptions: { ui_mode: 'modal' as any }
+      handlingOptions: { targets: ['modal'] }
     })
   }
 }
@@ -123,9 +123,10 @@ export class ComplexErrorHandler {
   async handleError(source: string): Promise<void> {
     try {
       switch (source) {
+        // biome-ignore lint/suspicious/noFallthroughSwitchClause: This function throws
         case 'deep':
           this.deepErrorChain()
-          break;
+        // No break needed - function throws
         case 'async':
           await this.complexAsyncErrorChain()
           break
@@ -207,7 +208,7 @@ export async function finalErrorTest(): Promise<void> {
         layers: ['error-sources', 'error-handlers', 'async-operations', 'complex-scenarios']
       },
       handlingOptions: {
-        ui_mode: 'banner' as any,
+        targets: ['banner'],
         logout: false,
         redirect: '/error-page'
       }

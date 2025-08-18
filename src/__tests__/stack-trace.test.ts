@@ -358,9 +358,9 @@ describe('Stack Trace Preservation', () => {
         expect(errorX.metadata.layers).toEqual(['error-sources', 'error-handlers', 'async-operations', 'complex-scenarios'])
 
         // Should have handling options
-        expect(errorX.handlingOptions.ui_mode).toBe('banner')
-        expect(errorX.handlingOptions.logout).toBe(false)
-        expect(errorX.handlingOptions.redirect).toBe('/error-page')
+        expect(errorX.handlingOptions?.targets).toEqual(['banner'])
+        expect(errorX.handlingOptions?.logout).toBe(false)
+        expect(errorX.handlingOptions?.redirect).toBe('/error-page')
       }
     })
   })
