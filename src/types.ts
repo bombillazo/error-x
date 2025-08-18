@@ -1,7 +1,7 @@
 /**
  * Metadata object containing additional context information for an error.
  * Can store any key-value pairs to provide extra debugging or business context.
- * 
+ *
  * @example
  * ```typescript
  * const metadata: ErrorMetadata = {
@@ -10,7 +10,7 @@
  *   retryCount: 3
  * }
  * ```
- * 
+ *
  * @public
  */
 export type ErrorMetadata = Record<string, any>
@@ -18,7 +18,7 @@ export type ErrorMetadata = Record<string, any>
 /**
  * Predefined display targets for error notifications and UI feedback.
  * These enum values provide consistent, type-safe options for where errors should be displayed.
- * 
+ *
  * @public
  */
 export enum HandlingTargets {
@@ -28,25 +28,25 @@ export enum HandlingTargets {
   BANNER = 'banner',
   CONSOLE = 'console',
   LOGGER = 'logger',
-  NOTIFICATION = 'notification'
+  NOTIFICATION = 'notification',
 }
 
 /**
  * Display target type that allows both predefined enum values and custom strings.
  * This enables flexibility for custom UI components while providing standard options.
- * 
+ *
  * @example
  * ```typescript
  * // Using predefined enum values
  * targets: [HandlingTargets.MODAL, HandlingTargets.TOAST]
- * 
+ *
  * // Using custom strings
  * targets: ['custom-sidebar', 'my-notification-center']
- * 
+ *
  * // Mixing both
  * targets: [HandlingTargets.MODAL, 'custom-popup', HandlingTargets.CONSOLE]
  * ```
- * 
+ *
  * @public
  */
 export type HandlingTarget = HandlingTargets | string
@@ -54,7 +54,7 @@ export type HandlingTarget = HandlingTargets | string
 /**
  * Action to display notifications in specified UI targets.
  * Used to notify applications to handle error messages through the indicated display mechanisms.
- * 
+ *
  * @example
  * ```typescript
  * {
@@ -66,7 +66,7 @@ export type HandlingTarget = HandlingTargets | string
  *   }
  * }
  * ```
- * 
+ *
  * @public
  */
 export type NotifyAction = {
@@ -80,7 +80,7 @@ export type NotifyAction = {
 /**
  * Action to log out the current user when an error occurs.
  * Useful for authentication errors or session expiration.
- * 
+ *
  * @example
  * ```typescript
  * {
@@ -91,7 +91,7 @@ export type NotifyAction = {
  *   }
  * }
  * ```
- * 
+ *
  * @public
  */
 export type LogoutAction = {
@@ -104,7 +104,7 @@ export type LogoutAction = {
 /**
  * Action to redirect the user to a different URL when an error occurs.
  * Commonly used for navigation after authentication errors or access denied scenarios.
- * 
+ *
  * @example
  * ```typescript
  * {
@@ -116,7 +116,7 @@ export type LogoutAction = {
  *   }
  * }
  * ```
- * 
+ *
  * @public
  */
 export type RedirectAction = {
@@ -131,7 +131,7 @@ export type RedirectAction = {
  * Custom action type for application-specific actions.
  * This type is essential for proper TypeScript discrimination in the ErrorAction union.
  * Without this, TypeScript cannot properly distinguish between predefined and custom actions.
- * 
+ *
  * @example
  * ```typescript
  * {
@@ -143,7 +143,7 @@ export type RedirectAction = {
  *     severity: 'high'
  *   }
  * }
- * 
+ *
  * {
  *   action: 'custom',
  *   payload: {
@@ -154,7 +154,7 @@ export type RedirectAction = {
  *   }
  * }
  * ```
- * 
+ *
  * @public
  */
 export type CustomAction = {
@@ -164,9 +164,9 @@ export type CustomAction = {
 
 /**
  * Union type of all possible error actions.
- * Includes predefined actions (NotifyAction, LogoutAction, RedirectAction) 
+ * Includes predefined actions (NotifyAction, LogoutAction, RedirectAction)
  * and CustomAction for application-specific actions.
- * 
+ *
  * @public
  */
 export type ErrorAction = NotifyAction | LogoutAction | RedirectAction | CustomAction
@@ -174,7 +174,7 @@ export type ErrorAction = NotifyAction | LogoutAction | RedirectAction | CustomA
 /**
  * Configuration options for creating an ErrorX instance.
  * All properties are optional with sensible defaults.
- * 
+ *
  * @public
  */
 export type ErrorXOptions = {
@@ -197,7 +197,7 @@ export type ErrorXOptions = {
 /**
  * JSON-serializable representation of an ErrorX instance.
  * Used for transmitting errors over network or storing in databases.
- * 
+ *
  * @example
  * ```typescript
  * const serialized: SerializableError = {
@@ -219,7 +219,7 @@ export type ErrorXOptions = {
  *   }
  * }
  * ```
- * 
+ *
  * @public
  */
 export type SerializableError = {

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { ErrorX } from '../index.js'
-import * as errorSources from './infrastructure/error-sources.js'
-import * as errorHandlers from './infrastructure/error-handlers.js'
 import * as asyncOperations from './infrastructure/async-operations.js'
 import * as complexScenarios from './infrastructure/complex-scenarios.js'
+import * as errorHandlers from './infrastructure/error-handlers.js'
+import * as errorSources from './infrastructure/error-sources.js'
 
 /**
  * Comprehensive stack trace preservation tests across multiple files
@@ -12,7 +12,7 @@ import * as complexScenarios from './infrastructure/complex-scenarios.js'
  * - Async operations and promise chains (async-operations.ts)
  * - Complex error wrapping and metadata operations (complex-scenarios.ts)
  * - Serialization/deserialization and edge cases
- * 
+ *
  * Test infrastructure:
  * - error-sources.ts: Original error throwing functions
  * - error-handlers.ts: Try-catch and rethrow scenarios
@@ -21,7 +21,6 @@ import * as complexScenarios from './infrastructure/complex-scenarios.js'
  */
 
 describe('Stack Trace Preservation', () => {
-
   describe('Basic Try-Catch Scenarios', () => {
     it('should preserve original stack trace in simple rethrow', () => {
       expect(() => errorHandlers.simpleTryCatchRethrow()).toThrow()
@@ -74,7 +73,8 @@ describe('Stack Trace Preservation', () => {
         // Check the error chain depth
         let current = errorX
         let depth = 0
-        while (current.cause && depth < 10) { // Prevent infinite loops
+        while (current.cause && depth < 10) {
+          // Prevent infinite loops
           depth++
           if (current.cause instanceof ErrorX) {
             current = current.cause
@@ -89,28 +89,37 @@ describe('Stack Trace Preservation', () => {
         let foundOriginalError = false
         let currentError: ErrorX | null = errorX
         while (currentError && !foundOriginalError) {
-          if (currentError.stack?.includes('error-sources.ts') ||
+          if (
+            currentError.stack?.includes('error-sources.ts') ||
             currentError.message.includes('error-sources.ts') ||
             (currentError.metadata?.originalError &&
               typeof currentError.metadata.originalError === 'object' &&
               'source' in currentError.metadata.originalError &&
-              currentError.metadata.originalError.source === 'error-sources.ts')) {
+              currentError.metadata.originalError.source === 'error-sources.ts')
+          ) {
             foundOriginalError = true
           }
 
           // Also check the final cause if it's a regular Error or Object
-          if (!foundOriginalError && currentError.cause &&
-            !(currentError.cause instanceof ErrorX)) {
+          if (
+            !foundOriginalError &&
+            currentError.cause &&
+            !(currentError.cause instanceof ErrorX)
+          ) {
             if (currentError.cause instanceof Error) {
-              if (currentError.cause.stack?.includes('error-sources.ts') ||
-                currentError.cause.message.includes('error-sources.ts')) {
+              if (
+                currentError.cause.stack?.includes('error-sources.ts') ||
+                currentError.cause.message.includes('error-sources.ts')
+              ) {
                 foundOriginalError = true
               }
             } else if (typeof currentError.cause === 'object' && currentError.cause !== null) {
               // Check if it's the object error from error-sources.ts
               const causeObj = currentError.cause as any
-              if (causeObj.source === 'error-sources.ts' ||
-                (causeObj.message?.includes('error-sources.ts'))) {
+              if (
+                causeObj.source === 'error-sources.ts' ||
+                causeObj.message?.includes('error-sources.ts')
+              ) {
                 foundOriginalError = true
               }
             }
@@ -202,7 +211,9 @@ describe('Stack Trace Preservation', () => {
         expect(error).toBeInstanceOf(ErrorX)
         const errorX = error as ErrorX
 
-        expect(errorX.message).toContain('Error after serialization round-trip from complex-scenarios.ts')
+        expect(errorX.message).toContain(
+          'Error after serialization round-trip from complex-scenarios.ts'
+        )
 
         // Even after serialization/deserialization, should preserve stack info
         expect(errorX.cause).toBeInstanceOf(ErrorX)
@@ -243,7 +254,9 @@ describe('Stack Trace Preservation', () => {
         expect(error).toBeInstanceOf(ErrorX)
         const errorX = error as ErrorX
 
-        expect(errorX.message).toContain('Error with metadata preservation from complex-scenarios.ts')
+        expect(errorX.message).toContain(
+          'Error with metadata preservation from complex-scenarios.ts'
+        )
         expect(errorX.cause).toBeInstanceOf(ErrorX)
 
         const enriched = errorX.cause as ErrorX
@@ -262,7 +275,9 @@ describe('Stack Trace Preservation', () => {
         expect(error).toBeInstanceOf(ErrorX)
         const errorX = error as ErrorX
 
-        expect(errorX.message).toContain('Chained processing by processor-async-operations in async-operations.ts')
+        expect(errorX.message).toContain(
+          'Chained processing by processor-async-operations in async-operations.ts'
+        )
 
         // Check the cause chain for metadata
         expect(errorX.cause).toBeInstanceOf(ErrorX)
@@ -350,20 +365,33 @@ describe('Stack Trace Preservation', () => {
         expect(error).toBeInstanceOf(ErrorX)
         const errorX = error as ErrorX
 
-        expect(errorX.message).toContain('Final error test from complex-scenarios.ts - maximum complexity')
+        expect(errorX.message).toContain(
+          'Final error test from complex-scenarios.ts - maximum complexity'
+        )
         expect(errorX.name).toBe('FinalError')
         expect(errorX.code).toBe('FINAL_ERROR')
         expect(errorX.metadata.testType).toBe('final')
         expect(errorX.metadata.complexity).toBe('maximum')
-        expect(errorX.metadata.layers).toEqual(['error-sources', 'error-handlers', 'async-operations', 'complex-scenarios'])
+        expect(errorX.metadata.layers).toEqual([
+          'error-sources',
+          'error-handlers',
+          'async-operations',
+          'complex-scenarios',
+        ])
 
         // Should have actions
         expect(errorX.actions).toBeDefined()
         const actions = errorX.actions || []
-        expect(actions.some(action => action.action === 'notify' &&
-          action.payload?.targets?.includes('banner'))).toBe(true)
-        expect(actions.some(action => action.action === 'redirect' &&
-          action.payload?.redirectURL === '/error-page')).toBe(true)
+        expect(
+          actions.some(
+            action => action.action === 'notify' && action.payload?.targets?.includes('banner')
+          )
+        ).toBe(true)
+        expect(
+          actions.some(
+            action => action.action === 'redirect' && action.payload?.redirectURL === '/error-page'
+          )
+        ).toBe(true)
       }
     })
   })
@@ -411,7 +439,9 @@ describe('Stack Trace Preservation', () => {
 
         const converted = errorX.cause as ErrorX
         expect(converted.message).toContain('String error from error-sources.ts')
-        expect(converted.metadata.originalError).toBe('String error from error-sources.ts throwStringError')
+        expect(converted.metadata.originalError).toBe(
+          'String error from error-sources.ts throwStringError'
+        )
       }
     })
   })
@@ -427,7 +457,8 @@ describe('Stack Trace Preservation', () => {
         const files: string[] = []
 
         // Navigate through the error chain
-        while (current && messages.length < 20) { // Prevent infinite loops
+        while (current && messages.length < 20) {
+          // Prevent infinite loops
           messages.push(current.message)
 
           // Extract file references from stack or message
