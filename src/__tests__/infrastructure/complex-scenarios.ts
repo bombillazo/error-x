@@ -1,5 +1,6 @@
 import { ErrorX } from '../../index'
 import * as asyncOperations from './async-operations'
+import { HandlingTargets } from '../../types';
 
 /**
  * Complex Scenarios - Advanced error wrapping and edge case testing
@@ -31,7 +32,7 @@ export async function complexAsyncErrorChain(): Promise<void> {
     throw new ErrorX({
       message: 'Complex async error chain from complex-scenarios.ts',
       cause: error,
-      handlingOptions: { targets: ['modal'] }
+      actions: [{ action: 'NOTIFY', payload: { targets: [HandlingTargets.LOGGER] } }],
     })
   }
 }
@@ -207,11 +208,10 @@ export async function finalErrorTest(): Promise<void> {
         complexity: 'maximum',
         layers: ['error-sources', 'error-handlers', 'async-operations', 'complex-scenarios']
       },
-      handlingOptions: {
-        targets: ['banner'],
-        logout: false,
-        redirect: '/error-page'
-      }
+      actions: [
+        { action: 'NOTIFY', payload: { targets: ['banner'] } },
+        { action: 'REDIRECT', payload: { redirectURL: '/error-page' } }
+      ]
     })
   }
 }

@@ -357,10 +357,13 @@ describe('Stack Trace Preservation', () => {
         expect(errorX.metadata.complexity).toBe('maximum')
         expect(errorX.metadata.layers).toEqual(['error-sources', 'error-handlers', 'async-operations', 'complex-scenarios'])
 
-        // Should have handling options
-        expect(errorX.handlingOptions?.targets).toEqual(['banner'])
-        expect(errorX.handlingOptions?.logout).toBe(false)
-        expect(errorX.handlingOptions?.redirect).toBe('/error-page')
+        // Should have actions
+        expect(errorX.actions).toBeDefined()
+        const actions = errorX.actions || []
+        expect(actions.some(action => action.action === 'NOTIFY' && 
+          action.payload.targets?.includes('banner'))).toBe(true)
+        expect(actions.some(action => action.action === 'REDIRECT' && 
+          action.payload.redirectURL === '/error-page')).toBe(true)
       }
     })
   })

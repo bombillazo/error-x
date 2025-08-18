@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { type ErrorMetadata, ErrorX, type SerializableError, HandlingTargets, type ErrorHandlingOptions } from '../index.js'
+import { type ErrorMetadata, ErrorX, type SerializableError, HandlingTargets, type ErrorAction } from '../index.js'
 
 describe('ErrorX', () => {
   let mockDate: Date
@@ -72,55 +72,63 @@ describe('ErrorX', () => {
       expect(error.uiMessage).toBe('Page not found')
     })
 
-    it('should create error with handlingOptions', () => {
-      const handlingOptions: ErrorHandlingOptions = {
-        logout: true,
-        redirect: '/login',
-        targets: [HandlingTargets.MODAL]
-      }
+    it('should create error with actions system', () => {
+      const actions: ErrorAction[] = [
+        { action: 'NOTIFY', payload: { targets: [HandlingTargets.MODAL] } },
+        { action: 'LOGOUT', payload: { clearStorage: true } },
+        { action: 'REDIRECT', payload: { redirectURL: '/login', delay: 1000 } }
+      ]
 
       const error = new ErrorX({
         message: 'Authentication expired',
         name: 'AuthExpiredError',
         code: 'AUTH_EXPIRED',
-        handlingOptions
+        actions
       })
 
       expect(error.message).toBe('Authentication expired.')
       expect(error.name).toBe('AuthExpiredError')
       expect(error.code).toBe('AUTH_EXPIRED')
-      expect(error.handlingOptions).toEqual(handlingOptions)
+      expect(error.actions).toEqual(actions)
     })
 
-    it('should create error with mixed display targets (enum + custom strings)', () => {
-      const handlingOptions: ErrorHandlingOptions = {
-        logout: false,
-        redirect: '/dashboard',
-        targets: [
-          HandlingTargets.TOAST,
-          'custom-sidebar',
-          HandlingTargets.CONSOLE,
-          'analytics-tracker'
-        ]
-      }
-
+    it('should create error without actions', () => {
       const error = new ErrorX({
-        message: 'Mixed display targets test',
-        name: 'MixedError',
-        code: 'MIXED_TARGETS',
-        handlingOptions
+        message: 'Simple test',
+        name: 'SimpleError',
+        code: 'SIMPLE_TEST'
       })
 
-      expect(error.message).toBe('Mixed display targets test.')
-      expect(error.name).toBe('MixedError')
-      expect(error.code).toBe('MIXED_TARGETS')
-      expect(error.handlingOptions?.targets).toEqual([
-        HandlingTargets.TOAST,
-        'custom-sidebar',
-        HandlingTargets.CONSOLE,
-        'analytics-tracker'
-      ])
+      expect(error.message).toBe('Simple test.')
+      expect(error.name).toBe('SimpleError')
+      expect(error.code).toBe('SIMPLE_TEST')
+      expect(error.actions).toBeUndefined()
     })
+
+    it('should create error with mixed targets and custom actions', () => {
+      const actions: ErrorAction[] = [
+        { 
+          action: 'NOTIFY', 
+          payload: { 
+            targets: [HandlingTargets.TOAST, 'custom-sidebar', HandlingTargets.CONSOLE, 'analytics-tracker']
+          }
+        },
+        { action: 'custom-analytics', payload: { event: 'error_occurred', severity: 'high' } }
+      ]
+
+      const error = new ErrorX({
+        message: 'Mixed actions test',
+        name: 'MixedError',
+        code: 'MIXED_ACTIONS',
+        actions
+      })
+
+      expect(error.message).toBe('Mixed actions test.')
+      expect(error.name).toBe('MixedError')
+      expect(error.code).toBe('MIXED_ACTIONS')
+      expect(error.actions).toEqual(actions)
+    })
+
 
     it('should create error with no options', () => {
       const error = new ErrorX()
@@ -130,7 +138,7 @@ describe('ErrorX', () => {
       expect(error.code).toBe('ERROR')
       expect(error.uiMessage).toBeUndefined()
       expect(error.metadata).toEqual({})
-      expect(error.handlingOptions).toBeUndefined()
+      expect(error.actions).toBeUndefined()
       expect(error.timestamp).toEqual(mockDate)
       expect(error).toBeInstanceOf(Error)
       expect(error).toBeInstanceOf(ErrorX)
@@ -144,7 +152,7 @@ describe('ErrorX', () => {
       expect(error.code).toBe('ERROR')
       expect(error.uiMessage).toBeUndefined()
       expect(error.metadata).toEqual({})
-      expect(error.handlingOptions).toBeUndefined()
+      expect(error.actions).toBeUndefined()
       expect(error.timestamp).toEqual(mockDate)
     })
 
@@ -156,7 +164,7 @@ describe('ErrorX', () => {
       expect(error.code).toBe('CUSTOM_ERROR')
       expect(error.uiMessage).toBeUndefined()
       expect(error.metadata).toEqual({})
-      expect(error.handlingOptions).toBeUndefined()
+      expect(error.actions).toBeUndefined()
     })
 
     it('should format messages correctly', () => {
@@ -329,16 +337,15 @@ describe('ErrorX', () => {
         expect(converted.metadata.originalError).toBe(apiError)
       })
 
-      it('should extract handlingOptions from objects', () => {
+      it('should extract actions from objects', () => {
         const apiError = {
           message: 'Session expired',
           name: 'SessionError',
           code: 'SESSION_EXPIRED',
-          handlingOptions: {
-            logout: true,
-            redirect: '/login',
-            targets: [HandlingTargets.TOAST]
-          }
+          actions: [
+            { action: 'NOTIFY', payload: { targets: [HandlingTargets.TOAST] } },
+            { action: 'LOGOUT', payload: { clearStorage: true } }
+          ]
         }
 
         const converted = ErrorX.toErrorX(apiError)
@@ -346,7 +353,23 @@ describe('ErrorX', () => {
         expect(converted.message).toBe('Session expired.')
         expect(converted.name).toBe('SessionError')
         expect(converted.code).toBe('SESSION_EXPIRED')
-        expect(converted.handlingOptions).toEqual(apiError.handlingOptions)
+        expect(converted.actions).toEqual(apiError.actions)
+        expect(converted.metadata.originalError).toBe(apiError)
+      })
+
+      it('should handle objects without actions', () => {
+        const apiError = {
+          message: 'Session expired',
+          name: 'SessionError',
+          code: 'SESSION_EXPIRED'
+        }
+
+        const converted = ErrorX.toErrorX(apiError)
+
+        expect(converted.message).toBe('Session expired.')
+        expect(converted.name).toBe('SessionError')
+        expect(converted.code).toBe('SESSION_EXPIRED')
+        expect(converted.actions).toBeUndefined()
         expect(converted.metadata.originalError).toBe(apiError)
       })
 
@@ -595,28 +618,42 @@ describe('ErrorX', () => {
         expect(json.stack).toBeUndefined()
       })
 
-      it('should serialize error with handlingOptions', () => {
-        const handlingOptions: ErrorHandlingOptions = {
-          logout: true,
-          redirect: '/dashboard',
-          targets: [HandlingTargets.BANNER]
-        }
+      it('should serialize error with actions', () => {
+        const actions: ErrorAction[] = [
+          { action: 'NOTIFY', payload: { targets: [HandlingTargets.BANNER] } },
+          { action: 'LOGOUT', payload: { clearStorage: true } },
+          { action: 'REDIRECT', payload: { redirectURL: '/dashboard', delay: 1000 } }
+        ]
 
         const error = new ErrorX({
           message: 'Permission denied',
           name: 'PermissionError',
           code: 'PERMISSION_DENIED',
-          handlingOptions
+          actions
         })
 
         const json = error.toJSON()
 
-        expect(json.handlingOptions).toEqual(handlingOptions)
+        expect(json.actions).toEqual(actions)
         expect(json.name).toBe('PermissionError')
         expect(json.code).toBe('PERMISSION_DENIED')
       })
 
-      it('should not include handlingOptions in serialization if empty', () => {
+      it('should serialize error without actions', () => {
+        const error = new ErrorX({
+          message: 'Simple error',
+          name: 'SimpleError',
+          code: 'SIMPLE_ERROR'
+        })
+
+        const json = error.toJSON()
+
+        expect(json.actions).toBeUndefined()
+        expect(json.name).toBe('SimpleError')
+        expect(json.code).toBe('SIMPLE_ERROR')
+      })
+
+      it('should not include actions in serialization if empty', () => {
         const error = new ErrorX({
           message: 'Simple error',
           code: 'SIMPLE'
@@ -624,7 +661,7 @@ describe('ErrorX', () => {
 
         const json = error.toJSON()
 
-        expect(json.handlingOptions).toBeUndefined()
+        expect(json.actions).toBeUndefined()
       })
     })
 
@@ -694,29 +731,28 @@ describe('ErrorX', () => {
         expect(error.cause).toBeUndefined()
       })
 
-      it('should deserialize error with handlingOptions', () => {
-        const handlingOptions: ErrorHandlingOptions = {
-          logout: false,
-          redirect: '/error',
-          targets: [HandlingTargets.INLINE]
-        }
+      it('should deserialize error with actions', () => {
+        const actions: ErrorAction[] = [
+          { action: 'NOTIFY', payload: { targets: [HandlingTargets.INLINE] } },
+          { action: 'REDIRECT', payload: { redirectURL: '/error' } }
+        ]
 
         const serialized: SerializableError = {
-          name: 'HandlingOptionsError',
-          message: 'Error with handlingOptions.',
-          code: 'HANDLING_OPTIONS_ERROR',
+          name: 'ActionsError',
+          message: 'Error with actions.',
+          code: 'ACTIONS_ERROR',
           uiMessage: 'Something went wrong',
           metadata: {},
           timestamp: '2024-01-15T10:30:45.123Z',
-          handlingOptions
+          actions
         }
 
         const error = ErrorX.fromJSON(serialized)
 
-        expect(error.name).toBe('HandlingOptionsError')
-        expect(error.message).toBe('Error with handlingOptions.')
-        expect(error.code).toBe('HANDLING_OPTIONS_ERROR')
-        expect(error.handlingOptions).toEqual(handlingOptions)
+        expect(error.name).toBe('ActionsError')
+        expect(error.message).toBe('Error with actions.')
+        expect(error.code).toBe('ACTIONS_ERROR')
+        expect(error.actions).toEqual(actions)
       })
     })
 
