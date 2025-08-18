@@ -304,6 +304,41 @@ try {
 
 ## FAQ
 
+### Why use action type "custom" instead of an open string type for CustomAction?
+
+The `ErrorAction` type uses a discriminated union based on the `action` property. When you use arbitrary values instead of the predefined action types (`'notify'`, `'logout'`, `'redirect'`, `'custom'`), it breaks TypeScript's ability to properly narrow the payload types.
+
+**The Problem:** If `ErrorAction` allowed any string as the action type, TypeScript would default to the most permissive payload type (`{ ...any }`) for all actions, causing type definition to leak between different action types.
+
+```typescript
+// ❌ Don't do this - breaks discriminated union
+const error = new ErrorX({
+  actions: [
+    { action: 'analytics', payload: { event: 'error' } }, // Loses type safety
+    { action: 'notify', payload: { targets: ['toast'] } }, // Payload type becomes too permissive
+    { action: 'redirect', payload: { redirectURL: '/home' } } // Required properties not enforced
+  ]
+})
+
+// ✅ Do this - maintains proper type discrimination
+const error = new ErrorX({
+  actions: [
+    { action: 'custom', payload: { type: 'analytics', event: 'error' } },
+    { action: 'notify', payload: { targets: ['toast'] } }, // Properly typed with required 'targets'
+    { action: 'redirect', payload: { redirectURL: '/home' } } // Properly typed with required 'redirectURL'
+  ]
+})
+```
+
+**The Solution:** Using `action: 'custom'` with a discriminating `type` property in the payload preserves the discriminated union while allowing unlimited flexibility for custom actions. This approach:
+
+- Maintains type safety for predefined actions (`notify`, `logout`, `redirect`)
+- Provides a structured way to handle custom application logic
+- Allows your error handlers to properly switch on action types
+- Enables you to create your own discriminated unions within custom payloads
+
+Ideally, we would support custom action types directly in the action. If there is a solution to this problem, we are more than happy to review it. Please open an issue or PR!.
+
 ## License
 
 MIT
