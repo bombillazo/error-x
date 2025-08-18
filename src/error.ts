@@ -1,5 +1,5 @@
-import type { ErrorMetadata, ErrorXOptions, SerializableError, ErrorHandlingOptions } from './types.js'
-import { HandlingTargets } from './types.js' // Used in JSDoc examples
+import type { ErrorMetadata, ErrorXOptions, SerializableError, ErrorAction } from './types.js'
+import safeStringify from 'safe-stringify';
 
 /**
  * Enhanced Error class with rich metadata, type-safe error handling, and intelligent error conversion.
@@ -28,8 +28,8 @@ export class ErrorX extends Error {
   public readonly metadata: ErrorMetadata
   /** Timestamp when the error was created */
   public readonly timestamp: Date
-  /** Error handling options for UI behavior and actions */
-  public readonly handlingOptions: ErrorHandlingOptions | undefined
+  /** Error actions for UI behavior and handling */
+  public readonly actions: ErrorAction[] | undefined
 
   /**
    * Creates a new ErrorX instance with enhanced error handling capabilities.
@@ -41,7 +41,7 @@ export class ErrorX extends Error {
    * @param options.uiMessage - User-friendly message (defaults to undefined)
    * @param options.cause - Original error that caused this error
    * @param options.metadata - Additional context data
-   * @param options.handlingOptions - Error handling options for UI behavior and actions (defaults to undefined)
+   * @param options.actions - Error actions for UI behavior and handling (defaults to undefined)
    * 
    * @example
    * ```typescript
@@ -52,7 +52,16 @@ export class ErrorX extends Error {
    *   code: 'DB_QUERY_FAILED',
    *   uiMessage: 'Unable to load data. Please try again.',
    *   metadata: { query: 'SELECT * FROM users', timeout: 5000 },
-   *   handlingOptions: { targets: [HandlingTargets.TOAST], redirect: '/dashboard' }
+   *   actions: [
+   *     { 
+   *       action: 'NOTIFY', 
+   *       payload: { targets: [HandlingTargets.TOAST] }
+   *     },
+   *     { 
+   *       action: 'REDIRECT', 
+   *       payload: { redirectURL: '/dashboard', delay: 1000 }
+   *     }
+   *   ]
    * })
    * 
    * // Create with minimal options
@@ -70,7 +79,7 @@ export class ErrorX extends Error {
     this.code = options.code != null ? String(options.code) : ErrorX.generateDefaultCode(options.name)
     this.uiMessage = options.uiMessage
     this.metadata = options.metadata ?? {}
-    this.handlingOptions = options.handlingOptions
+    this.actions = options.actions
     this.timestamp = new Date()
 
     // Handle stack trace preservation
@@ -93,6 +102,7 @@ export class ErrorX extends Error {
   private static getDefaultName(): string {
     return 'Error'
   }
+
 
   /**
    * Generates a default error code from the error name.
@@ -259,15 +269,18 @@ export class ErrorX extends Error {
    * ```
    */
   public withMetadata(additionalMetadata: ErrorMetadata): ErrorX {
-    const newError = new ErrorX({
+    const options: ErrorXOptions = {
       message: this.message,
       name: this.name,
       code: this.code,
       uiMessage: this.uiMessage,
       cause: this.cause,
       metadata: { ...this.metadata, ...additionalMetadata },
-      handlingOptions: this.handlingOptions,
-    })
+    }
+    if (this.actions) {
+      options.actions = this.actions
+    }
+    const newError = new ErrorX(options)
 
     // Preserve the original stack trace
     if (this.stack) {
@@ -331,7 +344,7 @@ export class ErrorX extends Error {
     let uiMessage = ''
     let cause: unknown
     let metadata: ErrorMetadata = {}
-    let handlingOptions: ErrorHandlingOptions | undefined
+    let actions: ErrorAction[] | undefined
 
     if (error) {
       if (typeof error === 'string') {
@@ -362,12 +375,9 @@ export class ErrorX extends Error {
         if ('uiMessage' in error && error.uiMessage) uiMessage = String(error.uiMessage)
         else if ('userMessage' in error && error.userMessage) uiMessage = String(error.userMessage)
 
-        // Extract handlingOptions
-        if ('handlingOptions' in error && error.handlingOptions && typeof error.handlingOptions === 'object') {
-          handlingOptions = error.handlingOptions as ErrorHandlingOptions
-        } else if ('config' in error && error.config && typeof error.config === 'object') {
-          // Also support legacy 'config' property name for backward compatibility
-          handlingOptions = error.config as ErrorHandlingOptions
+        // Extract actions
+        if ('actions' in error && Array.isArray(error.actions)) {
+          actions = error.actions as ErrorAction[]
         }
 
         // Store original object as metadata if it has additional properties
@@ -384,7 +394,7 @@ export class ErrorX extends Error {
     if (uiMessage) options.uiMessage = uiMessage
     if (cause) options.cause = cause
     if (Object.keys(metadata).length > 0) options.metadata = metadata
-    if (handlingOptions) options.handlingOptions = handlingOptions
+    if (actions && actions.length > 0) options.actions = actions
 
     return new ErrorX(options)
   }
@@ -424,15 +434,18 @@ export class ErrorX extends Error {
    */
   public cleanStackTrace(delimiter?: string): ErrorX {
     if (delimiter && this.stack) {
-      const newError = new ErrorX({
+      const options: ErrorXOptions = {
         message: this.message,
         name: this.name,
         code: this.code,
         uiMessage: this.uiMessage,
         cause: this.cause,
         metadata: this.metadata,
-        handlingOptions: this.handlingOptions,
-      })
+      }
+      if (this.actions) {
+        options.actions = this.actions
+      }
+      const newError = new ErrorX(options)
       newError.stack = ErrorX.processErrorStack(this, delimiter)
       return newError
     }
@@ -474,13 +487,8 @@ export class ErrorX extends Error {
 
     // Add metadata if present
     if (Object.keys(this.metadata).length > 0) {
-      try {
-        const metadataStr = JSON.stringify(this.metadata)
-        parts.push(`metadata: ${metadataStr}`)
-      } catch {
-        // Handle circular references gracefully
-        parts.push('metadata: [Circular Reference]')
-      }
+      const metadataStr = safeStringify(this.metadata)
+      parts.push(`metadata: ${metadataStr}`)
     }
 
     let result = parts.join(' ')
@@ -513,14 +521,12 @@ export class ErrorX extends Error {
    */
   public toJSON(): SerializableError {
     // Handle metadata serialization with circular reference protection
-    let safeMetadata: ErrorMetadata
-    try {
-      JSON.stringify(this.metadata)
-      safeMetadata = this.metadata
-    } catch {
-      // Handle circular references in metadata
-      safeMetadata = { error: 'Circular reference in metadata' }
-    }
+
+
+    // Use safe stringify to parse the metadata and remove circular references
+    const stringified = safeStringify(this.metadata)
+    const safeMetadata: ErrorMetadata = JSON.parse(stringified)
+
 
     const serialized: SerializableError = {
       name: this.name,
@@ -531,16 +537,13 @@ export class ErrorX extends Error {
       timestamp: this.timestamp.toISOString(),
     }
 
-    // Include handlingOptions if present
-    if (this.handlingOptions && Object.keys(this.handlingOptions).length > 0) {
-      try {
-        // Test if handlingOptions can be serialized
-        JSON.stringify(this.handlingOptions)
-        serialized.handlingOptions = this.handlingOptions
-      } catch {
-        // Handle circular references in handlingOptions
-        serialized.handlingOptions = undefined
-      }
+    // Include actions if present
+    if (this.actions && this.actions.length > 0) {
+
+      // Use safe stringify to parse the actions and remove circular references
+      const stringified = safeStringify(this.actions)
+      serialized.actions = JSON.parse(stringified)
+
     }
 
     // Include stack if available
@@ -602,8 +605,8 @@ export class ErrorX extends Error {
       metadata: serialized.metadata,
     }
 
-    if (serialized.handlingOptions) {
-      options.handlingOptions = serialized.handlingOptions
+    if (serialized.actions && serialized.actions.length > 0) {
+      options.actions = serialized.actions
     }
 
     const error = new ErrorX(options)

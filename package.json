@@ -66,5 +66,8 @@
     "cz-customizable": {
       "config": ".cz-config.cjs"
     }
+  },
+  "dependencies": {
+    "safe-stringify": "^1.2.0"
   }
 }
