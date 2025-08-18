@@ -27,7 +27,10 @@ jobs:
     name: Deploy Package
     runs-on: ubuntu-latest
     environment: production
-    
+    permissions:
+      contents: write
+      packages: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,7 +46,6 @@ jobs:
         with:
           node-version: 20
           cache: 'pnpm'
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -59,7 +61,6 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/bombillazo/error-x.git
 
       - name: Update version (custom)
         if: ${{ inputs.custom_version != '' }}
@@ -82,20 +83,22 @@ jobs:
       - name: Push changes
         if: ${{ !inputs.dry_run }}
         run: |
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/bombillazo/error-x.git
           git push origin main
           git push origin "v${{ env.NEW_VERSION }}"
 
-      - name: Publish to NPM (dry run)
-        if: ${{ inputs.dry_run }}
-        run: pnpm publish --dry-run --access public
+      - name: Set registry
+        run: 'echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Publish to NPM (dry run)
+        if: ${{ inputs.dry_run }}
+        run: pnpm publish --dry-run --access public --no-git-checks
+
       - name: Publish to NPM
         if: ${{ !inputs.dry_run }}
-        run: pnpm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm publish --access public --no-git-checks
 
       - name: Create GitHub Release
         if: ${{ !inputs.dry_run }}
