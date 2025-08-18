@@ -25,7 +25,7 @@ export class ErrorX extends Error {
   /** User-friendly message suitable for display in UI */
   public readonly uiMessage: string | undefined
   /** Additional context and metadata associated with the error */
-  public readonly metadata: ErrorMetadata
+  public readonly metadata: ErrorMetadata | undefined
   /** Timestamp when the error was created */
   public readonly timestamp: Date
   /** Error actions for UI behavior and handling */
@@ -40,7 +40,7 @@ export class ErrorX extends Error {
    * @param options.code - Error identifier code (auto-generated from name if not provided)
    * @param options.uiMessage - User-friendly message (defaults to undefined)
    * @param options.cause - Original error that caused this error
-   * @param options.metadata - Additional context data
+   * @param options.metadata - Additional context data (defaults to undefined)
    * @param options.actions - Error actions for UI behavior and handling (defaults to undefined)
    * 
    * @example
@@ -78,7 +78,7 @@ export class ErrorX extends Error {
     this.name = options.name ?? ErrorX.getDefaultName()
     this.code = options.code != null ? String(options.code) : ErrorX.generateDefaultCode(options.name)
     this.uiMessage = options.uiMessage
-    this.metadata = options.metadata ?? {}
+    this.metadata = options.metadata
     this.actions = options.actions
     this.timestamp = new Date()
 
@@ -275,7 +275,7 @@ export class ErrorX extends Error {
       code: this.code,
       uiMessage: this.uiMessage,
       cause: this.cause,
-      metadata: { ...this.metadata, ...additionalMetadata },
+      metadata: { ...(this.metadata ?? {}), ...additionalMetadata },
     }
     if (this.actions) {
       options.actions = this.actions
@@ -486,7 +486,7 @@ export class ErrorX extends Error {
     parts.push(`(${this.timestamp.toISOString()})`)
 
     // Add metadata if present
-    if (Object.keys(this.metadata).length > 0) {
+    if (this.metadata && Object.keys(this.metadata).length > 0) {
       const metadataStr = safeStringify(this.metadata)
       parts.push(`metadata: ${metadataStr}`)
     }
@@ -524,8 +524,8 @@ export class ErrorX extends Error {
 
 
     // Use safe stringify to parse the metadata and remove circular references
-    const stringified = safeStringify(this.metadata)
-    const safeMetadata: ErrorMetadata = JSON.parse(stringified)
+    const safeMetadata: ErrorMetadata | undefined = this.metadata ? 
+      JSON.parse(safeStringify(this.metadata)) : undefined
 
 
     const serialized: SerializableError = {

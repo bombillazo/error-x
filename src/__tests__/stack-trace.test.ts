@@ -91,7 +91,7 @@ describe('Stack Trace Preservation', () => {
         while (currentError && !foundOriginalError) {
           if (currentError.stack?.includes('error-sources.ts') ||
             currentError.message.includes('error-sources.ts') ||
-            (currentError.metadata.originalError &&
+            (currentError.metadata?.originalError &&
               typeof currentError.metadata.originalError === 'object' &&
               'source' in currentError.metadata.originalError &&
               currentError.metadata.originalError.source === 'error-sources.ts')) {

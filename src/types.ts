@@ -46,9 +46,6 @@ export enum HandlingTargets {
 export type HandlingTarget = HandlingTargets | string
 
 /**
- * Predefined error actions that can be performed when an error occurs.
- */
-/**
  * Action to display notifications in specified UI targets.
  * Used to notify applications to handle error messages through the indicated display mechanisms.
  * 
@@ -119,38 +116,44 @@ export type RedirectAction = {
 }
 
 /**
- * Generic action type for custom application-specific actions.
- * Allows defining any custom action with flexible payload structure.
+ * Custom action type for application-specific actions.
+ * This type is essential for proper TypeScript discrimination in the ErrorAction union.
+ * Without this, TypeScript cannot properly distinguish between predefined and custom actions.
  * 
  * @example
  * ```typescript
  * {
- *   action: 'track-analytics',
+ *   action: 'custom',
  *   payload: {
+ *     type: 'analytics',
  *     event: 'error_occurred',
- *     severity: 'high',
- *     category: 'authentication'
+ *     category: 'authentication',
+ *     severity: 'high'
  *   }
  * }
  * 
  * {
- *   action: 'show-help-modal',
+ *   action: 'custom',
  *   payload: {
- *     helpId: 'payment-error-help',
- *     category: 'billing'
+ *     type: 'show-modal',
+ *     modalId: 'error-modal',
+ *     title: 'Error',
+ *     message: 'Something went wrong'
  *   }
  * }
  * ```
  */
-export type GenericAction = {
-  action: string
+export type CustomAction = {
+  action: 'custom'
   payload?: Record<string, any>
 }
 
 /**
- * Union type of all possible actions - predefined and custom
+ * Union type of all possible error actions.
+ * Includes predefined actions (NotifyAction, LogoutAction, RedirectAction) 
+ * and CustomAction for application-specific actions.
  */
-export type ErrorAction = NotifyAction | LogoutAction | RedirectAction | GenericAction
+export type ErrorAction = NotifyAction | LogoutAction | RedirectAction | CustomAction
 
 /**
  * Configuration options for creating an ErrorX instance.
@@ -167,7 +170,7 @@ export type ErrorXOptions = {
   uiMessage?: string | undefined
   /** Original error that caused this error (preserves error chain) */
   cause?: Error | unknown
-  /** Additional context and debugging information (default: {}) */
+  /** Additional context and debugging information (default: undefined) */
   metadata?: ErrorMetadata
   /** Actions to perform when this error occurs (default: undefined) */
   actions?: ErrorAction[]
@@ -211,7 +214,7 @@ export type SerializableError = {
   /** Stack trace (optional) */
   stack?: string
   /** Additional context and debugging information */
-  metadata: ErrorMetadata
+  metadata: ErrorMetadata | undefined
   /** ISO timestamp when error was created */
   timestamp: string
   /** Actions to perform when this error occurs */

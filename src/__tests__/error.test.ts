@@ -30,7 +30,7 @@ describe('ErrorX', () => {
       expect(error.name).toBe('Error')
       expect(error.code).toBe('ERROR')
       expect(error.uiMessage).toBeUndefined()
-      expect(error.metadata).toEqual({})
+      expect(error.metadata).toBeUndefined()
       expect(error.timestamp).toEqual(mockDate)
       expect(error).toBeInstanceOf(Error)
       expect(error).toBeInstanceOf(ErrorX)
@@ -137,7 +137,7 @@ describe('ErrorX', () => {
       expect(error.name).toBe('Error')
       expect(error.code).toBe('ERROR')
       expect(error.uiMessage).toBeUndefined()
-      expect(error.metadata).toEqual({})
+      expect(error.metadata).toBeUndefined()
       expect(error.actions).toBeUndefined()
       expect(error.timestamp).toEqual(mockDate)
       expect(error).toBeInstanceOf(Error)
@@ -151,7 +151,7 @@ describe('ErrorX', () => {
       expect(error.name).toBe('Error')
       expect(error.code).toBe('ERROR')
       expect(error.uiMessage).toBeUndefined()
-      expect(error.metadata).toEqual({})
+      expect(error.metadata).toBeUndefined()
       expect(error.actions).toBeUndefined()
       expect(error.timestamp).toEqual(mockDate)
     })
@@ -163,7 +163,7 @@ describe('ErrorX', () => {
       expect(error.name).toBe('CustomError')
       expect(error.code).toBe('CUSTOM_ERROR')
       expect(error.uiMessage).toBeUndefined()
-      expect(error.metadata).toEqual({})
+      expect(error.metadata).toBeUndefined()
       expect(error.actions).toBeUndefined()
     })
 
@@ -250,9 +250,9 @@ describe('ErrorX', () => {
       expect(error.code).toBe('ERROR')
     })
 
-    it('should use empty metadata by default', () => {
+    it('should use undefined metadata by default', () => {
       const error = new ErrorX({ message: 'test' })
-      expect(error.metadata).toEqual({})
+      expect(error.metadata).toBeUndefined()
     })
   })
 
