@@ -33,7 +33,7 @@ yarn add @bombillazo/error-x
 ## Quick Start
 
 ```typescript
-import { ErrorX, HandlingTargets, type HandlingTarget } from 'error-x'
+import { ErrorX, HandlingTargets, type HandlingTarget, type ErrorAction } from 'error-x'
 
 // Minimal usage (all parameters optional)
 const error = new ErrorX()
@@ -51,13 +51,12 @@ const error = new ErrorX({
   metadata: { 
     userId: 123, 
     loginAttempt: 3,
-    timestamp: Date.now()
   },
-  handlingOptions: {
-    targets: [HandlingTargets.TOAST, HandlingTargets.BANNER],
-    redirect: '/login',
-    logout: false
-  }
+  actions: [
+    { action: 'notify', payload: { targets: [HandlingTargets.TOAST, HandlingTargets.BANNER] } },
+    { action: 'redirect', payload: { redirectURL: '/login', delay: 1000 } },
+    { action: 'custom-analytics', payload: { event: 'auth_failed', userId: 123, category: 'errors', severity: 'high' } }
+  ]
 })
 ```
 
@@ -73,11 +72,7 @@ new ErrorX(options?: {
   uiMessage?: string                 // Optional: User-friendly message (default: undefined)
   cause?: Error | unknown            // Optional: Original error that caused this (preserves stack traces)
   metadata?: Record<string, any>     // Optional: Additional context data (default: {})
-  handlingOptions?: {                // Optional: Error handling configuration (default: undefined)
-    targets?: HandlingTarget[]       // Where to display the error (predefined or custom targets)
-    redirect?: string                // URL to redirect to after error
-    logout?: boolean                 // Whether to log out the user
-  }
+  actions?: ErrorAction[]            // Optional: Configuration for application actions to perform when error occurs (default: undefined)
 })
 ```
 
@@ -85,64 +80,102 @@ new ErrorX(options?: {
 
 ### Properties
 
-| Property          | Type                                | Default Value                         | Description                                                              |
-| ----------------- | ----------------------------------- | ------------------------------------- | ------------------------------------------------------------------------ |
-| `name`            | `string`                            | `'Error'`                             | Error type/title                                                         |
-| `message`         | `string`                            | `'An error occurred'`                 | Auto-formatted technical error message                                   |
-| `code`            | `string`                            | Auto-generated from name or `'ERROR'` | Error identifier (auto-generated from name in UPPER_SNAKE_CASE)          |
-| `uiMessage`       | `string \| undefined`               | `undefined`                           | User-friendly message for display                                        |
-| `metadata`        | `Record<string, any>`               | `{}`                                  | Additional context and data                                              |
-| `timestamp`       | `Date`                              | `new Date()`                          | When the error was created (readonly)                                    |
-| `handlingOptions` | `ErrorHandlingOptions \| undefined` | `undefined`                           | UI behavior and application actions with display destinations (readonly) |
-| `stack`           | `string`                            | Auto-generated                        | Stack trace with preservation and cleaning (inherited from Error)        |
-| `cause`           | `unknown`                           | `undefined`                           | Original error that caused this (preserves full error chain)             |
+| Property  | Type                         | Default Value                         | Description                                                       |
+| --------- | ---------------------------- | ------------------------------------- | ----------------------------------------------------------------- |
+| name      | `string`                     | `'Error'`                             | Error type/title                                                  |
+| message   | `string`                     | `'An error occurred'`                 | Auto-formatted technical error message                            |
+| code      | `string`                     | Auto-generated from name or `'ERROR'` | Error identifier (auto-generated from name in UPPER_SNAKE_CASE)   |
+| uiMessage | `string \| undefined`        | `undefined`                           | User-friendly message for display                                 |
+| metadata  | `Record<string, any>`        | `{}`                                  | Additional context and data                                       |
+| timestamp | `Date`                       | `new Date()`                          | When the error was created (readonly)                             |
+| actions   | `ErrorAction[] \| undefined` | `undefined`                           | Array of actions to perform when error occurs (readonly)          |
+| stack     | `string`                     | Auto-generated                        | Stack trace with preservation and cleaning (inherited from Error) |
+| cause     | `unknown`                    | `undefined`                           | Original error that caused this (preserves full error chain)      |
 
-### Handling Targets
+### Actions System
 
-The `targets` property accepts an array of `HandlingTarget` values, which can be either predefined enum values or custom strings. This provides flexibility while maintaining type safety.
+The `actions` property allows errors to trigger application logic, passing along the necessary data. Your application error handler can route or execute these actions to achieve the desired behavior.
+
+`actions` accepts an array of `ErrorAction` objects that define what action must be perform when an error occurs. Each action has a specific structure with type-safe payloads, and open for custom actions to be triggered.
+
+#### Predefined Action Types
+
+| Action Type | Action Value | Required Payload | Description |
+| ----------- | ------------ | ---------------- | ----------- |
+| NotifyAction | `'notify'` | `{ targets: HandlingTarget[], ...any }` | Display notification in specified UI targets |
+| LogoutAction | `'logout'` | `{ ...any }` (optional) | Log out the current user |
+| RedirectAction | `'redirect'` | `{ redirectURL: string, ...any }` | Redirect to a specific URL |
+| GenericAction | `string` | `{ ...any }` (optional) | Custom action with flexible payload |
+
+```typescript
+import { HandlingTargets, type ErrorAction } from 'error-x'
+
+// Predefined actions with typed payloads
+const error1 = new ErrorX({
+  message: 'Payment failed',
+  actions: [
+    { action: 'notify', payload: { targets: [HandlingTargets.MODAL] } },
+    { action: 'redirect', payload: { redirectURL: '/payment', delay: 2000 } },
+    { action: 'custom-track', payload: { event: 'payment_failed', amount: 99.99 } }
+  ]
+})
+
+// Logout action
+const error2 = new ErrorX({
+  message: 'Session expired',
+  actions: [
+    { action: 'logout', payload: { clearStorage: true } },
+    { action: 'notify', payload: { targets: [HandlingTargets.TOAST] } }
+  ]
+})
+
+// Custom actions with flexible payloads
+const error3 = new ErrorX({
+  message: 'API rate limit exceeded',
+  actions: [
+    { action: 'show-rate-limit-modal', payload: { resetTime: Date.now() + 60000 } },
+    { action: 'cache-request', payload: { retryAfter: 60 } },
+    { action: 'send-to-datadog', payload: { tags: ['rate-limit', 'api'] } }
+  ]
+})
+```
+
+### Display Targets
+
+Display targets can be predefined enum values or custom strings for flexibility:
+
+#### Predefined Display Targets
+
+| Target | Enum Value | Description |
+| ------ | ---------- | ----------- |
+| MODAL | `'modal'` | Display in a modal dialog |
+| TOAST | `'toast'` | Display as a toast notification |
+| INLINE | `'inline'` | Display inline with content |
+| BANNER | `'banner'` | Display as a banner/alert bar |
+| CONSOLE | `'console'` | Log to browser/server console |
+| LOGGER | `'logger'` | Send to logging service |
+| NOTIFICATION | `'notification'` | System notification |
 
 ```typescript
 import { HandlingTargets, type HandlingTarget } from 'error-x'
 
-// Using predefined enum values
-const error1 = new ErrorX({
-  message: 'Database error',
-  handlingOptions: {
-    targets: [HandlingTargets.MODAL, HandlingTargets.TOAST]
-  }
-})
-
-// Using custom string values for custom UI components
-const error2 = new ErrorX({
-  message: 'Custom error',
-  handlingOptions: {
-    targets: ['sidebar-notification', 'status-bar', 'custom-popup']
-  }
-})
-
-// Mixing both predefined and custom targets
-const error3 = new ErrorX({
+const error = new ErrorX({
   message: 'Mixed error',
-  handlingOptions: {
-    targets: [
-      HandlingTargets.CONSOLE,  // Predefined
-      'my-custom-logger',            // Custom
-      HandlingTargets.BANNER,   // Predefined
-      'analytics-tracker'            // Custom
-    ]
-  }
+  actions: [
+    { 
+      action: 'notify', 
+      payload: { 
+        targets: [
+          HandlingTargets.CONSOLE,  // Predefined
+          'my-custom-logger',       // Custom
+          HandlingTargets.BANNER,   // Predefined
+          'analytics-tracker'       // Custom
+        ]
+      }
+    }
+  ]
 })
 ```
-
-**Predefined Display Targets:**
-
-- `HandlingTargets.MODAL` - Display in a modal dialog
-- `HandlingTargets.TOAST` - Display as a toast notification
-- `HandlingTargets.INLINE` - Display inline with content
-- `HandlingTargets.BANNER` - Display as a banner/alert bar
-- `HandlingTargets.CONSOLE` - Log to browser/server console
-- `HandlingTargets.LOGGER` - Send to logging service
-- `HandlingTargets.NOTIFICATION` - System notification
 
 ### Static Methods
 
@@ -326,7 +359,6 @@ async function fetchUser(id: string) {
     throw errorX.withMetadata({
       userId: id,
       operation: 'fetchUser',
-      timestamp: new Date().toISOString()
     })
   }
 }
@@ -349,7 +381,6 @@ try {
     cause: dbError, // Preserves original stack trace and error details
     metadata: {
       operation: 'userRegistration',
-      timestamp: new Date().toISOString(),
       userData: { email: userData.email } // Don't log sensitive data
     }
   })
