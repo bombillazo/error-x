@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { type ErrorMetadata, ErrorX, type SerializableError, HandlingTargets, type ErrorAction } from '../index.js'
+import {
+  type ErrorAction,
+  type ErrorMetadata,
+  ErrorX,
+  HandlingTargets,
+  type SerializableError,
+} from '../index.js'
 
 describe('ErrorX', () => {
   let mockDate: Date
@@ -18,7 +24,7 @@ describe('ErrorX', () => {
     vi.useRealTimers()
     // Restore original captureStackTrace
     if (originalCaptureStackTrace) {
-      ; (Error as any).captureStackTrace = originalCaptureStackTrace
+      ;(Error as any).captureStackTrace = originalCaptureStackTrace
     }
   })
 
@@ -76,14 +82,14 @@ describe('ErrorX', () => {
       const actions: ErrorAction[] = [
         { action: 'notify', payload: { targets: [HandlingTargets.MODAL] } },
         { action: 'logout', payload: { clearStorage: true } },
-        { action: 'redirect', payload: { redirectURL: '/login', delay: 1000 } }
+        { action: 'redirect', payload: { redirectURL: '/login', delay: 1000 } },
       ]
 
       const error = new ErrorX({
         message: 'Authentication expired',
         name: 'AuthExpiredError',
         code: 'AUTH_EXPIRED',
-        actions
+        actions,
       })
 
       expect(error.message).toBe('Authentication expired.')
@@ -96,7 +102,7 @@ describe('ErrorX', () => {
       const error = new ErrorX({
         message: 'Simple test',
         name: 'SimpleError',
-        code: 'SIMPLE_TEST'
+        code: 'SIMPLE_TEST',
       })
 
       expect(error.message).toBe('Simple test.')
@@ -107,20 +113,25 @@ describe('ErrorX', () => {
 
     it('should create error with mixed targets and custom actions', () => {
       const actions: ErrorAction[] = [
-        { 
-          action: 'notify', 
-          payload: { 
-            targets: [HandlingTargets.TOAST, 'custom-sidebar', HandlingTargets.CONSOLE, 'analytics-tracker']
-          }
+        {
+          action: 'notify',
+          payload: {
+            targets: [
+              HandlingTargets.TOAST,
+              'custom-sidebar',
+              HandlingTargets.CONSOLE,
+              'analytics-tracker',
+            ],
+          },
         },
-        { action: 'custom-analytics', payload: { event: 'error_occurred', severity: 'high' } }
+        { action: 'custom-analytics', payload: { event: 'error_occurred', severity: 'high' } },
       ]
 
       const error = new ErrorX({
         message: 'Mixed actions test',
         name: 'MixedError',
         code: 'MIXED_ACTIONS',
-        actions
+        actions,
       })
 
       expect(error.message).toBe('Mixed actions test.')
@@ -128,7 +139,6 @@ describe('ErrorX', () => {
       expect(error.code).toBe('MIXED_ACTIONS')
       expect(error.actions).toEqual(actions)
     })
-
 
     it('should create error with no options', () => {
       const error = new ErrorX()
@@ -344,8 +354,8 @@ describe('ErrorX', () => {
           code: 'SESSION_EXPIRED',
           actions: [
             { action: 'notify', payload: { targets: [HandlingTargets.TOAST] } },
-            { action: 'logout', payload: { clearStorage: true } }
-          ]
+            { action: 'logout', payload: { clearStorage: true } },
+          ],
         }
 
         const converted = ErrorX.toErrorX(apiError)
@@ -361,7 +371,7 @@ describe('ErrorX', () => {
         const apiError = {
           message: 'Session expired',
           name: 'SessionError',
-          code: 'SESSION_EXPIRED'
+          code: 'SESSION_EXPIRED',
         }
 
         const converted = ErrorX.toErrorX(apiError)
@@ -622,14 +632,14 @@ describe('ErrorX', () => {
         const actions: ErrorAction[] = [
           { action: 'notify', payload: { targets: [HandlingTargets.BANNER] } },
           { action: 'logout', payload: { clearStorage: true } },
-          { action: 'redirect', payload: { redirectURL: '/dashboard', delay: 1000 } }
+          { action: 'redirect', payload: { redirectURL: '/dashboard', delay: 1000 } },
         ]
 
         const error = new ErrorX({
           message: 'Permission denied',
           name: 'PermissionError',
           code: 'PERMISSION_DENIED',
-          actions
+          actions,
         })
 
         const json = error.toJSON()
@@ -643,7 +653,7 @@ describe('ErrorX', () => {
         const error = new ErrorX({
           message: 'Simple error',
           name: 'SimpleError',
-          code: 'SIMPLE_ERROR'
+          code: 'SIMPLE_ERROR',
         })
 
         const json = error.toJSON()
@@ -656,7 +666,7 @@ describe('ErrorX', () => {
       it('should not include actions in serialization if empty', () => {
         const error = new ErrorX({
           message: 'Simple error',
-          code: 'SIMPLE'
+          code: 'SIMPLE',
         })
 
         const json = error.toJSON()
@@ -734,7 +744,7 @@ describe('ErrorX', () => {
       it('should deserialize error with actions', () => {
         const actions: ErrorAction[] = [
           { action: 'notify', payload: { targets: [HandlingTargets.INLINE] } },
-          { action: 'redirect', payload: { redirectURL: '/error' } }
+          { action: 'redirect', payload: { redirectURL: '/error' } },
         ]
 
         const serialized: SerializableError = {
@@ -744,7 +754,7 @@ describe('ErrorX', () => {
           uiMessage: 'Something went wrong',
           metadata: {},
           timestamp: '2024-01-15T10:30:45.123Z',
-          actions
+          actions,
         }
 
         const error = ErrorX.fromJSON(serialized)

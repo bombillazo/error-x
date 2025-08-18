@@ -26,7 +26,7 @@ yarn add @bombillazo/error-x
 
 > [!WARNING]
 >
-> This library is currently in pre-1.0 development. While we strive to minimize breaking changes, the API may evolve based on feedback and real-world usage. We recommend pinning to specific versions and reviewing release notes when updating.
+> This library is currently in pre-v1.0 development. While we strive to minimize breaking changes, the API may evolve based on feedback and real-world usage. We recommend pinning to specific versions and reviewing release notes when updating.
 >
 > Once we reach version 1.0, we plan to minimize API changes and follow semantic versioning.
 

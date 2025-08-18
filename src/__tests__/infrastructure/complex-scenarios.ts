@@ -1,10 +1,10 @@
 import { ErrorX } from '../../index'
+import { HandlingTargets } from '../../types'
 import * as asyncOperations from './async-operations'
-import { HandlingTargets } from '../../types';
 
 /**
  * Complex Scenarios - Advanced error wrapping and edge case testing
- * 
+ *
  * This module contains the most sophisticated error handling scenarios including
  * deep error chains, serialization/deserialization, multiple error wrapping,
  * recursive errors, circular references, and metadata preservation.
@@ -20,7 +20,7 @@ export function deepErrorChain(): never {
       name: 'DeepChainError',
       code: 'DEEP_CHAIN',
       cause: error,
-      metadata: { layer: 'file3', depth: 'maximum' }
+      metadata: { layer: 'file3', depth: 'maximum' },
     })
   }
 }
@@ -48,7 +48,7 @@ export function errorSerializationTest(): never {
 
     throw new ErrorX({
       message: 'Error after serialization round-trip from complex-scenarios.ts',
-      cause: deserialized
+      cause: deserialized,
     })
   }
 }
@@ -60,17 +60,17 @@ export async function multipleErrorWrapping(): Promise<void> {
     // Wrap multiple times to test stack preservation
     const wrapped1 = new ErrorX({
       message: 'First wrap in complex-scenarios.ts',
-      cause: error
+      cause: error,
     })
 
     const wrapped2 = new ErrorX({
       message: 'Second wrap in complex-scenarios.ts',
-      cause: wrapped1
+      cause: wrapped1,
     })
 
     const wrapped3 = new ErrorX({
       message: 'Third wrap in complex-scenarios.ts',
-      cause: wrapped2
+      cause: wrapped2,
     })
 
     throw wrapped3
@@ -85,12 +85,12 @@ export async function withMetadataPreservation(): Promise<void> {
       // Test that withMetadata preserves stack traces
       const enriched = error.withMetadata({
         enrichedIn: 'complex-scenarios.ts',
-        originalStack: error.stack
+        originalStack: error.stack,
       })
 
       throw new ErrorX({
         message: 'Error with metadata preservation from complex-scenarios.ts',
-        cause: enriched
+        cause: enriched,
       })
     }
     throw error
@@ -106,7 +106,7 @@ export async function stackCleaningTest(): Promise<void> {
       const cleaned = error.cleanStackTrace('asyncOperations.ts')
       throw new ErrorX({
         message: 'Error after stack cleaning from complex-scenarios.ts',
-        cause: cleaned
+        cause: cleaned,
       })
     }
     throw error
@@ -141,8 +141,8 @@ export class ComplexErrorHandler {
         metadata: {
           handlerId: this.id,
           source,
-          handlerClass: 'ComplexErrorHandler'
-        }
+          handlerClass: 'ComplexErrorHandler',
+        },
       })
     }
   }
@@ -160,7 +160,7 @@ export function recursiveErrorTest(depth = 0): never {
   if (depth > 3) {
     throw new ErrorX({
       message: `Recursive error at depth ${depth} from complex-scenarios.ts`,
-      metadata: { recursionDepth: depth }
+      metadata: { recursionDepth: depth },
     })
   }
 
@@ -170,7 +170,7 @@ export function recursiveErrorTest(depth = 0): never {
     throw new ErrorX({
       message: `Recursive catch at depth ${depth} from complex-scenarios.ts`,
       cause: error,
-      metadata: { currentDepth: depth }
+      metadata: { currentDepth: depth },
     })
   }
 }
@@ -186,7 +186,7 @@ export function errorWithCircularReference(): never {
     throw new ErrorX({
       message: 'Error with circular reference from complex-scenarios.ts',
       cause: error,
-      metadata: { circular: obj }
+      metadata: { circular: obj },
     })
   }
 }
@@ -206,12 +206,12 @@ export async function finalErrorTest(): Promise<void> {
       metadata: {
         testType: 'final',
         complexity: 'maximum',
-        layers: ['error-sources', 'error-handlers', 'async-operations', 'complex-scenarios']
+        layers: ['error-sources', 'error-handlers', 'async-operations', 'complex-scenarios'],
       },
       actions: [
         { action: 'notify', payload: { targets: ['banner'] } },
-        { action: 'redirect', payload: { redirectURL: '/error-page' } }
-      ]
+        { action: 'redirect', payload: { redirectURL: '/error-page' } },
+      ],
     })
   }
 }
