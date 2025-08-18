@@ -3,7 +3,7 @@ import * as errorHandlers from './error-handlers'
 
 /**
  * Async Operations - Complex async operations and nested calls for stack trace testing
- * 
+ *
  * This module contains functions that test stack trace preservation through async
  * boundaries, promise chains, event loop operations, and complex method chains.
  * It builds upon error-handlers.ts to test async scenarios while maintaining
@@ -16,19 +16,18 @@ export async function asyncChainWithTryCatch(): Promise<void> {
   } catch (error) {
     throw new ErrorX({
       message: 'Async chain error from async-operations.ts',
-      cause: error
+      cause: error,
     })
   }
 }
 
 export function promiseChainWithCatch(): Promise<void> {
-  return errorHandlers.asyncTryCatchWithDelay()
-    .catch(error => {
-      throw new ErrorX({
-        message: 'Promise chain catch from async-operations.ts',
-        cause: error
-      })
+  return errorHandlers.asyncTryCatchWithDelay().catch(error => {
+    throw new ErrorX({
+      message: 'Promise chain catch from async-operations.ts',
+      cause: error,
     })
+  })
 }
 
 export async function parallelAsyncErrors(): Promise<never> {
@@ -36,12 +35,12 @@ export async function parallelAsyncErrors(): Promise<never> {
     // Don't catch the errors here - let them bubble up to be caught by the try-catch
     await Promise.all([
       errorHandlers.asyncTryCatchRethrow(),
-      errorHandlers.asyncTryCatchWithDelay()
+      errorHandlers.asyncTryCatchWithDelay(),
     ])
   } catch (error) {
     throw new ErrorX({
       message: 'Parallel async errors from async-operations.ts',
-      cause: error
+      cause: error,
     })
   }
 
@@ -56,14 +55,15 @@ export function nestedSyncAsyncMix(): Promise<never> {
       errorHandlers.simpleTryCatchRethrow()
     } catch (syncError: unknown) {
       if (syncError instanceof Error) {
-        errorHandlers.asyncTryCatchRethrow()
-          .catch(asyncError => {
-            reject(new ErrorX({
+        errorHandlers.asyncTryCatchRethrow().catch(asyncError => {
+          reject(
+            new ErrorX({
               message: 'Mixed sync/async error from async-operations.ts',
               cause: asyncError,
-              metadata: { syncError: syncError.message }
-            }))
-          })
+              metadata: { syncError: syncError.message },
+            })
+          )
+        })
       }
     }
   })
@@ -83,7 +83,7 @@ export class ErrorProcessor {
       throw new ErrorX({
         message: `Error processed by ${this.id} in async-operations.ts`,
         cause: error,
-        metadata: { processorId: this.id }
+        metadata: { processorId: this.id },
       })
     }
   }
@@ -95,7 +95,7 @@ export class ErrorProcessor {
       throw new ErrorX({
         message: `Async error processed by ${this.id} in async-operations.ts`,
         cause: error,
-        metadata: { processorId: this.id }
+        metadata: { processorId: this.id },
       })
     }
   }
@@ -106,7 +106,7 @@ export class ErrorProcessor {
     } catch (error) {
       throw new ErrorX({
         message: `Chained processing by ${this.id} in async-operations.ts`,
-        cause: error
+        cause: error,
       })
     }
   }
@@ -123,10 +123,12 @@ export async function eventLoopError(): Promise<never> {
       try {
         await errorHandlers.asyncTryCatchWithDelay()
       } catch (error) {
-        reject(new ErrorX({
-          message: 'Event loop error from async-operations.ts',
-          cause: error
-        }))
+        reject(
+          new ErrorX({
+            message: 'Event loop error from async-operations.ts',
+            cause: error,
+          })
+        )
       }
     })
   })
@@ -139,7 +141,7 @@ export function generatorError(): never {
     } catch (error) {
       throw new ErrorX({
         message: 'Generator error from async-operations.ts',
-        cause: error
+        cause: error,
       })
     }
   }
@@ -152,11 +154,11 @@ export function generatorError(): never {
 export async function* asyncGeneratorError(): AsyncGenerator<never, void, never> {
   try {
     await errorHandlers.asyncTryCatchRethrow()
-    yield undefined as never;
+    yield undefined as never
   } catch (error) {
     throw new ErrorX({
       message: 'Async generator error from async-operations.ts',
-      cause: error
+      cause: error,
     })
   }
 }

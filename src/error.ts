@@ -1,14 +1,14 @@
-import type { ErrorMetadata, ErrorXOptions, SerializableError, ErrorAction } from './types.js'
-import safeStringify from 'safe-stringify';
+import safeStringify from 'safe-stringify'
+import type { ErrorAction, ErrorMetadata, ErrorXOptions, SerializableError } from './types.js'
 
 /**
  * Enhanced Error class with rich metadata, type-safe error handling, and intelligent error conversion.
- * 
+ *
  * @example
  * ```typescript
  * // Basic usage
  * const error = new ErrorX({ message: 'Database connection failed' })
- * 
+ *
  * // With full options
  * const error = new ErrorX({
  *   message: 'User authentication failed',
@@ -18,7 +18,7 @@ import safeStringify from 'safe-stringify';
  *   metadata: { userId: 123, loginAttempt: 3 }
  * })
  * ```
- * 
+ *
  * @public
  */
 export class ErrorX extends Error {
@@ -35,7 +35,7 @@ export class ErrorX extends Error {
 
   /**
    * Creates a new ErrorX instance with enhanced error handling capabilities.
-   * 
+   *
    * @param options - Configuration options for the error (optional)
    * @param options.message - Technical error message (defaults to 'An error occurred')
    * @param options.name - Error type/name (defaults to 'Error')
@@ -44,7 +44,7 @@ export class ErrorX extends Error {
    * @param options.cause - Original error that caused this error
    * @param options.metadata - Additional context data (defaults to undefined)
    * @param options.actions - Error actions for UI behavior and handling (defaults to undefined)
-   * 
+   *
    * @example
    * ```typescript
    * // Create with full options
@@ -55,20 +55,20 @@ export class ErrorX extends Error {
    *   uiMessage: 'Unable to load data. Please try again.',
    *   metadata: { query: 'SELECT * FROM users', timeout: 5000 },
    *   actions: [
-   *     { 
-   *       action: 'notify', 
+   *     {
+   *       action: 'notify',
    *       payload: { targets: [HandlingTargets.TOAST] }
    *     },
-   *     { 
-   *       action: 'redirect', 
+   *     {
+   *       action: 'redirect',
    *       payload: { redirectURL: '/dashboard', delay: 1000 }
    *     }
    *   ]
    * })
-   * 
+   *
    * // Create with minimal options
    * const simpleError = new ErrorX({ message: 'Something failed' })
-   * 
+   *
    * // Create with no options (uses defaults)
    * const defaultError = new ErrorX()
    * ```
@@ -78,7 +78,8 @@ export class ErrorX extends Error {
     super(formattedMessage, { cause: options.cause })
 
     this.name = options.name ?? ErrorX.getDefaultName()
-    this.code = options.code != null ? String(options.code) : ErrorX.generateDefaultCode(options.name)
+    this.code =
+      options.code != null ? String(options.code) : ErrorX.generateDefaultCode(options.name)
     this.uiMessage = options.uiMessage
     this.metadata = options.metadata
     this.actions = options.actions
@@ -105,14 +106,13 @@ export class ErrorX extends Error {
     return 'Error'
   }
 
-
   /**
    * Generates a default error code from the error name.
    * Converts camelCase/PascalCase names to UPPER_SNAKE_CASE format.
-   * 
+   *
    * @param name - Error name to convert
    * @returns Generated error code in UPPER_SNAKE_CASE format
-   * 
+   *
    * @example
    * ```typescript
    * generateDefaultCode('DatabaseError') // 'DATABASE_ERROR'
@@ -134,7 +134,7 @@ export class ErrorX extends Error {
   /**
    * Preserves the original error's stack trace while updating the error message.
    * Combines the new error's message with the original error's stack trace.
-   * 
+   *
    * @param originalError - The original error whose stack to preserve
    * @param newError - The new error whose message to use
    * @returns Combined stack trace with new error message and original stack
@@ -156,7 +156,7 @@ export class ErrorX extends Error {
   /**
    * Cleans the stack trace by removing ErrorX internal method calls.
    * This provides cleaner stack traces that focus on user code.
-   * 
+   *
    * @param stack - Raw stack trace to clean
    * @returns Cleaned stack trace without ErrorX internal calls
    */
@@ -186,11 +186,11 @@ export class ErrorX extends Error {
   /**
    * Processes an error's stack trace to trim it after a specified delimiter.
    * Useful for removing irrelevant stack frames before a specific function.
-   * 
+   *
    * @param error - Error whose stack to process
    * @param delimiter - String to search for in stack lines
    * @returns Processed stack trace starting after the delimiter
-   * 
+   *
    * @example
    * ```typescript
    * const processed = ErrorX.processErrorStack(error, 'my-app-entry')
@@ -214,10 +214,10 @@ export class ErrorX extends Error {
   /**
    * Formats error messages with proper capitalization and punctuation.
    * Ensures consistent message formatting across all ErrorX instances.
-   * 
+   *
    * @param message - Raw error message to format (optional)
    * @returns Formatted message with proper capitalization and punctuation
-   * 
+   *
    * @example
    * ```typescript
    * formatMessage('database connection failed') // 'Database connection failed.'
@@ -252,20 +252,20 @@ export class ErrorX extends Error {
   /**
    * Creates a new ErrorX instance with additional metadata merged with existing metadata.
    * The original error properties are preserved while extending the metadata.
-   * 
+   *
    * @param additionalMetadata - Additional metadata to merge with existing metadata
    * @returns New ErrorX instance with merged metadata
-   * 
+   *
    * @example
    * ```typescript
-   * const error = new ErrorX({ 
+   * const error = new ErrorX({
    *   message: 'API request failed',
    *   metadata: { endpoint: '/users' }
    * })
-   * 
-   * const enrichedError = error.withMetadata({ 
+   *
+   * const enrichedError = error.withMetadata({
    *   retryCount: 3,
-   *   userId: 123 
+   *   userId: 123
    * })
    * // Result: metadata = { endpoint: '/users', retryCount: 3, userId: 123 }
    * ```
@@ -293,10 +293,10 @@ export class ErrorX extends Error {
 
   /**
    * Type guard that checks if a value is an ErrorX instance.
-   * 
+   *
    * @param value - Value to check
    * @returns True if value is an ErrorX instance, false otherwise
-   * 
+   *
    * @example
    * ```typescript
    * try {
@@ -316,18 +316,18 @@ export class ErrorX extends Error {
   /**
    * Converts unknown input into an ErrorX instance with intelligent property extraction.
    * Handles strings, regular Error objects, API response objects, and unknown values.
-   * 
+   *
    * @param error - Value to convert to ErrorX
    * @returns ErrorX instance with extracted properties
-   * 
+   *
    * @example
    * ```typescript
    * // Convert string error
    * const error1 = ErrorX.toErrorX('Something went wrong')
-   * 
+   *
    * // Convert regular Error
    * const error2 = ErrorX.toErrorX(new Error('Database failed'))
-   * 
+   *
    * // Convert API response object
    * const apiError = {
    *   message: 'User not found',
@@ -404,11 +404,11 @@ export class ErrorX extends Error {
   /**
    * Public wrapper for processing error stack traces with delimiter.
    * Delegates to the private processErrorStack method for implementation.
-   * 
+   *
    * @param error - Error whose stack to process
    * @param delimiter - String to search for in stack lines
    * @returns Processed stack trace starting after the delimiter
-   * 
+   *
    * @example
    * ```typescript
    * const error = new Error('Something failed')
@@ -423,10 +423,10 @@ export class ErrorX extends Error {
   /**
    * Creates a new ErrorX instance with cleaned stack trace using the specified delimiter.
    * Returns the same instance if no delimiter is provided or no stack is available.
-   * 
+   *
    * @param delimiter - Optional string to search for in stack lines
    * @returns New ErrorX instance with cleaned stack trace, or the same instance if no cleaning needed
-   * 
+   *
    * @example
    * ```typescript
    * const error = new ErrorX({ message: 'Database error' })
@@ -459,9 +459,9 @@ export class ErrorX extends Error {
   /**
    * Converts the ErrorX instance to a detailed string representation.
    * Includes error name, message, code, timestamp, metadata, and stack trace.
-   * 
+   *
    * @returns Formatted string representation of the error
-   * 
+   *
    * @example
    * ```typescript
    * const error = new ErrorX({
@@ -470,7 +470,7 @@ export class ErrorX extends Error {
    *   code: 'DB_CONN_FAILED',
    *   metadata: { host: 'localhost', port: 5432 }
    * })
-   * 
+   *
    * console.log(error.toString())
    * // Output: "DatabaseError: Database connection failed. [DB_CONN_FAILED] (2024-01-15T10:30:45.123Z) metadata: {...}"
    * ```
@@ -508,9 +508,9 @@ export class ErrorX extends Error {
   /**
    * Serializes the ErrorX instance to a JSON-compatible object.
    * Recursively serializes the error chain and handles ErrorX or regular Error causes.
-   * 
+   *
    * @returns Serializable object representation of the error
-   * 
+   *
    * @example
    * ```typescript
    * const error = new ErrorX({
@@ -518,7 +518,7 @@ export class ErrorX extends Error {
    *   code: 'API_ERROR',
    *   metadata: { endpoint: '/users', status: 500 }
    * })
-   * 
+   *
    * const serialized = error.toJSON()
    * // Can be safely passed to JSON.stringify() or sent over network
    * ```
@@ -526,11 +526,10 @@ export class ErrorX extends Error {
   public toJSON(): SerializableError {
     // Handle metadata serialization with circular reference protection
 
-
     // Use safe stringify to parse the metadata and remove circular references
-    const safeMetadata: ErrorMetadata | undefined = this.metadata ? 
-      JSON.parse(safeStringify(this.metadata)) : undefined
-
+    const safeMetadata: ErrorMetadata | undefined = this.metadata
+      ? JSON.parse(safeStringify(this.metadata))
+      : undefined
 
     const serialized: SerializableError = {
       name: this.name,
@@ -543,11 +542,9 @@ export class ErrorX extends Error {
 
     // Include actions if present
     if (this.actions && this.actions.length > 0) {
-
       // Use safe stringify to parse the actions and remove circular references
       const stringified = safeStringify(this.actions)
       serialized.actions = JSON.parse(stringified)
-
     }
 
     // Include stack if available
@@ -581,10 +578,10 @@ export class ErrorX extends Error {
   /**
    * Deserializes a JSON object back into an ErrorX instance.
    * Recursively reconstructs the error chain and restores all properties.
-   * 
+   *
    * @param serialized - Serialized error object to deserialize
    * @returns Reconstructed ErrorX instance with restored properties
-   * 
+   *
    * @example
    * ```typescript
    * const serializedError = {
@@ -595,7 +592,7 @@ export class ErrorX extends Error {
    *   metadata: { host: 'localhost' },
    *   timestamp: '2024-01-15T10:30:45.123Z'
    * }
-   * 
+   *
    * const error = ErrorX.fromJSON(serializedError)
    * // Fully restored ErrorX instance with all properties
    * ```

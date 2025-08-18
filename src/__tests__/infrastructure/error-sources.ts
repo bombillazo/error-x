@@ -2,7 +2,7 @@ import { ErrorX } from '../../index'
 
 /**
  * Error Sources - Original error throwing functions for stack trace testing
- * 
+ *
  * This module contains the fundamental error throwing functions that serve as
  * the source of all errors in the stack trace preservation test suite.
  * These functions represent the deepest level where actual errors occur
@@ -17,7 +17,7 @@ export function throwErrorXWithCause(): never {
   const originalError = new Error('Native error in error-sources.ts')
   throw new ErrorX({
     message: 'ErrorX with native cause from error-sources.ts',
-    cause: originalError
+    cause: originalError,
   })
 }
 
@@ -33,7 +33,7 @@ export function throwObjectError(): never {
   throw {
     message: 'Object error from error-sources.ts',
     code: 500,
-    source: 'error-sources.ts'
+    source: 'error-sources.ts',
   }
 }
 
