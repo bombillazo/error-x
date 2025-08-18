@@ -1,5 +1,5 @@
 import type { ErrorMetadata, ErrorXOptions, SerializableError, ErrorHandlingOptions } from './types.js'
-import { ErrorUIMode } from './types.js' // Used in JSDoc examples
+import { HandlingTargets } from './types.js' // Used in JSDoc examples
 
 /**
  * Enhanced Error class with rich metadata, type-safe error handling, and intelligent error conversion.
@@ -23,13 +23,13 @@ export class ErrorX extends Error {
   /** Error identifier code, auto-generated from name if not provided */
   public readonly code: string
   /** User-friendly message suitable for display in UI */
-  public readonly uiMessage: string
+  public readonly uiMessage: string | undefined
   /** Additional context and metadata associated with the error */
   public readonly metadata: ErrorMetadata
   /** Timestamp when the error was created */
   public readonly timestamp: Date
   /** Error handling options for UI behavior and actions */
-  public readonly handlingOptions: ErrorHandlingOptions
+  public readonly handlingOptions: ErrorHandlingOptions | undefined
 
   /**
    * Creates a new ErrorX instance with enhanced error handling capabilities.
@@ -38,10 +38,10 @@ export class ErrorX extends Error {
    * @param options.message - Technical error message (defaults to 'An error occurred')
    * @param options.name - Error type/name (defaults to 'Error')
    * @param options.code - Error identifier code (auto-generated from name if not provided)
-   * @param options.uiMessage - User-friendly message (defaults to generic message)
+   * @param options.uiMessage - User-friendly message (defaults to undefined)
    * @param options.cause - Original error that caused this error
    * @param options.metadata - Additional context data
-   * @param options.handlingOptions - Error handling options for UI behavior and actions
+   * @param options.handlingOptions - Error handling options for UI behavior and actions (defaults to undefined)
    * 
    * @example
    * ```typescript
@@ -52,7 +52,7 @@ export class ErrorX extends Error {
    *   code: 'DB_QUERY_FAILED',
    *   uiMessage: 'Unable to load data. Please try again.',
    *   metadata: { query: 'SELECT * FROM users', timeout: 5000 },
-   *   handlingOptions: { ui_mode: ErrorUIMode.TOAST, redirect: '/dashboard' }
+   *   handlingOptions: { targets: [HandlingTargets.TOAST], redirect: '/dashboard' }
    * })
    * 
    * // Create with minimal options
@@ -68,9 +68,9 @@ export class ErrorX extends Error {
 
     this.name = options.name ?? ErrorX.getDefaultName()
     this.code = options.code != null ? String(options.code) : ErrorX.generateDefaultCode(options.name)
-    this.uiMessage = options.uiMessage ?? ErrorX.getDefaultUiMessage()
+    this.uiMessage = options.uiMessage
     this.metadata = options.metadata ?? {}
-    this.handlingOptions = options.handlingOptions ?? {}
+    this.handlingOptions = options.handlingOptions
     this.timestamp = new Date()
 
     // Handle stack trace preservation
@@ -117,14 +117,6 @@ export class ErrorX extends Error {
       .replace(/\s+/g, '_') // Replace spaces with underscores
       .replace(/[^a-zA-Z0-9_]/g, '') // Remove special characters
       .toUpperCase()
-  }
-
-  /**
-   * Returns the default user-friendly error message.
-   * @returns Default UI message for user display
-   */
-  private static getDefaultUiMessage(): string {
-    return 'Something went wrong. Please try again.'
   }
 
   /**
@@ -540,14 +532,14 @@ export class ErrorX extends Error {
     }
 
     // Include handlingOptions if present
-    if (Object.keys(this.handlingOptions).length > 0) {
+    if (this.handlingOptions && Object.keys(this.handlingOptions).length > 0) {
       try {
         // Test if handlingOptions can be serialized
         JSON.stringify(this.handlingOptions)
         serialized.handlingOptions = this.handlingOptions
       } catch {
         // Handle circular references in handlingOptions
-        serialized.handlingOptions = {} as ErrorHandlingOptions
+        serialized.handlingOptions = undefined
       }
     }
 
@@ -565,7 +557,7 @@ export class ErrorX extends Error {
           name: this.cause.name,
           message: this.cause.message,
           code: 'ERROR',
-          uiMessage: 'An error occurred',
+          uiMessage: undefined,
           metadata: {},
           timestamp: new Date().toISOString(),
         }

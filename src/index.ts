@@ -1,3 +1,3 @@
 export { ErrorX } from './error.js'
-export type { ErrorMetadata, ErrorXOptions, SerializableError, ErrorHandlingOptions } from './types.js'
-export { ErrorUIMode } from './types.js'
+export type { ErrorMetadata, ErrorXOptions, SerializableError, ErrorHandlingOptions, HandlingTarget } from './types.js'
+export { HandlingTargets } from './types.js'
