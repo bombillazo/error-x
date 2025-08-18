@@ -1,6 +1,6 @@
 # error-x
 
-A smart, isomorphic, and delightful error library for TypeScript applications. Provides type-safe error handling with great DX, solving common pain points like unknown error types, lost stack traces, async error handling, and error serialization.
+A smart, isomorphic, and satisfying error library for TypeScript applications. Provides type-safe error handling with great DX, solving common pain points like unknown error types, lost stack traces, async error handling, and error serialization.
 
 ## Features
 
@@ -55,7 +55,7 @@ const error = new ErrorX({
   actions: [
     { action: 'notify', payload: { targets: [HandlingTargets.TOAST, HandlingTargets.BANNER] } },
     { action: 'redirect', payload: { redirectURL: '/login', delay: 1000 } },
-    { action: 'custom-analytics', payload: { event: 'auth_failed', userId: 123, category: 'errors', severity: 'high' } }
+    { action: 'custom', payload: { type: 'analytics', event: 'auth_failed', userId: 123, category: 'errors', severity: 'high' } }
   ]
 })
 ```
@@ -66,13 +66,13 @@ const error = new ErrorX({
 
 ```typescript
 new ErrorX(options?: {
-  name?: string                      // Optional: Error type (default: 'Error')
-  message?: string                    // Optional: Technical error message (default: 'An error occurred')
+  name?: string                      // Optional: Error type
+  message?: string                   // Optional: Technical error message (default: 'An error occurred')
   code?: string | number             // Optional: Error code (auto-generated from name if not provided)
-  uiMessage?: string                 // Optional: User-friendly message (default: undefined)
+  uiMessage?: string                 // Optional: User-friendly message
   cause?: Error | unknown            // Optional: Original error that caused this (preserves stack traces)
-  metadata?: Record<string, any>     // Optional: Additional context data (default: {})
-  actions?: ErrorAction[]            // Optional: Configuration for application actions to perform when error occurs (default: undefined)
+  metadata?: Record<string, any>     // Optional: Additional context data
+  actions?: ErrorAction[]            // Optional: Configuration for application actions to perform when error occurs 
 })
 ```
 
@@ -83,40 +83,39 @@ new ErrorX(options?: {
 | Property  | Type                         | Default Value                         | Description                                                       |
 | --------- | ---------------------------- | ------------------------------------- | ----------------------------------------------------------------- |
 | name      | `string`                     | `'Error'`                             | Error type/title                                                  |
-| message   | `string`                     | `'An error occurred'`                 | Auto-formatted technical error message                            |
 | code      | `string`                     | Auto-generated from name or `'ERROR'` | Error identifier (auto-generated from name in UPPER_SNAKE_CASE)   |
+| message   | `string`                     | `'An error occurred'`                 | Auto-formatted technical error message                            |
 | uiMessage | `string \| undefined`        | `undefined`                           | User-friendly message for display                                 |
-| metadata  | `Record<string, any>`        | `{}`                                  | Additional context and data                                       |
-| timestamp | `Date`                       | `new Date()`                          | When the error was created (readonly)                             |
-| actions   | `ErrorAction[] \| undefined` | `undefined`                           | Array of actions to perform when error occurs (readonly)          |
 | stack     | `string`                     | Auto-generated                        | Stack trace with preservation and cleaning (inherited from Error) |
 | cause     | `unknown`                    | `undefined`                           | Original error that caused this (preserves full error chain)      |
+| timestamp | `Date`                       | `new Date()`                          | When the error was created (readonly)                             |
+| metadata  | `Record<string, any> \| undefined` | `undefined`                        | Additional context and data                                       |
+| actions   | `ErrorAction[] \| undefined` | `undefined`                           | Array of actions to perform when error occurs (readonly)          |
 
 ### Actions System
 
 The `actions` property allows errors to trigger application logic, passing along the necessary data. Your application error handler can route or execute these actions to achieve the desired behavior.
 
-`actions` accepts an array of `ErrorAction` objects that define what action must be perform when an error occurs. Each action has a specific structure with type-safe payloads, and open for custom actions to be triggered.
+`actions` accepts an array of `ErrorAction` objects. The library provides predefined action types with type-safe payloads, and a `CustomAction` type for application-specific actions.
 
-#### Predefined Action Types
+#### Action Types
 
 | Action Type | Action Value | Required Payload | Description |
 | ----------- | ------------ | ---------------- | ----------- |
 | NotifyAction | `'notify'` | `{ targets: HandlingTarget[], ...any }` | Display notification in specified UI targets |
 | LogoutAction | `'logout'` | `{ ...any }` (optional) | Log out the current user |
 | RedirectAction | `'redirect'` | `{ redirectURL: string, ...any }` | Redirect to a specific URL |
-| GenericAction | `string` | `{ ...any }` (optional) | Custom action with flexible payload |
+| CustomAction | `'custom'` | `{ ...any }` (optional) | Application-specific actions with flexible payload structure |
 
 ```typescript
-import { HandlingTargets, type ErrorAction } from 'error-x'
+import { HandlingTargets, type ErrorAction, type CustomAction } from 'error-x'
 
 // Predefined actions with typed payloads
 const error1 = new ErrorX({
   message: 'Payment failed',
   actions: [
     { action: 'notify', payload: { targets: [HandlingTargets.MODAL] } },
-    { action: 'redirect', payload: { redirectURL: '/payment', delay: 2000 } },
-    { action: 'custom-track', payload: { event: 'payment_failed', amount: 99.99 } }
+    { action: 'redirect', payload: { redirectURL: '/payment', delay: 2000 } }
   ]
 })
 
@@ -129,20 +128,42 @@ const error2 = new ErrorX({
   ]
 })
 
-// Custom actions with flexible payloads
+// Custom actions for application-specific logic
 const error3 = new ErrorX({
   message: 'API rate limit exceeded',
   actions: [
-    { action: 'show-rate-limit-modal', payload: { resetTime: Date.now() + 60000 } },
-    { action: 'cache-request', payload: { retryAfter: 60 } },
-    { action: 'send-to-datadog', payload: { tags: ['rate-limit', 'api'] } }
+    { 
+      action: 'custom', 
+      payload: { 
+        type: 'show-rate-limit-modal', 
+        resetTime: Date.now() + 60000,
+        message: 'Too many requests. Please wait.' 
+      } 
+    },
+    { 
+      action: 'custom', 
+      payload: { 
+        type: 'analytics-track', 
+        event: 'rate_limit_hit', 
+        severity: 'warning',
+        category: 'api'
+      } 
+    },
+    { 
+      action: 'custom', 
+      payload: { 
+        type: 'cache-request', 
+        retryAfter: 60,
+        endpoint: '/api/users'
+      } 
+    }
   ]
 })
 ```
 
-### Display Targets
+### Notify Targets
 
-Display targets can be predefined enum values or custom strings for flexibility:
+For the `NotifyAction`, notify targets can be predefined enum values or custom strings for flexibility:
 
 #### Predefined Display Targets
 
@@ -175,118 +196,6 @@ const error = new ErrorX({
     }
   ]
 })
-```
-
-### Static Methods
-
-#### `ErrorX.toErrorX(error)`
-
-Intelligently converts unknown error formats to ErrorX instances.
-
-```typescript
-// API response
-const apiError = { error: 'User not found', code: 'USER_404', statusText: 'Not Found' }
-const errorX = ErrorX.toErrorX(apiError)
-
-// String error
-const stringError = ErrorX.toErrorX('Something went wrong')
-
-// Standard Error
-const standardError = ErrorX.toErrorX(new Error('Connection timeout'))
-```
-
-#### `ErrorX.isErrorX(value)`
-
-Type guard to check if a value is an ErrorX instance.
-
-```typescript
-if (ErrorX.isErrorX(error)) {
-  console.log(error.code) // TypeScript knows this is ErrorX
-}
-```
-
-#### `ErrorX.processStack(error, delimiter)`
-
-Processes an error's stack trace to trim it after a specified delimiter.
-
-```typescript
-const error = new Error('Something failed')
-const cleanStack = ErrorX.processStack(error, 'my-app-entry')
-// Returns stack trace starting after the line containing 'my-app-entry'
-```
-
-#### `ErrorX.fromJSON(serialized)`
-
-Deserializes a JSON object back into an ErrorX instance with full error chain reconstruction.
-
-```typescript
-const serializedError = {
-  name: 'DatabaseError',
-  message: 'Connection failed.',
-  code: 'DB_CONN_FAILED',
-  uiMessage: 'Database is temporarily unavailable',
-  metadata: { host: 'localhost' },
-  timestamp: '2024-01-15T10:30:45.123Z'
-}
-
-const error = ErrorX.fromJSON(serializedError)
-// Fully restored ErrorX instance with all properties
-```
-
-### Instance Methods
-
-#### `withMetadata(additionalMetadata)`
-
-Returns a new ErrorX instance with merged metadata while preserving stack traces.
-
-```typescript
-const error = new ErrorX({ message: 'API request failed' })
-const enrichedError = error.withMetadata({ 
-  endpoint: '/api/users',
-  retryCount: 3,
-  userId: 123
-})
-```
-
-#### `cleanStackTrace(delimiter?)`
-
-Returns a new ErrorX instance with cleaned stack trace using the specified delimiter.
-
-```typescript
-const error = new ErrorX({ message: 'Database error' })
-const cleanedError = error.cleanStackTrace('database-layer')
-// Returns new ErrorX with stack trace starting after 'database-layer'
-```
-
-#### `toJSON()`
-
-Serializes the ErrorX instance to a JSON-compatible object with full error chain serialization.
-
-```typescript
-const error = new ErrorX({
-  message: 'API request failed',
-  code: 'API_ERROR',
-  metadata: { endpoint: '/users', status: 500 }
-})
-
-const serialized = error.toJSON()
-// Can be safely passed to JSON.stringify() or sent over network
-```
-
-#### `toString()`
-
-Converts the ErrorX instance to a detailed string representation with all properties and stack trace.
-
-```typescript
-const error = new ErrorX({
-  message: 'Database connection failed',
-  name: 'DatabaseError',
-  code: 'DB_CONN_FAILED',
-  metadata: { host: 'localhost', port: 5432 }
-})
-
-console.log(error.toString())
-// Output: "DatabaseError: Database connection failed. [DB_CONN_FAILED] (2024-01-15T10:30:45.123Z) metadata: {...}"
 ```
 
 ## Smart Features
@@ -393,22 +302,7 @@ try {
 }
 ```
 
-### Type Guards and Error Handling
-
-```typescript
-function handleError(error: unknown) {
-  if (ErrorX.isErrorX(error)) {
-    // Full ErrorX functionality
-    console.error(`[${error.code}] ${error.message}`)
-    logToService(error.metadata)
-    showUserMessage(error.uiMessage)
-  } else {
-    // Convert unknown errors
-    const errorX = ErrorX.toErrorX(error)
-    handleError(errorX)
-  }
-}
-```
+## FAQ
 
 ## License
 
