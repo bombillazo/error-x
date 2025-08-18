@@ -32,7 +32,7 @@ export async function complexAsyncErrorChain(): Promise<void> {
     throw new ErrorX({
       message: 'Complex async error chain from complex-scenarios.ts',
       cause: error,
-      actions: [{ action: 'NOTIFY', payload: { targets: [HandlingTargets.LOGGER] } }],
+      actions: [{ action: 'notify', payload: { targets: [HandlingTargets.LOGGER] } }],
     })
   }
 }
@@ -209,8 +209,8 @@ export async function finalErrorTest(): Promise<void> {
         layers: ['error-sources', 'error-handlers', 'async-operations', 'complex-scenarios']
       },
       actions: [
-        { action: 'NOTIFY', payload: { targets: ['banner'] } },
-        { action: 'REDIRECT', payload: { redirectURL: '/error-page' } }
+        { action: 'notify', payload: { targets: ['banner'] } },
+        { action: 'redirect', payload: { redirectURL: '/error-page' } }
       ]
     })
   }

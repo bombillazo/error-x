@@ -55,7 +55,7 @@ export type HandlingTarget = HandlingTargets | string
  * @example
  * ```typescript
  * {
- *   action: 'NOTIFY',
+ *   action: 'notify',
  *   payload: {
  *     targets: [HandlingTargets.TOAST, 'custom-sidebar'],
  *     title: 'Error occurred',
@@ -65,7 +65,7 @@ export type HandlingTarget = HandlingTargets | string
  * ```
  */
 export type NotifyAction = {
-  action: 'NOTIFY'
+  action: 'notify'
   payload: {
     targets: HandlingTarget[]
     [key: string]: any
@@ -79,7 +79,7 @@ export type NotifyAction = {
  * @example
  * ```typescript
  * {
- *   action: 'LOGOUT',
+ *   action: 'logout',
  *   payload: {
  *     clearStorage: true,
  *     redirectURL: '/login'
@@ -88,7 +88,7 @@ export type NotifyAction = {
  * ```
  */
 export type LogoutAction = {
-  action: 'LOGOUT'
+  action: 'logout'
   payload?: {
     [key: string]: any
   }
@@ -101,7 +101,7 @@ export type LogoutAction = {
  * @example
  * ```typescript
  * {
- *   action: 'REDIRECT',
+ *   action: 'redirect',
  *   payload: {
  *     redirectURL: '/login',
  *     delay: 2000,
@@ -111,7 +111,7 @@ export type LogoutAction = {
  * ```
  */
 export type RedirectAction = {
-  action: 'REDIRECT'
+  action: 'redirect'
   payload: {
     redirectURL: string
     [key: string]: any
@@ -188,7 +188,7 @@ export type ErrorXOptions = {
  *   metadata: { userId: 123, loginAttempt: 3 },
  *   timestamp: '2024-01-15T10:30:45.123Z',
  *   actions: [
- *     { action: 'LOGOUT', payload: { clearStorage: true } }
+ *     { action: 'logout', payload: { clearStorage: true } }
  *   ],
  *   cause: {
  *     name: 'NetworkError',

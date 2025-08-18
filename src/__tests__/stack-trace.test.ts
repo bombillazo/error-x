@@ -360,10 +360,10 @@ describe('Stack Trace Preservation', () => {
         // Should have actions
         expect(errorX.actions).toBeDefined()
         const actions = errorX.actions || []
-        expect(actions.some(action => action.action === 'NOTIFY' && 
-          action.payload.targets?.includes('banner'))).toBe(true)
-        expect(actions.some(action => action.action === 'REDIRECT' && 
-          action.payload.redirectURL === '/error-page')).toBe(true)
+        expect(actions.some(action => action.action === 'notify' &&
+          action.payload?.targets?.includes('banner'))).toBe(true)
+        expect(actions.some(action => action.action === 'redirect' &&
+          action.payload?.redirectURL === '/error-page')).toBe(true)
       }
     })
   })

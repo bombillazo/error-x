@@ -54,11 +54,11 @@ export class ErrorX extends Error {
    *   metadata: { query: 'SELECT * FROM users', timeout: 5000 },
    *   actions: [
    *     { 
-   *       action: 'NOTIFY', 
+   *       action: 'notify', 
    *       payload: { targets: [HandlingTargets.TOAST] }
    *     },
    *     { 
-   *       action: 'REDIRECT', 
+   *       action: 'redirect', 
    *       payload: { redirectURL: '/dashboard', delay: 1000 }
    *     }
    *   ]

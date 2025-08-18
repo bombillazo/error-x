@@ -74,9 +74,9 @@ describe('ErrorX', () => {
 
     it('should create error with actions system', () => {
       const actions: ErrorAction[] = [
-        { action: 'NOTIFY', payload: { targets: [HandlingTargets.MODAL] } },
-        { action: 'LOGOUT', payload: { clearStorage: true } },
-        { action: 'REDIRECT', payload: { redirectURL: '/login', delay: 1000 } }
+        { action: 'notify', payload: { targets: [HandlingTargets.MODAL] } },
+        { action: 'logout', payload: { clearStorage: true } },
+        { action: 'redirect', payload: { redirectURL: '/login', delay: 1000 } }
       ]
 
       const error = new ErrorX({
@@ -108,7 +108,7 @@ describe('ErrorX', () => {
     it('should create error with mixed targets and custom actions', () => {
       const actions: ErrorAction[] = [
         { 
-          action: 'NOTIFY', 
+          action: 'notify', 
           payload: { 
             targets: [HandlingTargets.TOAST, 'custom-sidebar', HandlingTargets.CONSOLE, 'analytics-tracker']
           }
@@ -343,8 +343,8 @@ describe('ErrorX', () => {
           name: 'SessionError',
           code: 'SESSION_EXPIRED',
           actions: [
-            { action: 'NOTIFY', payload: { targets: [HandlingTargets.TOAST] } },
-            { action: 'LOGOUT', payload: { clearStorage: true } }
+            { action: 'notify', payload: { targets: [HandlingTargets.TOAST] } },
+            { action: 'logout', payload: { clearStorage: true } }
           ]
         }
 
@@ -620,9 +620,9 @@ describe('ErrorX', () => {
 
       it('should serialize error with actions', () => {
         const actions: ErrorAction[] = [
-          { action: 'NOTIFY', payload: { targets: [HandlingTargets.BANNER] } },
-          { action: 'LOGOUT', payload: { clearStorage: true } },
-          { action: 'REDIRECT', payload: { redirectURL: '/dashboard', delay: 1000 } }
+          { action: 'notify', payload: { targets: [HandlingTargets.BANNER] } },
+          { action: 'logout', payload: { clearStorage: true } },
+          { action: 'redirect', payload: { redirectURL: '/dashboard', delay: 1000 } }
         ]
 
         const error = new ErrorX({
@@ -733,8 +733,8 @@ describe('ErrorX', () => {
 
       it('should deserialize error with actions', () => {
         const actions: ErrorAction[] = [
-          { action: 'NOTIFY', payload: { targets: [HandlingTargets.INLINE] } },
-          { action: 'REDIRECT', payload: { redirectURL: '/error' } }
+          { action: 'notify', payload: { targets: [HandlingTargets.INLINE] } },
+          { action: 'redirect', payload: { redirectURL: '/error' } }
         ]
 
         const serialized: SerializableError = {
