@@ -34,9 +34,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.PAT_TOKEN }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
