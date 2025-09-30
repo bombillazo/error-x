@@ -360,7 +360,7 @@ export class ErrorX extends Error {
    *
    * @param error - Value to convert to ErrorXOptions
    * @returns ErrorXOptions object with extracted properties
-   * @private
+   * @internal
    */
   private static convertUnknownToOptions(error: unknown): ErrorXOptions {
     let name = ''
