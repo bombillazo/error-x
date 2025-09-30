@@ -37,6 +37,7 @@ describe('ErrorX', () => {
       expect(error.code).toBe('ERROR')
       expect(error.uiMessage).toBeUndefined()
       expect(error.metadata).toBeUndefined()
+      expect(error.type).toBeUndefined()
       expect(error.timestamp).toEqual(mockDate)
       expect(error).toBeInstanceOf(Error)
       expect(error).toBeInstanceOf(ErrorX)
@@ -1068,6 +1069,203 @@ describe('ErrorX', () => {
 
       const duration = Date.now() - start
       expect(duration).toBeLessThan(1000) // Should serialize 1000 times in less than 1 second
+    })
+  })
+
+  describe('Type field', () => {
+    it('should create error with type field', () => {
+      const error = new ErrorX({
+        message: 'Validation failed',
+        type: 'validation',
+      })
+
+      expect(error.type).toBe('validation')
+      expect(error.message).toBe('Validation failed.')
+    })
+
+    it('should create error without type field', () => {
+      const error = new ErrorX({
+        message: 'Generic error',
+      })
+
+      expect(error.type).toBeUndefined()
+    })
+
+    it('should create error with type and other fields', () => {
+      const error = new ErrorX({
+        message: 'Authentication failed',
+        name: 'AuthError',
+        code: 'AUTH_FAILED',
+        type: 'authentication',
+        metadata: { userId: 123 },
+      })
+
+      expect(error.type).toBe('authentication')
+      expect(error.name).toBe('AuthError')
+      expect(error.code).toBe('AUTH_FAILED')
+      expect(error.metadata).toEqual({ userId: 123 })
+    })
+
+    it('should preserve type in withMetadata', () => {
+      const error = new ErrorX({
+        message: 'Network error',
+        type: 'network',
+        metadata: { endpoint: '/api/users' },
+      })
+
+      const enriched = error.withMetadata({ retryCount: 3 })
+
+      expect(enriched.type).toBe('network')
+      expect(enriched.metadata).toEqual({
+        endpoint: '/api/users',
+        retryCount: 3,
+      })
+    })
+
+    it('should preserve type in cleanStackTrace', () => {
+      const error = new ErrorX({
+        message: 'Database error',
+        type: 'database',
+      })
+
+      const cleaned = error.cleanStackTrace('test')
+
+      expect(cleaned.type).toBe('database')
+    })
+
+    it('should serialize error with type', () => {
+      const error = new ErrorX({
+        message: 'Validation error',
+        type: 'validation',
+        code: 'VAL_ERROR',
+      })
+
+      const json = error.toJSON()
+
+      expect(json.type).toBe('validation')
+      expect(json.message).toBe('Validation error.')
+      expect(json.code).toBe('VAL_ERROR')
+    })
+
+    it('should not include type in serialization if undefined', () => {
+      const error = new ErrorX({
+        message: 'Generic error',
+      })
+
+      const json = error.toJSON()
+
+      expect(json.type).toBeUndefined()
+    })
+
+    it('should deserialize error with type', () => {
+      const serialized: SerializableError = {
+        name: 'ValidationError',
+        message: 'Validation failed.',
+        code: 'VAL_ERROR',
+        uiMessage: 'Please check your input',
+        metadata: undefined,
+        timestamp: '2024-01-15T10:30:45.123Z',
+        type: 'validation',
+      }
+
+      const error = ErrorX.fromJSON(serialized)
+
+      expect(error.type).toBe('validation')
+      expect(error.name).toBe('ValidationError')
+      expect(error.message).toBe('Validation failed.')
+    })
+
+    it('should deserialize error without type', () => {
+      const serialized: SerializableError = {
+        name: 'GenericError',
+        message: 'Generic error.',
+        code: 'GENERIC',
+        uiMessage: undefined,
+        metadata: undefined,
+        timestamp: '2024-01-15T10:30:45.123Z',
+      }
+
+      const error = ErrorX.fromJSON(serialized)
+
+      expect(error.type).toBeUndefined()
+    })
+
+    it('should preserve type through JSON round trip', () => {
+      const original = new ErrorX({
+        message: 'Network timeout',
+        type: 'network',
+        code: 'TIMEOUT',
+        metadata: { endpoint: '/api/data', timeout: 5000 },
+      })
+
+      const serialized = original.toJSON()
+      const deserialized = ErrorX.fromJSON(serialized)
+
+      expect(deserialized.type).toBe(original.type)
+      expect(deserialized.message).toBe(original.message)
+      expect(deserialized.code).toBe(original.code)
+      expect(deserialized.metadata).toEqual(original.metadata)
+    })
+
+    it('should convert unknown objects with type field', () => {
+      const apiError = {
+        message: 'Request failed',
+        code: 'REQ_FAILED',
+        type: 'network',
+        status: 500,
+      }
+
+      const error = new ErrorX(apiError)
+
+      expect(error.type).toBe('network')
+      expect(error.message).toBe('Request failed.')
+      expect(error.code).toBe('REQ_FAILED')
+    })
+
+    it('should convert unknown objects without type field', () => {
+      const apiError = {
+        message: 'Request failed',
+        code: 'REQ_FAILED',
+      }
+
+      const error = new ErrorX(apiError)
+
+      expect(error.type).toBeUndefined()
+    })
+
+    it('should handle common type values', () => {
+      const types = ['validation', 'authentication', 'network', 'database', 'business', 'system']
+
+      for (const type of types) {
+        const error = new ErrorX({
+          message: `${type} error`,
+          type,
+        })
+
+        expect(error.type).toBe(type)
+      }
+    })
+
+    it('should convert type to string from unknown input', () => {
+      const apiError = {
+        message: 'Test error',
+        type: 123, // number
+      }
+
+      const error = new ErrorX(apiError)
+
+      expect(error.type).toBe('123')
+    })
+
+    it('should not set type if it is empty string', () => {
+      const apiError = {
+        message: 'Test error',
+        type: '',
+      }
+
+      const error = new ErrorX(apiError)
+
+      expect(error.type).toBeUndefined()
     })
   })
 })
