@@ -186,6 +186,7 @@ export const ERROR_X_OPTION_FIELDS = [
   'metadata',
   'actions',
   'httpStatus',
+  'type',
 ] as const;
 
 /**
@@ -241,6 +242,8 @@ export type ErrorXOptions = {
   actions?: ErrorAction[];
   /** HTTP status code (100-599) for HTTP-related errors (default: undefined) */
   httpStatus?: number | undefined;
+  /** Error type for categorization */
+  type?: string | undefined;
 };
 
 /**
@@ -292,4 +295,6 @@ export type SerializableError = {
   cause?: SerializableError;
   /** HTTP status code for HTTP-related errors */
   httpStatus?: number;
+  /** Error type for categorization */
+  type?: string;
 };

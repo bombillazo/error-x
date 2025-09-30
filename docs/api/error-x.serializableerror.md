@@ -19,6 +19,8 @@ type SerializableError = {
     timestamp: string;
     actions?: ErrorAction[];
     cause?: SerializableError;
+    httpStatus?: number;
+    type?: string;
 };
 ```
 **References:** [ErrorMetadata](./error-x.errormetadata.md)<!-- -->, [ErrorAction](./error-x.erroraction.md)<!-- -->, [SerializableError](./error-x.serializableerror.md)

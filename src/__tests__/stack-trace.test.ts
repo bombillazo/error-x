@@ -260,8 +260,8 @@ describe('Stack Trace Preservation', () => {
         expect(errorX.cause).toBeInstanceOf(ErrorX);
 
         const enriched = errorX.cause as ErrorX;
-        expect(enriched.metadata.enrichedIn).toBe('complex-scenarios.ts');
-        expect(enriched.metadata.originalStack).toBeDefined();
+        expect(enriched.metadata?.enrichedIn).toBe('complex-scenarios.ts');
+        expect(enriched.metadata?.originalStack).toBeDefined();
 
         // Stack should still be preserved
         expect(enriched.stack).toBeDefined();
@@ -282,7 +282,7 @@ describe('Stack Trace Preservation', () => {
         // Check the cause chain for metadata
         expect(errorX.cause).toBeInstanceOf(ErrorX);
         const cause = errorX.cause as ErrorX;
-        expect(cause.metadata.processorId).toBe('processor-async-operations');
+        expect(cause.metadata?.processorId).toBe('processor-async-operations');
 
         // Should trace through class methods
         expect(errorX.stack).toContain('async-operations.ts');
@@ -314,7 +314,7 @@ describe('Stack Trace Preservation', () => {
 
         // Should be the first level (depth 0)
         expect(errorX.message).toContain('Recursive catch at depth 0 from complex-scenarios.ts');
-        expect(errorX.metadata.currentDepth).toBe(0);
+        expect(errorX.metadata?.currentDepth).toBe(0);
 
         // Count recursion depth
         let current = errorX;
@@ -342,11 +342,11 @@ describe('Stack Trace Preservation', () => {
         expect(errorX.message).toContain('Error with circular reference from complex-scenarios.ts');
 
         // The circular reference should either be preserved or safely handled
-        if (errorX.metadata.circular) {
-          expect(errorX.metadata.circular.name).toBe('circular');
+        if (errorX.metadata?.circular) {
+          expect(errorX.metadata?.circular.name).toBe('circular');
         } else {
           // If circular reference was replaced with safe value
-          expect(errorX.metadata.error).toBe('Circular reference in metadata');
+          expect(errorX.metadata?.error).toBe('Circular reference in metadata');
         }
 
         // Should handle circular references gracefully
@@ -370,9 +370,9 @@ describe('Stack Trace Preservation', () => {
         );
         expect(errorX.name).toBe('FinalError');
         expect(errorX.code).toBe('FINAL_ERROR');
-        expect(errorX.metadata.testType).toBe('final');
-        expect(errorX.metadata.complexity).toBe('maximum');
-        expect(errorX.metadata.layers).toEqual([
+        expect(errorX.metadata?.testType).toBe('final');
+        expect(errorX.metadata?.complexity).toBe('maximum');
+        expect(errorX.metadata?.layers).toEqual([
           'error-sources',
           'error-handlers',
           'async-operations',
@@ -440,7 +440,7 @@ describe('Stack Trace Preservation', () => {
 
         const converted = errorX.cause as ErrorX;
         expect(converted.message).toContain('String error from error-sources.ts');
-        expect(converted.metadata.originalError).toBe(
+        expect(converted.metadata?.originalError).toBe(
           'String error from error-sources.ts throwStringError'
         );
       }
