@@ -258,7 +258,7 @@ Use a preset as-is without modifications:
 import { ErrorX } from '@bombillazo/error-x'
 
 // Simple usage
-throw new ErrorX(ErrorX.presets.HTTP.NOT_FOUND)
+throw new ErrorX(ErrorX.HTTP.NOT_FOUND)
 // Result: 404 error with default message and UI message
 ```
 
@@ -268,7 +268,7 @@ Customize the error while keeping other preset values:
 
 ```typescript
 throw new ErrorX({
-  ...ErrorX.presets.HTTP.NOT_FOUND,
+  ...ErrorX.HTTP.NOT_FOUND,
   message: 'User not found',
   metadata: { userId: 123 }
 })
@@ -281,7 +281,7 @@ Enhance presets with additional context and behaviors:
 
 ```typescript
 throw new ErrorX({
-  ...ErrorX.presets.HTTP.UNAUTHORIZED,
+  ...ErrorX.HTTP.UNAUTHORIZED,
   metadata: { attemptedAction: 'viewProfile', userId: 456 },
   actions: [
     { action: 'logout', payload: { clearStorage: true } },
@@ -299,7 +299,7 @@ try {
   // some operation
 } catch (originalError) {
   throw new ErrorX({
-    ...ErrorX.presets.HTTP.INTERNAL_SERVER_ERROR,
+    ...ErrorX.HTTP.INTERNAL_SERVER_ERROR,
     cause: originalError,
     metadata: { operation: 'database-query' }
   })
@@ -369,7 +369,7 @@ app.get('/users/:id', async (req, res) => {
 
   if (!user) {
     throw new ErrorX({
-      ...ErrorX.presets.HTTP.NOT_FOUND,
+      ...ErrorX.HTTP.NOT_FOUND,
       message: 'User not found',
       metadata: { userId: req.params.id }
     })
@@ -385,7 +385,7 @@ app.get('/users/:id', async (req, res) => {
 const requireAuth = (req, res, next) => {
   if (!req.user) {
     throw new ErrorX({
-      ...ErrorX.presets.HTTP.UNAUTHORIZED,
+      ...ErrorX.HTTP.UNAUTHORIZED,
       actions: [
         { action: 'redirect', payload: { redirectURL: '/login' } }
       ]
@@ -400,7 +400,7 @@ const requireAuth = (req, res, next) => {
 ```typescript
 if (isRateLimited(req.ip)) {
   throw new ErrorX({
-    ...ErrorX.presets.HTTP.TOO_MANY_REQUESTS,
+    ...ErrorX.HTTP.TOO_MANY_REQUESTS,
     metadata: {
       ip: req.ip,
       retryAfter: 60
