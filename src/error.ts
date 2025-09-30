@@ -8,6 +8,9 @@ import type {
 } from './types.js'
 import { ERROR_X_OPTION_FIELDS } from './types.js'
 
+// Use the single source of truth for accepted fields
+const acceptedFields = new Set(ERROR_X_OPTION_FIELDS)
+
 /**
  * Enhanced Error class with rich metadata, type-safe error handling, and intelligent error conversion.
  *
@@ -155,9 +158,6 @@ export class ErrorX extends Error {
     if (keys.length === 0) {
       return true
     }
-
-    // Use the single source of truth for accepted fields
-    const acceptedFields = new Set(ERROR_X_OPTION_FIELDS)
 
     // Check if all keys are in the accepted fields
     // If there's any key that's not accepted, it's not ErrorXOptions
