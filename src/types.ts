@@ -185,6 +185,7 @@ export const ERROR_X_OPTION_FIELDS = [
   'cause',
   'metadata',
   'actions',
+  'httpStatus',
 ] as const
 
 /**
@@ -238,6 +239,8 @@ export type ErrorXOptions = {
   metadata?: ErrorMetadata
   /** Actions to perform when this error occurs (default: undefined) */
   actions?: ErrorAction[]
+  /** HTTP status code (100-599) for HTTP-related errors (default: undefined) */
+  httpStatus?: number | undefined
 }
 
 /**
@@ -287,4 +290,6 @@ export type SerializableError = {
   actions?: ErrorAction[]
   /** Serialized cause error (for error chaining) */
   cause?: SerializableError
+  /** HTTP status code for HTTP-related errors */
+  httpStatus?: number
 }

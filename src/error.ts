@@ -42,6 +42,8 @@ export class ErrorX extends Error {
   public readonly timestamp: Date
   /** Error actions for UI behavior and handling */
   public readonly actions: ErrorAction[] | undefined
+  /** HTTP status code (100-599) for HTTP-related errors */
+  public readonly httpStatus: number | undefined
 
   /**
    * Creates a new ErrorX instance with enhanced error handling capabilities.
@@ -111,6 +113,7 @@ export class ErrorX extends Error {
     this.uiMessage = options.uiMessage
     this.metadata = options.metadata
     this.actions = options.actions
+    this.httpStatus = ErrorX.validateHttpStatus(options.httpStatus)
     this.timestamp = new Date()
 
     // Handle stack trace preservation
@@ -132,6 +135,27 @@ export class ErrorX extends Error {
    */
   private static getDefaultName(): string {
     return 'Error'
+  }
+
+  /**
+   * Validates HTTP status code to ensure it's within valid range (100-599)
+   *
+   * @param status - Status code to validate
+   * @returns Valid status code or undefined if invalid/not provided
+   */
+  private static validateHttpStatus(status?: number): number | undefined {
+    if (status === undefined || status === null) {
+      return undefined
+    }
+
+    const statusNum = Number(status)
+
+    // Validate status code is a number and within valid HTTP range
+    if (Number.isNaN(statusNum) || statusNum < 100 || statusNum > 599) {
+      return undefined
+    }
+
+    return Math.floor(statusNum)
   }
 
   /**
@@ -336,6 +360,7 @@ export class ErrorX extends Error {
       uiMessage: this.uiMessage,
       cause: this.cause,
       metadata: { ...(this.metadata ?? {}), ...additionalMetadata },
+      httpStatus: this.httpStatus,
     }
     if (this.actions) {
       options.actions = this.actions
@@ -388,6 +413,7 @@ export class ErrorX extends Error {
     let cause: unknown
     let metadata: ErrorMetadata = {}
     let actions: ErrorAction[] | undefined
+    let httpStatus: number | undefined
 
     if (error) {
       if (typeof error === 'string') {
@@ -423,6 +449,20 @@ export class ErrorX extends Error {
           actions = error.actions as ErrorAction[]
         }
 
+        let _httpStatus: unknown;
+        // Extract HTTP status
+        if ('httpStatus' in error) {
+          _httpStatus = error.httpStatus
+        } else if ('status' in error) {
+          _httpStatus = (error as any).status
+        } else if ('statusCode' in error) {
+          _httpStatus = (error as any).statusCode
+        }
+        if (_httpStatus !== undefined && _httpStatus !== null) {
+          const num = typeof _httpStatus === 'number' ? _httpStatus : Number(_httpStatus)
+          httpStatus = Number.isNaN(num) ? undefined : num
+        }
+
         // Store original object as metadata if it has additional properties
         metadata = { originalError: error }
       }
@@ -438,6 +478,7 @@ export class ErrorX extends Error {
     if (cause) options.cause = cause
     if (Object.keys(metadata).length > 0) options.metadata = metadata
     if (actions && actions.length > 0) options.actions = actions
+    if (httpStatus) options.httpStatus = ErrorX.validateHttpStatus(httpStatus)
 
     return options
   }
@@ -514,6 +555,7 @@ export class ErrorX extends Error {
         code: this.code,
         uiMessage: this.uiMessage,
         cause: this.cause,
+        httpStatus: this.httpStatus,
       }
       if (this.metadata !== undefined) {
         options.metadata = this.metadata
@@ -619,6 +661,11 @@ export class ErrorX extends Error {
       serialized.actions = JSON.parse(stringified)
     }
 
+    // Include httpStatus if present
+    if (this.httpStatus !== undefined) {
+      serialized.httpStatus = this.httpStatus
+    }
+
     // Include stack if available
     if (this.stack) {
       serialized.stack = this.stack
@@ -675,6 +722,7 @@ export class ErrorX extends Error {
       name: serialized.name,
       code: serialized.code,
       uiMessage: serialized.uiMessage,
+      httpStatus: serialized.httpStatus,
     }
     if (serialized.metadata !== undefined) {
       options.metadata = serialized.metadata
