@@ -88,8 +88,7 @@ export class ErrorX extends Error {
       options = messageOrOptions
     } else if (messageOrOptions != null) {
       // Unknown input - convert using smart conversion
-      const converted = ErrorX.convertUnknownToOptions(messageOrOptions)
-      options = converted
+      options = ErrorX.convertUnknownToOptions(messageOrOptions)
     }
     // else: undefined/null - use empty options object
 
@@ -131,7 +130,6 @@ export class ErrorX extends Error {
    *
    * @param value - Value to check
    * @returns True if value is a valid ErrorXOptions object
-   * @internal
    */
   private static isErrorXOptions(value: unknown): value is ErrorXOptions {
     if (value == null || typeof value !== 'object' || Array.isArray(value)) {
