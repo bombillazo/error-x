@@ -4,7 +4,7 @@
 [![npm](https://img.shields.io/npm/dt/@bombillazo/error-x.svg?style=for-the-badge)](https://www.npmjs.com/package/@bombillazo/error-x)
 [![npm](https://img.shields.io/npm/l/@bombillazo/error-x?style=for-the-badge)](https://github.com/bombillazo/error-x/blob/master/LICENSE)
 
-A smart, isomorphic, and satisfying error library for TypeScript applications. Provides type-safe error handling with great DX, solving common pain points like unknown error types, lost stack traces, async error handling, and error serialization.
+A smart, isomorphic, and opinionated error library for TypeScript applications. Provides type-safe error handling with great DX, solving common pain points like unknown error types, lost stack traces, async error handling, and error serialization.
 
 ## Features
 
@@ -12,12 +12,11 @@ A smart, isomorphic, and satisfying error library for TypeScript applications. P
 - 🔄 **Smart error conversion** from various formats (API responses, strings, Error objects)
 - 📝 **Auto-formatted messages and error codes** with proper capitalization and punctuation
 - 👤 **User-friendly messages** separate from technical messages
-- 🕒 **Automatic timestamps** for error tracking
 - 🔗 **Error chaining** with cause preservation and stack trace preservation
 - 📊 **Flexible metadata** for additional context
 - 🎛️ **Error handling options** for UI behavior and application actions
 - 📦 **Serialization/deserialization** support for network transfer and storage
-- 🎨 **Pre-configured error presets** for common HTTP status codes (400-511)
+- 🎨 **Pre-configured error presets** for common error types
 
 ## Installation
 
@@ -256,10 +255,10 @@ ErrorX provides pre-configured error templates for common scenarios, making it e
 Use a preset as-is without modifications:
 
 ```typescript
-import { ErrorX, PRESETS } from '@bombillazo/error-x'
+import { ErrorX } from '@bombillazo/error-x'
 
 // Simple usage
-throw new ErrorX(PRESETS.HTTP.NOT_FOUND)
+throw new ErrorX(ErrorX.HTTP.NOT_FOUND)
 // Result: 404 error with default message and UI message
 ```
 
@@ -269,7 +268,7 @@ Customize the error while keeping other preset values:
 
 ```typescript
 throw new ErrorX({
-  ...PRESETS.HTTP.NOT_FOUND,
+  ...ErrorX.HTTP.NOT_FOUND,
   message: 'User not found',
   metadata: { userId: 123 }
 })
@@ -282,7 +281,7 @@ Enhance presets with additional context and behaviors:
 
 ```typescript
 throw new ErrorX({
-  ...PRESETS.HTTP.UNAUTHORIZED,
+  ...ErrorX.HTTP.UNAUTHORIZED,
   metadata: { attemptedAction: 'viewProfile', userId: 456 },
   actions: [
     { action: 'logout', payload: { clearStorage: true } },
@@ -300,7 +299,7 @@ try {
   // some operation
 } catch (originalError) {
   throw new ErrorX({
-    ...PRESETS.HTTP.INTERNAL_SERVER_ERROR,
+    ...ErrorX.HTTP.INTERNAL_SERVER_ERROR,
     cause: originalError,
     metadata: { operation: 'database-query' }
   })
@@ -363,14 +362,14 @@ try {
 #### API Endpoint
 
 ```typescript
-import { ErrorX, PRESETS } from '@bombillazo/error-x'
+import { ErrorX } from '@bombillazo/error-x'
 
 app.get('/users/:id', async (req, res) => {
   const user = await db.users.findById(req.params.id)
 
   if (!user) {
     throw new ErrorX({
-      ...PRESETS.HTTP.NOT_FOUND,
+      ...ErrorX.HTTP.NOT_FOUND,
       message: 'User not found',
       metadata: { userId: req.params.id }
     })
@@ -386,7 +385,7 @@ app.get('/users/:id', async (req, res) => {
 const requireAuth = (req, res, next) => {
   if (!req.user) {
     throw new ErrorX({
-      ...PRESETS.HTTP.UNAUTHORIZED,
+      ...ErrorX.HTTP.UNAUTHORIZED,
       actions: [
         { action: 'redirect', payload: { redirectURL: '/login' } }
       ]
@@ -401,7 +400,7 @@ const requireAuth = (req, res, next) => {
 ```typescript
 if (isRateLimited(req.ip)) {
   throw new ErrorX({
-    ...PRESETS.HTTP.TOO_MANY_REQUESTS,
+    ...ErrorX.HTTP.TOO_MANY_REQUESTS,
     metadata: {
       ip: req.ip,
       retryAfter: 60
