@@ -56,6 +56,32 @@ Predefined display targets for error notifications and UI feedback. These enum v
 </td></tr>
 </tbody></table>
 
+## Variables
+
+<table><thead><tr><th>
+
+Variable
+
+
+</th><th>
+
+Description
+
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[PRESETS](./error-x.presets.md)
+
+
+</td><td>
+
+Preset configurations for common errors organized by category. Each preset includes httpStatus (for HTTP errors), code, name, message, and uiMessage.
+
+
+</td></tr>
+</tbody></table>
+
 ## Type Aliases
 
 <table><thead><tr><th>

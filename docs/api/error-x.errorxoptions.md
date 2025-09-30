@@ -17,6 +17,8 @@ type ErrorXOptions = {
     cause?: Error | unknown;
     metadata?: ErrorMetadata;
     actions?: ErrorAction[];
+    httpStatus?: number | undefined;
+    type?: string | undefined;
 };
 ```
 **References:** [ErrorMetadata](./error-x.errormetadata.md)<!-- -->, [ErrorAction](./error-x.erroraction.md)

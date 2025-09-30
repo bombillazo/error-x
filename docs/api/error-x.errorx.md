@@ -131,6 +131,27 @@ Error identifier code, auto-generated from name if not provided
 </td></tr>
 <tr><td>
 
+[httpStatus](./error-x.errorx.httpstatus.md)
+
+
+</td><td>
+
+`readonly`
+
+
+</td><td>
+
+number \| undefined
+
+
+</td><td>
+
+HTTP status code (100-599) for HTTP-related errors
+
+
+</td></tr>
+<tr><td>
+
 [metadata](./error-x.errorx.metadata.md)
 
 
@@ -168,6 +189,27 @@ Date
 </td><td>
 
 Timestamp when the error was created
+
+
+</td></tr>
+<tr><td>
+
+[type](./error-x.errorx.type.md)
+
+
+</td><td>
+
+`readonly`
+
+
+</td><td>
+
+string \| undefined
+
+
+</td><td>
+
+Error type for categorization
 
 
 </td></tr>
@@ -255,6 +297,22 @@ Deserializes a JSON object back into an ErrorX instance. Recursively reconstruct
 </td><td>
 
 Type guard that checks if a value is an ErrorX instance.
+
+
+</td></tr>
+<tr><td>
+
+[isErrorXOptions(value)](./error-x.errorx.iserrorxoptions.md)
+
+
+</td><td>
+
+`static`
+
+
+</td><td>
+
+Validates if an object is a valid ErrorXOptions object. Checks that the object only contains accepted ErrorXOptions fields.
 
 
 </td></tr>

@@ -475,7 +475,7 @@ export class ErrorX extends Error {
           actions = error.actions as ErrorAction[]
         }
 
-        let _httpStatus: unknown;
+        let _httpStatus: unknown
         // Extract HTTP status
         if ('httpStatus' in error) {
           _httpStatus = error.httpStatus
