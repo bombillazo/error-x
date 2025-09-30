@@ -21,3 +21,23 @@ type ErrorXOptions = {
 ```
 **References:** [ErrorMetadata](./error-x.errormetadata.md)<!-- -->, [ErrorAction](./error-x.erroraction.md)
 
+## Remarks
+
+\*\*Note on design:\*\* ErrorXOptions is a `type` instead of a `class` to provide maximum flexibility. This allows you to pass plain objects without instantiation:
+
+```typescript
+// ✅ Works - plain object
+new ErrorX({ message: 'Error', code: 'ERR' })
+
+// ✅ Works - object literal
+const opts = { message: 'Error' }
+new ErrorX(opts)
+```
+If ErrorXOptions were a class, you would need to instantiate it:
+
+```typescript
+// ❌ Would be required with class
+new ErrorX(new ErrorXOptions({ message: 'Error' }))
+```
+The current `type` approach provides better ergonomics while still maintaining type safety. The `isErrorXOptions()` validation method ensures only valid option objects are accepted.
+

@@ -334,6 +334,62 @@ describe('ErrorX', () => {
       expect(error.code).toBe('SESSION_EXPIRED')
       expect(error.actions).toEqual(apiError.actions)
     })
+
+    it('should treat object with only ErrorXOptions fields as ErrorXOptions', () => {
+      const options = {
+        message: 'Valid ErrorXOptions',
+        code: 'VALID',
+        metadata: { key: 'value' },
+      }
+
+      const error = new ErrorX(options)
+
+      expect(error.message).toBe('Valid ErrorXOptions.')
+      expect(error.code).toBe('VALID')
+      expect(error.metadata).toEqual({ key: 'value' })
+    })
+
+    it('should convert object with extra fields not in ErrorXOptions', () => {
+      const apiError = {
+        message: 'Has extra fields',
+        code: 'ERR',
+        extraField: 'not in ErrorXOptions',
+        anotherField: 123,
+      }
+
+      const error = new ErrorX(apiError)
+
+      expect(error.message).toBe('Has extra fields.')
+      expect(error.code).toBe('ERR')
+      expect(error.metadata?.originalError).toBe(apiError)
+    })
+
+    it('should convert object with mixed ErrorXOptions and non-ErrorXOptions fields', () => {
+      const mixedObject = {
+        message: 'Mixed object',
+        statusCode: 404, // Not an ErrorXOptions field
+        url: '/api/users', // Not an ErrorXOptions field
+      }
+
+      const error = new ErrorX(mixedObject)
+
+      expect(error.message).toBe('Mixed object.')
+      // Should be treated as unknown and converted
+      expect(error.metadata?.originalError).toBe(mixedObject)
+    })
+
+    it('should handle object with only non-ErrorXOptions fields', () => {
+      const apiResponse = {
+        status: 500,
+        statusText: 'Internal Server Error',
+        url: '/api/data',
+      }
+
+      const error = new ErrorX(apiResponse)
+
+      expect(error.message).toBe('Internal Server Error.')
+      expect(error.metadata?.originalError).toBe(apiResponse)
+    })
   })
 
   describe('Default Values', () => {

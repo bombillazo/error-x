@@ -83,32 +83,11 @@ export class ErrorX extends Error {
         message: messageOrOptions,
         ...additionalOptions,
       }
-    } else if (
-      messageOrOptions != null &&
-      typeof messageOrOptions === 'object' &&
-      !Array.isArray(messageOrOptions)
-    ) {
-      // Check if it looks like ErrorXOptions (has at least one expected property)
-      const hasErrorXProperties =
-        'message' in messageOrOptions ||
-        'name' in messageOrOptions ||
-        'code' in messageOrOptions ||
-        'uiMessage' in messageOrOptions ||
-        'cause' in messageOrOptions ||
-        'metadata' in messageOrOptions ||
-        'actions' in messageOrOptions
-      const isEmptyObject = Object.keys(messageOrOptions).length === 0
-
-      if ((hasErrorXProperties || isEmptyObject) && !(messageOrOptions instanceof Error)) {
-        // Treat as ErrorXOptions
-        options = messageOrOptions as ErrorXOptions
-      } else {
-        // Convert unknown input using toErrorX logic
-        const converted = ErrorX.convertUnknownToOptions(messageOrOptions)
-        options = converted
-      }
+    } else if (ErrorX.isErrorXOptions(messageOrOptions)) {
+      // Valid ErrorXOptions object - use directly
+      options = messageOrOptions
     } else if (messageOrOptions != null) {
-      // Non-object, non-string input - convert it
+      // Unknown input - convert using smart conversion
       const converted = ErrorX.convertUnknownToOptions(messageOrOptions)
       options = converted
     }
@@ -144,6 +123,48 @@ export class ErrorX extends Error {
    */
   private static getDefaultName(): string {
     return 'Error'
+  }
+
+  /**
+   * Validates if an object is a valid ErrorXOptions object.
+   * Checks that the object only contains accepted ErrorXOptions fields.
+   *
+   * @param value - Value to check
+   * @returns True if value is a valid ErrorXOptions object
+   * @internal
+   */
+  private static isErrorXOptions(value: unknown): value is ErrorXOptions {
+    if (value == null || typeof value !== 'object' || Array.isArray(value)) {
+      return false
+    }
+
+    // If it's an Error instance, it's not ErrorXOptions
+    if (value instanceof Error) {
+      return false
+    }
+
+    const obj = value as Record<string, unknown>
+    const keys = Object.keys(obj)
+
+    // Empty object is valid ErrorXOptions
+    if (keys.length === 0) {
+      return true
+    }
+
+    // Define all accepted ErrorXOptions field names
+    const acceptedFields = new Set([
+      'message',
+      'name',
+      'code',
+      'uiMessage',
+      'cause',
+      'metadata',
+      'actions',
+    ])
+
+    // Check if all keys are in the accepted fields
+    // If there's any key that's not accepted, it's not ErrorXOptions
+    return keys.every(key => acceptedFields.has(key))
   }
 
   /**
