@@ -1,4 +1,4 @@
-export { ErrorX } from './error.js'
+export { ErrorX } from './error.js';
 export type {
   CustomAction,
   ErrorAction,
@@ -9,5 +9,5 @@ export type {
   NotifyAction,
   RedirectAction,
   SerializableError,
-} from './types.js'
-export { HandlingTargets } from './types.js'
+} from './types.js';
+export { HandlingTargets } from './types.js';
