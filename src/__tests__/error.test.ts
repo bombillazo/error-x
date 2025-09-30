@@ -156,7 +156,7 @@ describe('ErrorX', () => {
             ],
           },
         },
-        { action: 'custom-analytics', payload: { event: 'error_occurred', severity: 'high' } },
+        { action: 'custom', payload: { event: 'error_occurred', severity: 'high' } },
       ];
 
       const error = new ErrorX({
@@ -458,7 +458,7 @@ describe('ErrorX', () => {
         const converted = ErrorX.toErrorX('simple string error');
 
         expect(converted.message).toBe('Simple string error.');
-        expect(converted.metadata.originalError).toBe('simple string error');
+        expect(converted.metadata?.originalError).toBe('simple string error');
       });
 
       it('should extract properties from API-like objects', () => {
@@ -477,7 +477,7 @@ describe('ErrorX', () => {
         expect(converted.name).toBe('NotFoundError');
         expect(converted.code).toBe('USER_404');
         expect(converted.uiMessage).toBe('User does not exist');
-        expect(converted.metadata.originalError).toBe(apiError);
+        expect(converted.metadata?.originalError).toBe(apiError);
       });
 
       it('should extract number codes from objects', () => {
@@ -493,7 +493,7 @@ describe('ErrorX', () => {
         expect(converted.message).toBe('HTTP request failed.');
         expect(converted.name).toBe('HTTPError');
         expect(converted.code).toBe('500');
-        expect(converted.metadata.originalError).toBe(apiError);
+        expect(converted.metadata?.originalError).toBe(apiError);
       });
 
       it('should extract actions from objects', () => {
@@ -513,7 +513,7 @@ describe('ErrorX', () => {
         expect(converted.name).toBe('SessionError');
         expect(converted.code).toBe('SESSION_EXPIRED');
         expect(converted.actions).toEqual(apiError.actions);
-        expect(converted.metadata.originalError).toBe(apiError);
+        expect(converted.metadata?.originalError).toBe(apiError);
       });
 
       it('should handle objects without actions', () => {
@@ -529,7 +529,7 @@ describe('ErrorX', () => {
         expect(converted.name).toBe('SessionError');
         expect(converted.code).toBe('SESSION_EXPIRED');
         expect(converted.actions).toBeUndefined();
-        expect(converted.metadata.originalError).toBe(apiError);
+        expect(converted.metadata?.originalError).toBe(apiError);
       });
 
       it('should extract from alternative property names', () => {
@@ -543,7 +543,7 @@ describe('ErrorX', () => {
         for (const errorObj of testCases) {
           const converted = ErrorX.toErrorX(errorObj);
           expect(converted.message).toBeTruthy();
-          expect(converted.metadata.originalError).toBe(errorObj);
+          expect(converted.metadata?.originalError).toBe(errorObj);
         }
       });
 
@@ -981,8 +981,8 @@ describe('ErrorX', () => {
         metadata: largeMetadata,
       });
 
-      expect(Object.keys(error.metadata)).toHaveLength(1000);
-      expect(error.metadata.key999).toBe('value999');
+      expect(Object.keys(error.metadata || {})).toHaveLength(1000);
+      expect(error.metadata?.key999).toBe('value999');
     });
 
     it('should handle circular references in metadata', () => {
@@ -995,7 +995,7 @@ describe('ErrorX', () => {
       });
 
       // Should not throw when creating
-      expect(error.metadata.circular).toBe(circularObj);
+      expect(error.metadata?.circular).toBe(circularObj);
 
       // toString should handle circular references gracefully
       expect(() => error.toString()).not.toThrow();
