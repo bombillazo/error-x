@@ -29,6 +29,37 @@ describe('ErrorX', () => {
   })
 
   describe('Constructor', () => {
+    it('should create error with string message only', () => {
+      const error = new ErrorX('test error')
+
+      expect(error.message).toBe('Test error.')
+      expect(error.name).toBe('Error')
+      expect(error.code).toBe('ERROR')
+      expect(error.uiMessage).toBeUndefined()
+      expect(error.metadata).toBeUndefined()
+      expect(error.timestamp).toEqual(mockDate)
+      expect(error).toBeInstanceOf(Error)
+      expect(error).toBeInstanceOf(ErrorX)
+    })
+
+    it('should create error with string message and additional options', () => {
+      const metadata = { userId: 123, action: 'login' }
+
+      const error = new ErrorX('authentication failed', {
+        name: 'AuthError',
+        code: 'AUTH_FAILED',
+        uiMessage: 'Please check your credentials',
+        metadata,
+      })
+
+      expect(error.message).toBe('Authentication failed.')
+      expect(error.name).toBe('AuthError')
+      expect(error.code).toBe('AUTH_FAILED')
+      expect(error.uiMessage).toBe('Please check your credentials')
+      expect(error.metadata).toEqual(metadata)
+      expect(error.timestamp).toEqual(mockDate)
+    })
+
     it('should create error with minimal options', () => {
       const error = new ErrorX({ message: 'test error' })
 
@@ -241,6 +272,123 @@ describe('ErrorX', () => {
       expect(error.stack).not.toContain('new ErrorX')
       expect(error.stack).not.toContain('ErrorX.constructor')
       expect(error.stack).not.toContain('error-x/src/error.ts')
+    })
+
+    it('should create error from regular Error instance', () => {
+      const originalError = new Error('Original error message')
+      originalError.name = 'CustomError'
+
+      const error = new ErrorX(originalError)
+
+      expect(error.message).toBe('Original error message.')
+      expect(error.name).toBe('CustomError')
+      expect(error.cause).toBe(originalError.cause)
+    })
+
+    it('should create error from API-like object with ErrorX properties', () => {
+      const apiError = {
+        message: 'user not found',
+        name: 'NotFoundError',
+        code: 'USER_404',
+        uiMessage: 'User does not exist',
+      }
+
+      const error = new ErrorX(apiError)
+
+      expect(error.message).toBe('User not found.')
+      expect(error.name).toBe('NotFoundError')
+      expect(error.code).toBe('USER_404')
+      expect(error.uiMessage).toBe('User does not exist')
+      // When object has ErrorX properties, it's treated as ErrorXOptions directly
+      expect(error.metadata).toBeUndefined()
+    })
+
+    it('should create error from API-like object without ErrorX properties', () => {
+      const apiError = {
+        error: 'user not found',
+        status: 404,
+      }
+
+      const error = new ErrorX(apiError)
+
+      expect(error.message).toBe('User not found.')
+      expect(error.code).toBe('ERROR')
+      expect(error.metadata?.originalError).toBe(apiError)
+    })
+
+    it('should create error from object with actions', () => {
+      const apiError = {
+        message: 'Session expired',
+        name: 'SessionError',
+        code: 'SESSION_EXPIRED',
+        actions: [
+          { action: 'notify', payload: { targets: [HandlingTargets.TOAST] } },
+          { action: 'logout', payload: { clearStorage: true } },
+        ],
+      }
+
+      const error = new ErrorX(apiError)
+
+      expect(error.message).toBe('Session expired.')
+      expect(error.name).toBe('SessionError')
+      expect(error.code).toBe('SESSION_EXPIRED')
+      expect(error.actions).toEqual(apiError.actions)
+    })
+
+    it('should treat object with only ErrorXOptions fields as ErrorXOptions', () => {
+      const options = {
+        message: 'Valid ErrorXOptions',
+        code: 'VALID',
+        metadata: { key: 'value' },
+      }
+
+      const error = new ErrorX(options)
+
+      expect(error.message).toBe('Valid ErrorXOptions.')
+      expect(error.code).toBe('VALID')
+      expect(error.metadata).toEqual({ key: 'value' })
+    })
+
+    it('should convert object with extra fields not in ErrorXOptions', () => {
+      const apiError = {
+        message: 'Has extra fields',
+        code: 'ERR',
+        extraField: 'not in ErrorXOptions',
+        anotherField: 123,
+      }
+
+      const error = new ErrorX(apiError)
+
+      expect(error.message).toBe('Has extra fields.')
+      expect(error.code).toBe('ERR')
+      expect(error.metadata?.originalError).toBe(apiError)
+    })
+
+    it('should convert object with mixed ErrorXOptions and non-ErrorXOptions fields', () => {
+      const mixedObject = {
+        message: 'Mixed object',
+        statusCode: 404, // Not an ErrorXOptions field
+        url: '/api/users', // Not an ErrorXOptions field
+      }
+
+      const error = new ErrorX(mixedObject)
+
+      expect(error.message).toBe('Mixed object.')
+      // Should be treated as unknown and converted
+      expect(error.metadata?.originalError).toBe(mixedObject)
+    })
+
+    it('should handle object with only non-ErrorXOptions fields', () => {
+      const apiResponse = {
+        status: 500,
+        statusText: 'Internal Server Error',
+        url: '/api/data',
+      }
+
+      const error = new ErrorX(apiResponse)
+
+      expect(error.message).toBe('Internal Server Error.')
+      expect(error.metadata?.originalError).toBe(apiResponse)
     })
   })
 

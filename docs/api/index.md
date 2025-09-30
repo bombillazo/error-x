@@ -19,7 +19,7 @@ Description
 </th></tr></thead>
 <tbody><tr><td>
 
-[error-x](./error-x.md)
+[@bombillazo/error-x](./error-x.md)
 
 
 </td><td>

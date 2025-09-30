@@ -172,8 +172,54 @@ export type CustomAction = {
 export type ErrorAction = NotifyAction | LogoutAction | RedirectAction | CustomAction
 
 /**
+ * Array of valid ErrorXOptions field names.
+ * This serves as the single source of truth for both runtime validation and type checking.
+ *
+ * @internal
+ */
+export const ERROR_X_OPTION_FIELDS = [
+  'message',
+  'name',
+  'code',
+  'uiMessage',
+  'cause',
+  'metadata',
+  'actions',
+] as const
+
+/**
+ * Union type of all valid ErrorXOptions field names.
+ *
+ * @public
+ */
+export type ErrorXOptionField = (typeof ERROR_X_OPTION_FIELDS)[number]
+
+/**
  * Configuration options for creating an ErrorX instance.
  * All properties are optional with sensible defaults.
+ *
+ * @remarks
+ * **Note on design:** ErrorXOptions is a `type` instead of a `class` to provide maximum flexibility.
+ * This allows you to pass plain objects without instantiation:
+ *
+ * ```typescript
+ * // ✅ Works - plain object
+ * new ErrorX({ message: 'Error', code: 'ERR' })
+ *
+ * // ✅ Works - object literal
+ * const opts = { message: 'Error' }
+ * new ErrorX(opts)
+ * ```
+ *
+ * If ErrorXOptions were a class, you would need to instantiate it:
+ *
+ * ```typescript
+ * // ❌ Would be required with class
+ * new ErrorX(new ErrorXOptions({ message: 'Error' }))
+ * ```
+ *
+ * The current `type` approach provides better ergonomics while still maintaining type safety.
+ * The `isErrorXOptions()` validation method ensures only valid option objects are accepted.
  *
  * @public
  */

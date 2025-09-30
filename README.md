@@ -42,18 +42,26 @@ import { ErrorX, HandlingTargets, type HandlingTarget, type ErrorAction } from '
 // Minimal usage (all parameters optional)
 const error = new ErrorX()
 
-// Simple usage
-const error = new ErrorX({ message: 'Database connection failed' })
+// Simple string message
+const error = new ErrorX('Database connection failed')
 
-// With full options
+// String message with additional options
+const error = new ErrorX('User authentication failed', {
+  name: 'AuthError',
+  code: 'AUTH_FAILED',
+  uiMessage: 'Please check your credentials and try again',
+  metadata: { userId: 123, loginAttempt: 3 }
+})
+
+// Options object (backward compatible)
 const error = new ErrorX({
   message: 'User authentication failed',
   name: 'AuthError',
   code: 'AUTH_FAILED',
   uiMessage: 'Please check your credentials and try again',
   cause: originalError, // Chain errors while preserving stack traces
-  metadata: { 
-    userId: 123, 
+  metadata: {
+    userId: 123,
     loginAttempt: 3,
   },
   actions: [
@@ -62,6 +70,10 @@ const error = new ErrorX({
     { action: 'custom', payload: { type: 'analytics', event: 'auth_failed', userId: 123, category: 'errors', severity: 'high' } }
   ]
 })
+
+// Smart conversion from unknown errors
+const apiError = { message: 'User not found', code: 404, statusText: 'Not Found' }
+const error = new ErrorX(apiError)
 ```
 
 ## Documentation
@@ -77,6 +89,17 @@ For complete API documentation with detailed descriptions, examples, and type in
 ### Constructor
 
 ```typescript
+// String message signature
+new ErrorX(message: string, options?: {
+  name?: string                      // Optional: Error type
+  code?: string | number             // Optional: Error code (auto-generated from name if not provided)
+  uiMessage?: string                 // Optional: User-friendly message
+  cause?: Error | unknown            // Optional: Original error that caused this (preserves stack traces)
+  metadata?: Record<string, any>     // Optional: Additional context data
+  actions?: ErrorAction[]            // Optional: Configuration for application actions to perform when error occurs
+})
+
+// Options object signature (backward compatible)
 new ErrorX(options?: {
   name?: string                      // Optional: Error type
   message?: string                   // Optional: Technical error message (default: 'An error occurred')
@@ -84,8 +107,11 @@ new ErrorX(options?: {
   uiMessage?: string                 // Optional: User-friendly message
   cause?: Error | unknown            // Optional: Original error that caused this (preserves stack traces)
   metadata?: Record<string, any>     // Optional: Additional context data
-  actions?: ErrorAction[]            // Optional: Configuration for application actions to perform when error occurs 
+  actions?: ErrorAction[]            // Optional: Configuration for application actions to perform when error occurs
 })
+
+// Smart conversion signature (converts any unknown input)
+new ErrorX(input: unknown)
 ```
 
 **All parameters are optional** - ErrorX uses sensible defaults and auto-generates missing values.
@@ -248,8 +274,7 @@ import { ErrorX } from 'error-x'
 
 function validateUser(user: unknown) {
   if (!user) {
-    throw new ErrorX({
-      message: 'User validation failed: user is required',
+    throw new ErrorX('User validation failed: user is required', {
       name: 'ValidationError',
       code: 'USER_REQUIRED',
       uiMessage: 'Please provide user information',
@@ -266,8 +291,7 @@ async function fetchUser(id: string) {
   try {
     const response = await fetch(`/api/users/${id}`)
     if (!response.ok) {
-      throw new ErrorX({
-        message: `Failed to fetch user: ${response.statusText}`,
+      throw new ErrorX(`Failed to fetch user: ${response.statusText}`, {
         code: `HTTP_${response.status}`,
         uiMessage: 'Unable to load user data',
         metadata: { status: response.status, statusText: response.statusText }
@@ -276,7 +300,7 @@ async function fetchUser(id: string) {
     return response.json()
   } catch (error) {
     // Convert any error to ErrorX and add context
-    const errorX = ErrorX.toErrorX(error)
+    const errorX = new ErrorX(error)
     throw errorX.withMetadata({
       userId: id,
       operation: 'fetchUser',
@@ -294,8 +318,7 @@ try {
   })
 } catch (dbError) {
   // Create new ErrorX while preserving the original error in the cause chain
-  const error = new ErrorX({
-    message: 'User creation failed',
+  const error = new ErrorX('User creation failed', {
     name: 'UserCreationError',
     code: 'USER_CREATE_FAILED',
     uiMessage: 'Unable to create user account',
@@ -305,7 +328,7 @@ try {
       userData: { email: userData.email } // Don't log sensitive data
     }
   })
-  
+
   // Add more context while preserving the error chain
   throw error.withMetadata({
     requestId: generateRequestId(),
