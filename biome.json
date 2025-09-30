@@ -40,8 +40,8 @@
     "formatter": {
       "quoteStyle": "single",
       "trailingCommas": "es5",
-      "semicolons": "asNeeded",
-      "arrowParentheses": "asNeeded",
+      "semicolons": "always",
+      "arrowParentheses": "always",
       "quoteProperties": "asNeeded"
     }
   },

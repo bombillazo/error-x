@@ -1,4 +1,4 @@
-import type { ErrorXOptions } from './types.js'
+import type { ErrorXOptions } from './types.js';
 
 /**
  * Preset configurations for common errors organized by category.
@@ -386,4 +386,4 @@ export const PRESETS = {
       type: 'http',
     } satisfies ErrorXOptions,
   },
-} as const
+} as const;

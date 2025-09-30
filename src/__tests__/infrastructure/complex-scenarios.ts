@@ -1,6 +1,6 @@
-import { ErrorX } from '../../index'
-import { HandlingTargets } from '../../types'
-import * as asyncOperations from './async-operations'
+import { ErrorX } from '../../index';
+import { HandlingTargets } from '../../types';
+import * as asyncOperations from './async-operations';
 
 /**
  * Complex Scenarios - Advanced error wrapping and edge case testing
@@ -13,7 +13,7 @@ import * as asyncOperations from './async-operations'
 
 export function deepErrorChain(): never {
   try {
-    asyncOperations.instantiateAndProcess()
+    asyncOperations.instantiateAndProcess();
   } catch (error) {
     throw new ErrorX({
       message: 'Deep error chain from complex-scenarios.ts',
@@ -21,104 +21,104 @@ export function deepErrorChain(): never {
       code: 'DEEP_CHAIN',
       cause: error,
       metadata: { layer: 'file3', depth: 'maximum' },
-    })
+    });
   }
 }
 
 export async function complexAsyncErrorChain(): Promise<void> {
   try {
-    await asyncOperations.asyncChainWithTryCatch()
+    await asyncOperations.asyncChainWithTryCatch();
   } catch (error) {
     throw new ErrorX({
       message: 'Complex async error chain from complex-scenarios.ts',
       cause: error,
       actions: [{ action: 'notify', payload: { targets: [HandlingTargets.LOGGER] } }],
-    })
+    });
   }
 }
 
 export function errorSerializationTest(): never {
   try {
-    asyncOperations.generatorError()
+    asyncOperations.generatorError();
   } catch (error) {
     // Test that serialization/deserialization preserves stack traces
-    const errorX = ErrorX.toErrorX(error)
-    const serialized = errorX.toJSON()
-    const deserialized = ErrorX.fromJSON(serialized)
+    const errorX = ErrorX.toErrorX(error);
+    const serialized = errorX.toJSON();
+    const deserialized = ErrorX.fromJSON(serialized);
 
     throw new ErrorX({
       message: 'Error after serialization round-trip from complex-scenarios.ts',
       cause: deserialized,
-    })
+    });
   }
 }
 
 export async function multipleErrorWrapping(): Promise<void> {
   try {
-    await asyncOperations.promiseChainWithCatch()
+    await asyncOperations.promiseChainWithCatch();
   } catch (error) {
     // Wrap multiple times to test stack preservation
     const wrapped1 = new ErrorX({
       message: 'First wrap in complex-scenarios.ts',
       cause: error,
-    })
+    });
 
     const wrapped2 = new ErrorX({
       message: 'Second wrap in complex-scenarios.ts',
       cause: wrapped1,
-    })
+    });
 
     const wrapped3 = new ErrorX({
       message: 'Third wrap in complex-scenarios.ts',
       cause: wrapped2,
-    })
+    });
 
-    throw wrapped3
+    throw wrapped3;
   }
 }
 
 export async function withMetadataPreservation(): Promise<void> {
   try {
-    await asyncOperations.eventLoopError()
+    await asyncOperations.eventLoopError();
   } catch (error) {
     if (error instanceof ErrorX) {
       // Test that withMetadata preserves stack traces
       const enriched = error.withMetadata({
         enrichedIn: 'complex-scenarios.ts',
         originalStack: error.stack,
-      })
+      });
 
       throw new ErrorX({
         message: 'Error with metadata preservation from complex-scenarios.ts',
         cause: enriched,
-      })
+      });
     }
-    throw error
+    throw error;
   }
 }
 
 export async function stackCleaningTest(): Promise<void> {
   try {
-    await asyncOperations.nestedSyncAsyncMix()
+    await asyncOperations.nestedSyncAsyncMix();
   } catch (error) {
     if (error instanceof ErrorX) {
       // Test stack cleaning functionality
-      const cleaned = error.cleanStackTrace('asyncOperations.ts')
+      const cleaned = error.cleanStackTrace('asyncOperations.ts');
       throw new ErrorX({
         message: 'Error after stack cleaning from complex-scenarios.ts',
         cause: cleaned,
-      })
+      });
     }
-    throw error
+    throw error;
   }
 }
 
 export class ComplexErrorHandler {
-  private static instances = 0
-  private id: number
+  private static instances = 0;
+  private id: number;
 
   constructor() {
-    this.id = ++ComplexErrorHandler.instances
+    this.id = ++ComplexErrorHandler.instances;
   }
 
   async handleError(source: string): Promise<void> {
@@ -126,13 +126,13 @@ export class ComplexErrorHandler {
       switch (source) {
         // biome-ignore lint/suspicious/noFallthroughSwitchClause: This function throws
         case 'deep':
-          this.deepErrorChain()
+          this.deepErrorChain();
         // No break needed - function throws
         case 'async':
-          await this.complexAsyncErrorChain()
-          break
+          await this.complexAsyncErrorChain();
+          break;
         default:
-          await asyncOperations.parallelAsyncErrors()
+          await asyncOperations.parallelAsyncErrors();
       }
     } catch (error) {
       throw new ErrorX({
@@ -143,16 +143,16 @@ export class ComplexErrorHandler {
           source,
           handlerClass: 'ComplexErrorHandler',
         },
-      })
+      });
     }
   }
 
   private deepErrorChain(): never {
-    return deepErrorChain()
+    return deepErrorChain();
   }
 
   private async complexAsyncErrorChain(): Promise<void> {
-    return complexAsyncErrorChain()
+    return complexAsyncErrorChain();
   }
 }
 
@@ -161,42 +161,42 @@ export function recursiveErrorTest(depth = 0): never {
     throw new ErrorX({
       message: `Recursive error at depth ${depth} from complex-scenarios.ts`,
       metadata: { recursionDepth: depth },
-    })
+    });
   }
 
   try {
-    recursiveErrorTest(depth + 1)
+    recursiveErrorTest(depth + 1);
   } catch (error) {
     throw new ErrorX({
       message: `Recursive catch at depth ${depth} from complex-scenarios.ts`,
       cause: error,
       metadata: { currentDepth: depth },
-    })
+    });
   }
 }
 
 export function errorWithCircularReference(): never {
-  const obj: any = { name: 'circular' }
-  obj.self = obj
-  obj.nested = { parent: obj }
+  const obj: any = { name: 'circular' };
+  obj.self = obj;
+  obj.nested = { parent: obj };
 
   try {
-    asyncOperations.instantiateAndProcess()
+    asyncOperations.instantiateAndProcess();
   } catch (error) {
     throw new ErrorX({
       message: 'Error with circular reference from complex-scenarios.ts',
       cause: error,
       metadata: { circular: obj },
-    })
+    });
   }
 }
 
 export async function finalErrorTest(): Promise<void> {
-  const handler = new ComplexErrorHandler()
+  const handler = new ComplexErrorHandler();
 
   try {
     // Use the deep error chain to create maximum complexity
-    await handler.handleError('deep')
+    await handler.handleError('deep');
   } catch (error) {
     throw new ErrorX({
       message: 'Final error test from complex-scenarios.ts - maximum complexity',
@@ -212,6 +212,6 @@ export async function finalErrorTest(): Promise<void> {
         { action: 'notify', payload: { targets: ['banner'] } },
         { action: 'redirect', payload: { redirectURL: '/error-page' } },
       ],
-    })
+    });
   }
 }

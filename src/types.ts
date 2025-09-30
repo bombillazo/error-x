@@ -13,7 +13,7 @@
  *
  * @public
  */
-export type ErrorMetadata = Record<string, any>
+export type ErrorMetadata = Record<string, any>;
 
 /**
  * Predefined display targets for error notifications and UI feedback.
@@ -49,7 +49,7 @@ export enum HandlingTargets {
  *
  * @public
  */
-export type HandlingTarget = HandlingTargets | string
+export type HandlingTarget = HandlingTargets | string;
 
 /**
  * Action to display notifications in specified UI targets.
@@ -70,12 +70,12 @@ export type HandlingTarget = HandlingTargets | string
  * @public
  */
 export type NotifyAction = {
-  action: 'notify'
+  action: 'notify';
   payload: {
-    targets: HandlingTarget[]
-    [key: string]: any
-  }
-}
+    targets: HandlingTarget[];
+    [key: string]: any;
+  };
+};
 
 /**
  * Action to log out the current user when an error occurs.
@@ -95,11 +95,11 @@ export type NotifyAction = {
  * @public
  */
 export type LogoutAction = {
-  action: 'logout'
+  action: 'logout';
   payload?: {
-    [key: string]: any
-  }
-}
+    [key: string]: any;
+  };
+};
 
 /**
  * Action to redirect the user to a different URL when an error occurs.
@@ -120,12 +120,12 @@ export type LogoutAction = {
  * @public
  */
 export type RedirectAction = {
-  action: 'redirect'
+  action: 'redirect';
   payload: {
-    redirectURL: string
-    [key: string]: any
-  }
-}
+    redirectURL: string;
+    [key: string]: any;
+  };
+};
 
 /**
  * Custom action type for application-specific actions.
@@ -158,9 +158,9 @@ export type RedirectAction = {
  * @public
  */
 export type CustomAction = {
-  action: 'custom'
-  payload?: Record<string, any>
-}
+  action: 'custom';
+  payload?: Record<string, any>;
+};
 
 /**
  * Union type of all possible error actions.
@@ -169,7 +169,7 @@ export type CustomAction = {
  *
  * @public
  */
-export type ErrorAction = NotifyAction | LogoutAction | RedirectAction | CustomAction
+export type ErrorAction = NotifyAction | LogoutAction | RedirectAction | CustomAction;
 
 /**
  * Array of valid ErrorXOptions field names.
@@ -187,14 +187,14 @@ export const ERROR_X_OPTION_FIELDS = [
   'actions',
   'httpStatus',
   'type',
-] as const
+] as const;
 
 /**
  * Union type of all valid ErrorXOptions field names.
  *
  * @public
  */
-export type ErrorXOptionField = (typeof ERROR_X_OPTION_FIELDS)[number]
+export type ErrorXOptionField = (typeof ERROR_X_OPTION_FIELDS)[number];
 
 /**
  * Configuration options for creating an ErrorX instance.
@@ -227,24 +227,24 @@ export type ErrorXOptionField = (typeof ERROR_X_OPTION_FIELDS)[number]
  */
 export type ErrorXOptions = {
   /** Technical error message (default: 'An error occurred') */
-  message?: string
+  message?: string;
   /** Error type/name (default: 'Error') */
-  name?: string
+  name?: string;
   /** Error identifier code (auto-generated from name if not provided) */
-  code?: string | number
+  code?: string | number;
   /** User-friendly message for UI display (default: undefined) */
-  uiMessage?: string | undefined
+  uiMessage?: string | undefined;
   /** Original error that caused this error (preserves error chain) */
-  cause?: Error | unknown
+  cause?: Error | unknown;
   /** Additional context and debugging information (default: undefined) */
-  metadata?: ErrorMetadata
+  metadata?: ErrorMetadata;
   /** Actions to perform when this error occurs (default: undefined) */
-  actions?: ErrorAction[]
+  actions?: ErrorAction[];
   /** HTTP status code (100-599) for HTTP-related errors (default: undefined) */
-  httpStatus?: number | undefined
+  httpStatus?: number | undefined;
   /** Error type for categorization */
-  type?: string | undefined
-}
+  type?: string | undefined;
+};
 
 /**
  * JSON-serializable representation of an ErrorX instance.
@@ -276,25 +276,25 @@ export type ErrorXOptions = {
  */
 export type SerializableError = {
   /** Error type/name */
-  name: string
+  name: string;
   /** Technical error message */
-  message: string
+  message: string;
   /** Error identifier code */
-  code: string
+  code: string;
   /** User-friendly message for UI display */
-  uiMessage: string | undefined
+  uiMessage: string | undefined;
   /** Stack trace (optional) */
-  stack?: string
+  stack?: string;
   /** Additional context and debugging information */
-  metadata: ErrorMetadata | undefined
+  metadata: ErrorMetadata | undefined;
   /** ISO timestamp when error was created */
-  timestamp: string
+  timestamp: string;
   /** Actions to perform when this error occurs */
-  actions?: ErrorAction[]
+  actions?: ErrorAction[];
   /** Serialized cause error (for error chaining) */
-  cause?: SerializableError
+  cause?: SerializableError;
   /** HTTP status code for HTTP-related errors */
-  httpStatus?: number
+  httpStatus?: number;
   /** Error type for categorization */
-  type?: string
-}
+  type?: string;
+};

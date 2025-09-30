@@ -1,15 +1,15 @@
-import safeStringify from 'safe-stringify'
+import safeStringify from 'safe-stringify';
 import type {
   ErrorAction,
   ErrorMetadata,
   ErrorXOptionField,
   ErrorXOptions,
   SerializableError,
-} from './types.js'
-import { ERROR_X_OPTION_FIELDS } from './types.js'
+} from './types.js';
+import { ERROR_X_OPTION_FIELDS } from './types.js';
 
 // Use the single source of truth for accepted fields
-const acceptedFields = new Set(ERROR_X_OPTION_FIELDS)
+const acceptedFields = new Set(ERROR_X_OPTION_FIELDS);
 
 /**
  * Enhanced Error class with rich metadata, type-safe error handling, and intelligent error conversion.
@@ -33,19 +33,19 @@ const acceptedFields = new Set(ERROR_X_OPTION_FIELDS)
  */
 export class ErrorX extends Error {
   /** Error identifier code, auto-generated from name if not provided */
-  public readonly code: string
+  public readonly code: string;
   /** User-friendly message suitable for display in UI */
-  public readonly uiMessage: string | undefined
+  public readonly uiMessage: string | undefined;
   /** Additional context and metadata associated with the error */
-  public readonly metadata: ErrorMetadata | undefined
+  public readonly metadata: ErrorMetadata | undefined;
   /** Timestamp when the error was created */
-  public readonly timestamp: Date
+  public readonly timestamp: Date;
   /** Error actions for UI behavior and handling */
-  public readonly actions: ErrorAction[] | undefined
+  public readonly actions: ErrorAction[] | undefined;
   /** HTTP status code (100-599) for HTTP-related errors */
-  public readonly httpStatus: number | undefined
+  public readonly httpStatus: number | undefined;
   /** Error type for categorization */
-  public readonly type: string | undefined
+  public readonly type: string | undefined;
 
   /**
    * Creates a new ErrorX instance with enhanced error handling capabilities.
@@ -88,7 +88,7 @@ export class ErrorX extends Error {
     messageOrOptions?: string | ErrorXOptions | unknown,
     additionalOptions?: Partial<ErrorXOptions>
   ) {
-    let options: ErrorXOptions = {}
+    let options: ErrorXOptions = {};
 
     // Handle different input types
     if (typeof messageOrOptions === 'string') {
@@ -96,39 +96,39 @@ export class ErrorX extends Error {
       options = {
         message: messageOrOptions,
         ...additionalOptions,
-      }
+      };
     } else if (ErrorX.isErrorXOptions(messageOrOptions)) {
       // Valid ErrorXOptions object - use directly
-      options = messageOrOptions
+      options = messageOrOptions;
     } else if (messageOrOptions != null) {
       // Unknown input - convert using smart conversion
-      options = ErrorX.convertUnknownToOptions(messageOrOptions)
+      options = ErrorX.convertUnknownToOptions(messageOrOptions);
     }
     // else: undefined/null - use empty options object
 
-    const formattedMessage = ErrorX.formatMessage(options.message)
-    super(formattedMessage, { cause: options.cause })
+    const formattedMessage = ErrorX.formatMessage(options.message);
+    super(formattedMessage, { cause: options.cause });
 
-    this.name = options.name ?? ErrorX.getDefaultName()
+    this.name = options.name ?? ErrorX.getDefaultName();
     this.code =
-      options.code != null ? String(options.code) : ErrorX.generateDefaultCode(options.name)
-    this.uiMessage = options.uiMessage
-    this.metadata = options.metadata
-    this.actions = options.actions
-    this.httpStatus = ErrorX.validateHttpStatus(options.httpStatus)
-    this.type = ErrorX.validateType(options.type)
-    this.timestamp = new Date()
+      options.code != null ? String(options.code) : ErrorX.generateDefaultCode(options.name);
+    this.uiMessage = options.uiMessage;
+    this.metadata = options.metadata;
+    this.actions = options.actions;
+    this.httpStatus = ErrorX.validateHttpStatus(options.httpStatus);
+    this.type = ErrorX.validateType(options.type);
+    this.timestamp = new Date();
 
     // Handle stack trace preservation
     if (options.cause instanceof Error) {
-      this.stack = ErrorX.preserveOriginalStack(options.cause, this)
+      this.stack = ErrorX.preserveOriginalStack(options.cause, this);
     } else {
       // Node.js specific stack trace capture for clean stack
       if (typeof Error.captureStackTrace === 'function') {
-        Error.captureStackTrace(this, this.constructor)
+        Error.captureStackTrace(this, this.constructor);
       }
       // Clean the stack to remove ErrorX constructor noise
-      this.stack = ErrorX.cleanStack(this.stack)
+      this.stack = ErrorX.cleanStack(this.stack);
     }
   }
 
@@ -137,7 +137,7 @@ export class ErrorX extends Error {
    * @returns Default error name 'Error'
    */
   private static getDefaultName(): string {
-    return 'Error'
+    return 'Error';
   }
 
   /**
@@ -148,17 +148,17 @@ export class ErrorX extends Error {
    */
   private static validateHttpStatus(status?: number): number | undefined {
     if (status === undefined || status === null) {
-      return undefined
+      return undefined;
     }
 
-    const statusNum = Number(status)
+    const statusNum = Number(status);
 
     // Validate status code is a number and within valid HTTP range
     if (Number.isNaN(statusNum) || statusNum < 100 || statusNum > 599) {
-      return undefined
+      return undefined;
     }
 
-    return Math.floor(statusNum)
+    return Math.floor(statusNum);
   }
 
   /**
@@ -169,17 +169,17 @@ export class ErrorX extends Error {
    */
   private static validateType(type?: string): string | undefined {
     if (type === undefined || type === null) {
-      return undefined
+      return undefined;
     }
 
-    const typeStr = String(type).trim()
+    const typeStr = String(type).trim();
 
     // Return undefined for empty strings
     if (typeStr === '') {
-      return undefined
+      return undefined;
     }
 
-    return typeStr
+    return typeStr;
   }
 
   /**
@@ -191,25 +191,25 @@ export class ErrorX extends Error {
    */
   public static isErrorXOptions(value: unknown): value is ErrorXOptions {
     if (value == null || typeof value !== 'object' || Array.isArray(value)) {
-      return false
+      return false;
     }
 
     // If it's an Error instance, it's not ErrorXOptions
     if (value instanceof Error) {
-      return false
+      return false;
     }
 
-    const obj = value as Record<string, unknown>
-    const keys = Object.keys(obj)
+    const obj = value as Record<string, unknown>;
+    const keys = Object.keys(obj);
 
     // Empty object is valid ErrorXOptions
     if (keys.length === 0) {
-      return true
+      return true;
     }
 
     // Check if all keys are in the accepted fields
     // If there's any key that's not accepted, it's not ErrorXOptions
-    return keys.every(key => acceptedFields.has(key as ErrorXOptionField))
+    return keys.every((key) => acceptedFields.has(key as ErrorXOptionField));
   }
 
   /**
@@ -227,14 +227,14 @@ export class ErrorX extends Error {
    * ```
    */
   private static generateDefaultCode(name?: string): string {
-    if (!name) return 'ERROR'
+    if (!name) return 'ERROR';
 
     // Convert camelCase/PascalCase to UPPER_SNAKE_CASE
     return name
       .replace(/([a-z])([A-Z])/g, '$1_$2') // Add underscore between camelCase
       .replace(/\s+/g, '_') // Replace spaces with underscores
       .replace(/[^a-zA-Z0-9_]/g, '') // Remove special characters
-      .toUpperCase()
+      .toUpperCase();
   }
 
   /**
@@ -246,17 +246,17 @@ export class ErrorX extends Error {
    * @returns Combined stack trace with new error message and original stack
    */
   private static preserveOriginalStack(originalError: Error, newError: Error): string {
-    if (!originalError.stack) return newError.stack || ''
+    if (!originalError.stack) return newError.stack || '';
 
     // Get the new error's first line (error name + message)
-    const newErrorFirstLine = `${newError.name}: ${newError.message}`
+    const newErrorFirstLine = `${newError.name}: ${newError.message}`;
 
     // Get original stack lines (skip the first line which is the original error message)
-    const originalStackLines = originalError.stack.split('\n')
-    const originalStackTrace = originalStackLines.slice(1)
+    const originalStackLines = originalError.stack.split('\n');
+    const originalStackTrace = originalStackLines.slice(1);
 
     // Combine new error message with original stack trace
-    return [newErrorFirstLine, ...originalStackTrace].join('\n')
+    return [newErrorFirstLine, ...originalStackTrace].join('\n');
   }
 
   /**
@@ -267,10 +267,10 @@ export class ErrorX extends Error {
    * @returns Cleaned stack trace without ErrorX internal calls
    */
   private static cleanStack(stack?: string): string {
-    if (!stack) return ''
+    if (!stack) return '';
 
-    const stackLines = stack.split('\n')
-    const cleanedLines: string[] = []
+    const stackLines = stack.split('\n');
+    const cleanedLines: string[] = [];
 
     for (const line of stackLines) {
       // Skip lines that contain ErrorX constructor or internal methods
@@ -281,12 +281,12 @@ export class ErrorX extends Error {
         line.includes('error-x/dist/') ||
         line.includes('error-x/src/error.ts')
       ) {
-        continue
+        continue;
       }
-      cleanedLines.push(line)
+      cleanedLines.push(line);
     }
 
-    return cleanedLines.join('\n')
+    return cleanedLines.join('\n');
   }
 
   /**
@@ -304,17 +304,17 @@ export class ErrorX extends Error {
    * ```
    */
   private static processErrorStack(error: Error, delimiter: string): string {
-    let stack = error.stack ?? ''
-    const stackLines = stack.split('\n')
+    let stack = error.stack ?? '';
+    const stackLines = stack.split('\n');
 
     // Find the index of the first line containing the delimiter
-    const delimiterIndex = stackLines.findIndex(line => line.includes(delimiter))
+    const delimiterIndex = stackLines.findIndex((line) => line.includes(delimiter));
 
     // If the delimiter is found, return all lines after it
     if (delimiterIndex !== -1) {
-      stack = stackLines.slice(delimiterIndex + 1).join('\n')
+      stack = stackLines.slice(delimiterIndex + 1).join('\n');
     }
-    return stack
+    return stack;
   }
 
   /**
@@ -333,26 +333,26 @@ export class ErrorX extends Error {
    */
   private static formatMessage(message?: string): string {
     if (!message || typeof message !== 'string' || !message.trim()) {
-      return 'An error occurred'
+      return 'An error occurred';
     }
 
     // Split by sentences and capitalize each
     let formatted = message
       .split('. ')
-      .map(sentence => {
-        const trimmed = sentence.trim()
-        if (!trimmed) return trimmed
-        return trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
+      .map((sentence) => {
+        const trimmed = sentence.trim();
+        if (!trimmed) return trimmed;
+        return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
       })
-      .join('. ')
+      .join('. ');
 
     // Add period at the end if it doesn't have proper punctuation
-    const endsWithPunctuation = /[.!?)\]]$/.test(formatted)
+    const endsWithPunctuation = /[.!?)\]]$/.test(formatted);
     if (!endsWithPunctuation) {
-      formatted = `${formatted}.`
+      formatted = `${formatted}.`;
     }
 
-    return formatted
+    return formatted;
   }
 
   /**
@@ -386,17 +386,17 @@ export class ErrorX extends Error {
       metadata: { ...(this.metadata ?? {}), ...additionalMetadata },
       httpStatus: this.httpStatus,
       type: this.type,
-    }
+    };
     if (this.actions) {
-      options.actions = this.actions
+      options.actions = this.actions;
     }
-    const newError = new ErrorX(options)
+    const newError = new ErrorX(options);
 
     // Preserve the original stack trace
     if (this.stack) {
-      newError.stack = this.stack
+      newError.stack = this.stack;
     }
-    return newError
+    return newError;
   }
 
   /**
@@ -418,7 +418,7 @@ export class ErrorX extends Error {
    * ```
    */
   public static isErrorX(value: unknown): value is ErrorX {
-    return value instanceof ErrorX
+    return value instanceof ErrorX;
   }
 
   /**
@@ -431,88 +431,89 @@ export class ErrorX extends Error {
    * @internal
    */
   private static convertUnknownToOptions(error: unknown): ErrorXOptions {
-    let name = ''
-    let message = ''
-    let code = ''
-    let uiMessage = ''
-    let cause: unknown
-    let metadata: ErrorMetadata = {}
-    let actions: ErrorAction[] | undefined
-    let httpStatus: number | undefined
-    let type: string | undefined
+    let name = '';
+    let message = '';
+    let code = '';
+    let uiMessage = '';
+    let cause: unknown;
+    let metadata: ErrorMetadata = {};
+    let actions: ErrorAction[] | undefined;
+    let httpStatus: number | undefined;
+    let type: string | undefined;
 
     if (error) {
       if (typeof error === 'string') {
-        message = error
-        metadata = { originalError: error }
+        message = error;
+        metadata = { originalError: error };
       } else if (error instanceof Error) {
-        name = error.name
-        message = error.message
-        cause = error.cause
+        name = error.name;
+        message = error.message;
+        cause = error.cause;
       } else if (typeof error === 'object') {
         // Extract name from various properties
-        if ('name' in error && error.name) name = String(error.name)
-        else if ('title' in error && error.title) name = String(error.title)
+        if ('name' in error && error.name) name = String(error.name);
+        else if ('title' in error && error.title) name = String(error.title);
 
         // Extract message from various properties
-        if ('message' in error && error.message) message = String(error.message)
-        else if ('details' in error && error.details) message = String(error.details)
-        else if ('text' in error && error.text) message = String(error.text)
-        else if ('info' in error && error.info) message = String(error.info)
-        else if ('statusText' in error && error.statusText) message = String(error.statusText)
-        else if ('error' in error && error.error) message = String(error.error)
-        else if ('errorMessage' in error && error.errorMessage) message = String(error.errorMessage)
+        if ('message' in error && error.message) message = String(error.message);
+        else if ('details' in error && error.details) message = String(error.details);
+        else if ('text' in error && error.text) message = String(error.text);
+        else if ('info' in error && error.info) message = String(error.info);
+        else if ('statusText' in error && error.statusText) message = String(error.statusText);
+        else if ('error' in error && error.error) message = String(error.error);
+        else if ('errorMessage' in error && error.errorMessage)
+          message = String(error.errorMessage);
 
         // Extract code
-        if ('code' in error && error.code) code = String(error.code)
+        if ('code' in error && error.code) code = String(error.code);
 
         // Extract UI message
-        if ('uiMessage' in error && error.uiMessage) uiMessage = String(error.uiMessage)
-        else if ('userMessage' in error && error.userMessage) uiMessage = String(error.userMessage)
+        if ('uiMessage' in error && error.uiMessage) uiMessage = String(error.uiMessage);
+        else if ('userMessage' in error && error.userMessage) uiMessage = String(error.userMessage);
 
         // Extract actions
         if ('actions' in error && Array.isArray(error.actions)) {
-          actions = error.actions as ErrorAction[]
+          actions = error.actions as ErrorAction[];
         }
 
-        let _httpStatus: unknown
+        let _httpStatus: unknown;
         // Extract HTTP status
         if ('httpStatus' in error) {
-          _httpStatus = error.httpStatus
+          _httpStatus = error.httpStatus;
         } else if ('status' in error) {
-          _httpStatus = (error as any).status
+          _httpStatus = (error as any).status;
         } else if ('statusCode' in error) {
-          _httpStatus = (error as any).statusCode
+          _httpStatus = (error as any).statusCode;
         }
         if (_httpStatus !== undefined && _httpStatus !== null) {
-          const num = typeof _httpStatus === 'number' ? _httpStatus : Number(_httpStatus)
-          httpStatus = Number.isNaN(num) ? undefined : num
+          const num = typeof _httpStatus === 'number' ? _httpStatus : Number(_httpStatus);
+          httpStatus = Number.isNaN(num) ? undefined : num;
         }
 
         // Extract type
         if ('type' in error && error.type) {
-          type = String(error.type).trim()
+          type = String(error.type).trim();
         }
 
         // Store original object as metadata if it has additional properties
-        metadata = { originalError: error }
+        metadata = { originalError: error };
       }
     }
 
     const options: ErrorXOptions = {
       message: message || 'Unknown error occurred',
-    }
+    };
 
-    if (name) options.name = name
-    if (code) options.code = code
-    if (uiMessage) options.uiMessage = uiMessage
-    if (cause) options.cause = cause
-    if (Object.keys(metadata).length > 0) options.metadata = metadata
-    if (actions && actions.length > 0) options.actions = actions
-    if (httpStatus) options.httpStatus = ErrorX.validateHttpStatus(httpStatus)
-    if (type) options.type = ErrorX.validateType(type)
+    if (name) options.name = name;
+    if (code) options.code = code;
+    if (uiMessage) options.uiMessage = uiMessage;
+    if (cause) options.cause = cause;
+    if (Object.keys(metadata).length > 0) options.metadata = metadata;
+    if (actions && actions.length > 0) options.actions = actions;
+    if (httpStatus) options.httpStatus = ErrorX.validateHttpStatus(httpStatus);
+    if (type) options.type = ErrorX.validateType(type);
 
-    return options
+    return options;
   }
 
   /**
@@ -540,10 +541,10 @@ export class ErrorX extends Error {
    * ```
    */
   public static toErrorX(error: unknown): ErrorX {
-    if (error instanceof ErrorX) return error
+    if (error instanceof ErrorX) return error;
 
-    const options = ErrorX.convertUnknownToOptions(error)
-    return new ErrorX(options)
+    const options = ErrorX.convertUnknownToOptions(error);
+    return new ErrorX(options);
   }
 
   /**
@@ -562,7 +563,7 @@ export class ErrorX extends Error {
    * ```
    */
   public static processStack(error: Error, delimiter: string): string {
-    return ErrorX.processErrorStack(error, delimiter)
+    return ErrorX.processErrorStack(error, delimiter);
   }
 
   /**
@@ -589,18 +590,18 @@ export class ErrorX extends Error {
         cause: this.cause,
         httpStatus: this.httpStatus,
         type: this.type,
-      }
+      };
       if (this.metadata !== undefined) {
-        options.metadata = this.metadata
+        options.metadata = this.metadata;
       }
       if (this.actions) {
-        options.actions = this.actions
+        options.actions = this.actions;
       }
-      const newError = new ErrorX(options)
-      newError.stack = ErrorX.processErrorStack(this, delimiter)
-      return newError
+      const newError = new ErrorX(options);
+      newError.stack = ErrorX.processErrorStack(this, delimiter);
+      return newError;
     }
-    return this
+    return this;
   }
 
   /**
@@ -623,33 +624,33 @@ export class ErrorX extends Error {
    * ```
    */
   public toString(): string {
-    const parts = []
+    const parts = [];
 
     // Add name and message
-    parts.push(`${this.name}: ${this.message}`)
+    parts.push(`${this.name}: ${this.message}`);
 
     // Add code if different from default
     if (this.code && this.code !== 'ERROR') {
-      parts.push(`[${this.code}]`)
+      parts.push(`[${this.code}]`);
     }
 
     // Add timestamp
-    parts.push(`(${this.timestamp.toISOString()})`)
+    parts.push(`(${this.timestamp.toISOString()})`);
 
     // Add metadata if present
     if (this.metadata && Object.keys(this.metadata).length > 0) {
-      const metadataStr = safeStringify(this.metadata)
-      parts.push(`metadata: ${metadataStr}`)
+      const metadataStr = safeStringify(this.metadata);
+      parts.push(`metadata: ${metadataStr}`);
     }
 
-    let result = parts.join(' ')
+    let result = parts.join(' ');
 
     // Add stack trace if available
     if (this.stack) {
-      result += `\n${this.stack}`
+      result += `\n${this.stack}`;
     }
 
-    return result
+    return result;
   }
 
   /**
@@ -676,7 +677,7 @@ export class ErrorX extends Error {
     // Use safe stringify to parse the metadata and remove circular references
     const safeMetadata: ErrorMetadata | undefined = this.metadata
       ? JSON.parse(safeStringify(this.metadata))
-      : undefined
+      : undefined;
 
     const serialized: SerializableError = {
       name: this.name,
@@ -685,34 +686,34 @@ export class ErrorX extends Error {
       uiMessage: this.uiMessage,
       metadata: safeMetadata,
       timestamp: this.timestamp.toISOString(),
-    }
+    };
 
     // Include actions if present
     if (this.actions && this.actions.length > 0) {
       // Use safe stringify to parse the actions and remove circular references
-      const stringified = safeStringify(this.actions)
-      serialized.actions = JSON.parse(stringified)
+      const stringified = safeStringify(this.actions);
+      serialized.actions = JSON.parse(stringified);
     }
 
     // Include httpStatus if present
     if (this.httpStatus !== undefined) {
-      serialized.httpStatus = this.httpStatus
+      serialized.httpStatus = this.httpStatus;
     }
 
     // Include type if present
     if (this.type !== undefined) {
-      serialized.type = this.type
+      serialized.type = this.type;
     }
 
     // Include stack if available
     if (this.stack) {
-      serialized.stack = this.stack
+      serialized.stack = this.stack;
     }
 
     // Recursively serialize cause if it's an ErrorX
     if (this.cause) {
       if (this.cause instanceof ErrorX) {
-        serialized.cause = this.cause.toJSON()
+        serialized.cause = this.cause.toJSON();
       } else if (this.cause instanceof Error) {
         const causeData: SerializableError = {
           name: this.cause.name,
@@ -721,15 +722,15 @@ export class ErrorX extends Error {
           uiMessage: undefined,
           metadata: {},
           timestamp: new Date().toISOString(),
-        }
+        };
         if (this.cause.stack) {
-          causeData.stack = this.cause.stack
+          causeData.stack = this.cause.stack;
         }
-        serialized.cause = causeData
+        serialized.cause = causeData;
       }
     }
 
-    return serialized
+    return serialized;
   }
 
   /**
@@ -762,35 +763,35 @@ export class ErrorX extends Error {
       uiMessage: serialized.uiMessage,
       httpStatus: serialized.httpStatus,
       type: serialized.type,
-    }
+    };
     if (serialized.metadata !== undefined) {
-      options.metadata = serialized.metadata
+      options.metadata = serialized.metadata;
     }
 
     if (serialized.actions && serialized.actions.length > 0) {
-      options.actions = serialized.actions
+      options.actions = serialized.actions;
     }
 
-    const error = new ErrorX(options)
+    const error = new ErrorX(options);
 
     // Restore stack and timestamp
     if (serialized.stack) {
-      error.stack = serialized.stack
+      error.stack = serialized.stack;
     }
     // Use Object.defineProperty to set readonly properties
     Object.defineProperty(error, 'timestamp', {
       value: new Date(serialized.timestamp),
       writable: false,
-    })
+    });
 
     // Restore cause chain
     if (serialized.cause) {
       Object.defineProperty(error, 'cause', {
         value: ErrorX.fromJSON(serialized.cause),
         writable: false,
-      })
+      });
     }
 
-    return error
+    return error;
   }
 }
