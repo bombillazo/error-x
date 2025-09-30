@@ -487,12 +487,12 @@ export class ErrorX extends Error {
         }
         if (_httpStatus !== undefined && _httpStatus !== null) {
           const num = typeof _httpStatus === 'number' ? _httpStatus : Number(_httpStatus);
-          httpStatus = Number.isNaN(num) ? undefined : num;
+          httpStatus = ErrorX.validateHttpStatus(num);
         }
 
         // Extract type
         if ('type' in error && error.type) {
-          type = String(error.type).trim();
+          type = ErrorX.validateType(String(error.type));
         }
 
         // Store original object as metadata if it has additional properties
@@ -510,8 +510,8 @@ export class ErrorX extends Error {
     if (cause) options.cause = cause;
     if (Object.keys(metadata).length > 0) options.metadata = metadata;
     if (actions && actions.length > 0) options.actions = actions;
-    if (httpStatus) options.httpStatus = ErrorX.validateHttpStatus(httpStatus);
-    if (type) options.type = ErrorX.validateType(type);
+    if (httpStatus) options.httpStatus = httpStatus;
+    if (type) options.type = type;
 
     return options;
   }
