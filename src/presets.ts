@@ -2,27 +2,127 @@ import type { ErrorXOptions } from './types.js';
 
 /**
  * Preset configurations for common errors organized by category.
- * Each preset includes httpStatus (for HTTP errors), code, name, message, and uiMessage.
  *
- * @example
+ * ## Features
+ * - **Pre-configured error templates** for common HTTP status codes (400-511)
+ * - **Type-safe** with TypeScript support
+ * - **Fully customizable** via destructuring and override pattern
+ * - **User-friendly messages** included for all presets
+ * - **Categorized by type** - all HTTP presets include `type: 'http'`
+ *
+ * ## Available Categories
+ * - **HTTP**: Common HTTP status codes (4xx client errors, 5xx server errors)
+ *
+ * ## Usage Patterns
+ *
+ * ### 1. Direct Usage
+ * Use a preset as-is without any modifications:
  * ```typescript
- * import { ErrorX, ErrorPresets } from '@bombillazo/error-x'
+ * import { ErrorX, PRESETS } from '@bombillazo/error-x'
  *
- * // Use preset directly
- * const error = new ErrorX(ErrorPresets.HTTP.NOT_FOUND)
+ * throw new ErrorX(PRESETS.HTTP.NOT_FOUND)
+ * // Result: 404 error with default message and UI message
+ * ```
  *
- * // Override preset values
- * const error = new ErrorX({
- *   ...ErrorPresets.HTTP.NOT_FOUND,
+ * ### 2. Override Specific Fields
+ * Customize the error while keeping other preset values:
+ * ```typescript
+ * throw new ErrorX({
+ *   ...PRESETS.HTTP.NOT_FOUND,
  *   message: 'User not found',
  *   metadata: { userId: 123 }
  * })
+ * // Result: 404 error with custom message but keeps httpStatus, code, name, uiMessage, type
+ * ```
  *
- * // Use with additional options
- * const error = new ErrorX({
- *   ...ErrorPresets.HTTP.UNAUTHORIZED,
- *   actions: [{ action: 'redirect', payload: { redirectURL: '/login' } }]
+ * ### 3. Add Metadata and Actions
+ * Enhance presets with additional context and behaviors:
+ * ```typescript
+ * throw new ErrorX({
+ *   ...PRESETS.HTTP.UNAUTHORIZED,
+ *   metadata: { attemptedAction: 'viewProfile', userId: 456 },
+ *   actions: [
+ *     { action: 'logout', payload: { clearStorage: true } },
+ *     { action: 'redirect', payload: { redirectURL: '/login' } }
+ *   ]
  * })
+ * ```
+ *
+ * ### 4. Add Error Cause
+ * Chain errors by adding a cause:
+ * ```typescript
+ * try {
+ *   // some operation
+ * } catch (originalError) {
+ *   throw new ErrorX({
+ *     ...PRESETS.HTTP.INTERNAL_SERVER_ERROR,
+ *     cause: originalError,
+ *     metadata: { operation: 'database-query' }
+ *   })
+ * }
+ * ```
+ *
+ * ## Common HTTP Presets
+ *
+ * ### 4xx Client Errors
+ * - `BAD_REQUEST` (400) - Invalid request data
+ * - `UNAUTHORIZED` (401) - Authentication required
+ * - `FORBIDDEN` (403) - Insufficient permissions
+ * - `NOT_FOUND` (404) - Resource not found
+ * - `METHOD_NOT_ALLOWED` (405) - HTTP method not allowed
+ * - `CONFLICT` (409) - Resource conflict
+ * - `UNPROCESSABLE_ENTITY` (422) - Validation failed
+ * - `TOO_MANY_REQUESTS` (429) - Rate limit exceeded
+ *
+ * ### 5xx Server Errors
+ * - `INTERNAL_SERVER_ERROR` (500) - Unexpected server error
+ * - `NOT_IMPLEMENTED` (501) - Feature not implemented
+ * - `BAD_GATEWAY` (502) - Upstream server error
+ * - `SERVICE_UNAVAILABLE` (503) - Service temporarily down
+ * - `GATEWAY_TIMEOUT` (504) - Upstream timeout
+ *
+ * @example
+ * ```typescript
+ * import { ErrorX, PRESETS } from '@bombillazo/error-x'
+ *
+ * // API endpoint example
+ * app.get('/users/:id', async (req, res) => {
+ *   const user = await db.users.findById(req.params.id)
+ *
+ *   if (!user) {
+ *     throw new ErrorX({
+ *       ...PRESETS.HTTP.NOT_FOUND,
+ *       message: 'User not found',
+ *       metadata: { userId: req.params.id }
+ *     })
+ *   }
+ *
+ *   res.json(user)
+ * })
+ *
+ * // Authentication middleware example
+ * const requireAuth = (req, res, next) => {
+ *   if (!req.user) {
+ *     throw new ErrorX({
+ *       ...PRESETS.HTTP.UNAUTHORIZED,
+ *       actions: [
+ *         { action: 'redirect', payload: { redirectURL: '/login' } }
+ *       ]
+ *     })
+ *   }
+ *   next()
+ * }
+ *
+ * // Rate limiting example
+ * if (isRateLimited(req.ip)) {
+ *   throw new ErrorX({
+ *     ...PRESETS.HTTP.TOO_MANY_REQUESTS,
+ *     metadata: {
+ *       ip: req.ip,
+ *       retryAfter: 60
+ *     }
+ *   })
+ * }
  * ```
  *
  * @public
