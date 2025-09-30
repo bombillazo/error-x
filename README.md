@@ -17,6 +17,7 @@ A smart, isomorphic, and satisfying error library for TypeScript applications. P
 - 📊 **Flexible metadata** for additional context
 - 🎛️ **Error handling options** for UI behavior and application actions
 - 📦 **Serialization/deserialization** support for network transfer and storage
+- 🎨 **Pre-configured error presets** for common HTTP status codes (400-511)
 
 ## Installation
 
@@ -236,6 +237,179 @@ const error = new ErrorX({
 })
 ```
 
+## Error Presets
+
+ErrorX provides pre-configured error templates for common scenarios, making it easy to create consistent, well-structured errors without repetition. All HTTP presets (400-511) are included with proper status codes, messages, and user-friendly text.
+
+### Features
+
+- ✅ **Pre-configured templates** with httpStatus, code, name, message, and uiMessage
+- ✅ **Type-safe** with full TypeScript support
+- ✅ **Fully customizable** via destructuring and override pattern
+- ✅ **Categorized by type** - all HTTP presets include `type: 'http'` for easy filtering
+- ✅ **User-friendly messages** included for all presets
+
+### Usage Patterns
+
+#### 1. Direct Usage
+
+Use a preset as-is without modifications:
+
+```typescript
+import { ErrorX, PRESETS } from '@bombillazo/error-x'
+
+// Simple usage
+throw new ErrorX(PRESETS.HTTP.NOT_FOUND)
+// Result: 404 error with default message and UI message
+```
+
+#### 2. Override Specific Fields
+
+Customize the error while keeping other preset values:
+
+```typescript
+throw new ErrorX({
+  ...PRESETS.HTTP.NOT_FOUND,
+  message: 'User not found',
+  metadata: { userId: 123 }
+})
+// Result: 404 error with custom message but keeps httpStatus, code, name, uiMessage, type
+```
+
+#### 3. Add Metadata and Actions
+
+Enhance presets with additional context and behaviors:
+
+```typescript
+throw new ErrorX({
+  ...PRESETS.HTTP.UNAUTHORIZED,
+  metadata: { attemptedAction: 'viewProfile', userId: 456 },
+  actions: [
+    { action: 'logout', payload: { clearStorage: true } },
+    { action: 'redirect', payload: { redirectURL: '/login' } }
+  ]
+})
+```
+
+#### 4. Add Error Cause
+
+Chain errors by adding a cause:
+
+```typescript
+try {
+  // some operation
+} catch (originalError) {
+  throw new ErrorX({
+    ...PRESETS.HTTP.INTERNAL_SERVER_ERROR,
+    cause: originalError,
+    metadata: { operation: 'database-query' }
+  })
+}
+```
+
+### Available HTTP Presets
+
+#### 4xx Client Errors
+
+| Preset | Status | Description |
+| ------ | ------ | ----------- |
+| BAD_REQUEST | 400 | Invalid request data |
+| UNAUTHORIZED | 401 | Authentication required |
+| PAYMENT_REQUIRED | 402 | Payment required to access resource |
+| FORBIDDEN | 403 | Insufficient permissions |
+| NOT_FOUND | 404 | Resource not found |
+| METHOD_NOT_ALLOWED | 405 | HTTP method not allowed |
+| NOT_ACCEPTABLE | 406 | Requested format not supported |
+| PROXY_AUTHENTICATION_REQUIRED | 407 | Proxy authentication required |
+| REQUEST_TIMEOUT | 408 | Request took too long |
+| CONFLICT | 409 | Resource conflict |
+| GONE | 410 | Resource no longer available |
+| LENGTH_REQUIRED | 411 | Missing length information |
+| PRECONDITION_FAILED | 412 | Required condition not met |
+| PAYLOAD_TOO_LARGE | 413 | Request payload too large |
+| URI_TOO_LONG | 414 | Request URL too long |
+| UNSUPPORTED_MEDIA_TYPE | 415 | File type not supported |
+| RANGE_NOT_SATISFIABLE | 416 | Requested range cannot be satisfied |
+| EXPECTATION_FAILED | 417 | Server cannot meet request requirements |
+| IM_A_TEAPOT | 418 | I'm a teapot (RFC 2324) |
+| UNPROCESSABLE_ENTITY | 422 | Validation failed |
+| LOCKED | 423 | Resource is locked |
+| FAILED_DEPENDENCY | 424 | Request failed due to dependency error |
+| TOO_EARLY | 425 | Request sent too early |
+| UPGRADE_REQUIRED | 426 | Upgrade required to continue |
+| PRECONDITION_REQUIRED | 428 | Required conditions missing |
+| TOO_MANY_REQUESTS | 429 | Rate limit exceeded |
+| REQUEST_HEADER_FIELDS_TOO_LARGE | 431 | Request headers too large |
+| UNAVAILABLE_FOR_LEGAL_REASONS | 451 | Content unavailable for legal reasons |
+
+#### 5xx Server Errors
+
+| Preset | Status | Description |
+| ------ | ------ | ----------- |
+| INTERNAL_SERVER_ERROR | 500 | Unexpected server error |
+| NOT_IMPLEMENTED | 501 | Feature not implemented |
+| BAD_GATEWAY | 502 | Upstream server error |
+| SERVICE_UNAVAILABLE | 503 | Service temporarily down |
+| GATEWAY_TIMEOUT | 504 | Upstream timeout |
+| HTTP_VERSION_NOT_SUPPORTED | 505 | HTTP version not supported |
+| VARIANT_ALSO_NEGOTIATES | 506 | Internal configuration error |
+| INSUFFICIENT_STORAGE | 507 | Insufficient storage |
+| LOOP_DETECTED | 508 | Infinite loop detected |
+| NOT_EXTENDED | 510 | Additional extensions required |
+| NETWORK_AUTHENTICATION_REQUIRED | 511 | Network authentication required |
+
+### Real-World Examples
+
+#### API Endpoint
+
+```typescript
+import { ErrorX, PRESETS } from '@bombillazo/error-x'
+
+app.get('/users/:id', async (req, res) => {
+  const user = await db.users.findById(req.params.id)
+
+  if (!user) {
+    throw new ErrorX({
+      ...PRESETS.HTTP.NOT_FOUND,
+      message: 'User not found',
+      metadata: { userId: req.params.id }
+    })
+  }
+
+  res.json(user)
+})
+```
+
+#### Authentication Middleware
+
+```typescript
+const requireAuth = (req, res, next) => {
+  if (!req.user) {
+    throw new ErrorX({
+      ...PRESETS.HTTP.UNAUTHORIZED,
+      actions: [
+        { action: 'redirect', payload: { redirectURL: '/login' } }
+      ]
+    })
+  }
+  next()
+}
+```
+
+#### Rate Limiting
+
+```typescript
+if (isRateLimited(req.ip)) {
+  throw new ErrorX({
+    ...PRESETS.HTTP.TOO_MANY_REQUESTS,
+    metadata: {
+      ip: req.ip,
+      retryAfter: 60
+    }
+  })
+}
+```
+
 ## Smart Features
 
 ### Auto Code Generation
@@ -246,7 +420,7 @@ Error codes are automatically generated from the error name:
 new ErrorX({ message: 'Failed', name: 'DatabaseError' })
 // code: 'DATABASE_ERROR'
 
-new ErrorX({ message: 'Failed', name: 'userAuthError' })  
+new ErrorX({ message: 'Failed', name: 'userAuthError' })
 // code: 'USER_AUTH_ERROR'
 
 new ErrorX({ message: 'Failed', name: 'API Timeout' })

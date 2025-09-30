@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ErrorX } from '../error.js';
 import { PRESETS } from '../presets.js';
 
-describe('ErrorPresets', () => {
+describe('PRESETS', () => {
   describe('Basic preset usage', () => {
     it('should create error with NOT_FOUND preset', () => {
       const error = new ErrorX(PRESETS.HTTP.NOT_FOUND);
