@@ -172,6 +172,29 @@ export type CustomAction = {
 export type ErrorAction = NotifyAction | LogoutAction | RedirectAction | CustomAction
 
 /**
+ * Array of valid ErrorXOptions field names.
+ * This serves as the single source of truth for both runtime validation and type checking.
+ *
+ * @internal
+ */
+export const ERROR_X_OPTION_FIELDS = [
+  'message',
+  'name',
+  'code',
+  'uiMessage',
+  'cause',
+  'metadata',
+  'actions',
+] as const
+
+/**
+ * Union type of all valid ErrorXOptions field names.
+ *
+ * @public
+ */
+export type ErrorXOptionField = (typeof ERROR_X_OPTION_FIELDS)[number]
+
+/**
  * Configuration options for creating an ErrorX instance.
  * All properties are optional with sensible defaults.
  *

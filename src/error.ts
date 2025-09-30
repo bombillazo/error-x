@@ -1,5 +1,12 @@
 import safeStringify from 'safe-stringify'
-import type { ErrorAction, ErrorMetadata, ErrorXOptions, SerializableError } from './types.js'
+import type {
+  ErrorAction,
+  ErrorMetadata,
+  ErrorXOptionField,
+  ErrorXOptions,
+  SerializableError,
+} from './types.js'
+import { ERROR_X_OPTION_FIELDS } from './types.js'
 
 /**
  * Enhanced Error class with rich metadata, type-safe error handling, and intelligent error conversion.
@@ -149,20 +156,12 @@ export class ErrorX extends Error {
       return true
     }
 
-    // Define all accepted ErrorXOptions field names
-    const acceptedFields = new Set([
-      'message',
-      'name',
-      'code',
-      'uiMessage',
-      'cause',
-      'metadata',
-      'actions',
-    ])
+    // Use the single source of truth for accepted fields
+    const acceptedFields = new Set(ERROR_X_OPTION_FIELDS)
 
     // Check if all keys are in the accepted fields
     // If there's any key that's not accepted, it's not ErrorXOptions
-    return keys.every(key => acceptedFields.has(key))
+    return keys.every(key => acceptedFields.has(key as ErrorXOptionField))
   }
 
   /**
