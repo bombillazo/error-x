@@ -44,6 +44,8 @@ export class ErrorX extends Error {
   public readonly actions: ErrorAction[] | undefined
   /** HTTP status code (100-599) for HTTP-related errors */
   public readonly httpStatus: number | undefined
+  /** Error type for categorization */
+  public readonly type: string | undefined
 
   /**
    * Creates a new ErrorX instance with enhanced error handling capabilities.
@@ -114,6 +116,7 @@ export class ErrorX extends Error {
     this.metadata = options.metadata
     this.actions = options.actions
     this.httpStatus = ErrorX.validateHttpStatus(options.httpStatus)
+    this.type = ErrorX.validateType(options.type)
     this.timestamp = new Date()
 
     // Handle stack trace preservation
@@ -156,6 +159,27 @@ export class ErrorX extends Error {
     }
 
     return Math.floor(statusNum)
+  }
+
+  /**
+   * Validates and normalizes the type field
+   *
+   * @param type - Type value to validate
+   * @returns Validated type string or undefined if invalid/empty
+   */
+  private static validateType(type?: string): string | undefined {
+    if (type === undefined || type === null) {
+      return undefined
+    }
+
+    const typeStr = String(type).trim()
+
+    // Return undefined for empty strings
+    if (typeStr === '') {
+      return undefined
+    }
+
+    return typeStr
   }
 
   /**
@@ -361,6 +385,7 @@ export class ErrorX extends Error {
       cause: this.cause,
       metadata: { ...(this.metadata ?? {}), ...additionalMetadata },
       httpStatus: this.httpStatus,
+      type: this.type,
     }
     if (this.actions) {
       options.actions = this.actions
@@ -414,6 +439,7 @@ export class ErrorX extends Error {
     let metadata: ErrorMetadata = {}
     let actions: ErrorAction[] | undefined
     let httpStatus: number | undefined
+    let type: string | undefined
 
     if (error) {
       if (typeof error === 'string') {
@@ -463,6 +489,11 @@ export class ErrorX extends Error {
           httpStatus = Number.isNaN(num) ? undefined : num
         }
 
+        // Extract type
+        if ('type' in error && error.type) {
+          type = String(error.type).trim()
+        }
+
         // Store original object as metadata if it has additional properties
         metadata = { originalError: error }
       }
@@ -479,6 +510,7 @@ export class ErrorX extends Error {
     if (Object.keys(metadata).length > 0) options.metadata = metadata
     if (actions && actions.length > 0) options.actions = actions
     if (httpStatus) options.httpStatus = ErrorX.validateHttpStatus(httpStatus)
+    if (type) options.type = ErrorX.validateType(type)
 
     return options
   }
@@ -556,6 +588,7 @@ export class ErrorX extends Error {
         uiMessage: this.uiMessage,
         cause: this.cause,
         httpStatus: this.httpStatus,
+        type: this.type,
       }
       if (this.metadata !== undefined) {
         options.metadata = this.metadata
@@ -666,6 +699,11 @@ export class ErrorX extends Error {
       serialized.httpStatus = this.httpStatus
     }
 
+    // Include type if present
+    if (this.type !== undefined) {
+      serialized.type = this.type
+    }
+
     // Include stack if available
     if (this.stack) {
       serialized.stack = this.stack
@@ -723,6 +761,7 @@ export class ErrorX extends Error {
       code: serialized.code,
       uiMessage: serialized.uiMessage,
       httpStatus: serialized.httpStatus,
+      type: serialized.type,
     }
     if (serialized.metadata !== undefined) {
       options.metadata = serialized.metadata
