@@ -36,44 +36,84 @@ export class ErrorX extends Error {
   /**
    * Creates a new ErrorX instance with enhanced error handling capabilities.
    *
-   * @param options - Configuration options for the error (optional)
-   * @param options.message - Technical error message (defaults to 'An error occurred')
-   * @param options.name - Error type/name (defaults to 'Error')
-   * @param options.code - Error identifier code (auto-generated from name if not provided)
-   * @param options.uiMessage - User-friendly message (defaults to undefined)
-   * @param options.cause - Original error that caused this error
-   * @param options.metadata - Additional context data (defaults to undefined)
-   * @param options.actions - Error actions for UI behavior and handling (defaults to undefined)
+   * @param messageOrOptions - Error message string, ErrorXOptions object, or any value to convert to ErrorX
+   * @param additionalOptions - Additional options when first parameter is a string (optional)
    *
    * @example
    * ```typescript
-   * // Create with full options
-   * const error = new ErrorX({
-   *   message: 'Database query failed',
+   * // Create with string message only
+   * const error1 = new ErrorX('Database query failed')
+   *
+   * // Create with string message and additional options
+   * const error2 = new ErrorX('Database query failed', {
    *   name: 'DatabaseError',
    *   code: 'DB_QUERY_FAILED',
    *   uiMessage: 'Unable to load data. Please try again.',
-   *   metadata: { query: 'SELECT * FROM users', timeout: 5000 },
+   *   metadata: { query: 'SELECT * FROM users', timeout: 5000 }
+   * })
+   *
+   * // Create with options object (backward compatible)
+   * const error3 = new ErrorX({
+   *   message: 'Database query failed',
+   *   name: 'DatabaseError',
+   *   code: 'DB_QUERY_FAILED',
    *   actions: [
-   *     {
-   *       action: 'notify',
-   *       payload: { targets: [HandlingTargets.TOAST] }
-   *     },
-   *     {
-   *       action: 'redirect',
-   *       payload: { redirectURL: '/dashboard', delay: 1000 }
-   *     }
+   *     { action: 'notify', payload: { targets: [HandlingTargets.TOAST] } }
    *   ]
    * })
    *
-   * // Create with minimal options
-   * const simpleError = new ErrorX({ message: 'Something failed' })
+   * // Create with unknown input (smart conversion)
+   * const apiError = { message: 'User not found', code: 404 }
+   * const error4 = new ErrorX(apiError)
    *
    * // Create with no options (uses defaults)
-   * const defaultError = new ErrorX()
+   * const error5 = new ErrorX()
    * ```
    */
-  constructor(options: ErrorXOptions = {}) {
+  constructor(
+    messageOrOptions?: string | ErrorXOptions | unknown,
+    additionalOptions?: Partial<ErrorXOptions>
+  ) {
+    let options: ErrorXOptions = {}
+
+    // Handle different input types
+    if (typeof messageOrOptions === 'string') {
+      // String message provided - merge with additional options
+      options = {
+        message: messageOrOptions,
+        ...additionalOptions,
+      }
+    } else if (
+      messageOrOptions != null &&
+      typeof messageOrOptions === 'object' &&
+      !Array.isArray(messageOrOptions)
+    ) {
+      // Check if it looks like ErrorXOptions (has at least one expected property)
+      const hasErrorXProperties =
+        'message' in messageOrOptions ||
+        'name' in messageOrOptions ||
+        'code' in messageOrOptions ||
+        'uiMessage' in messageOrOptions ||
+        'cause' in messageOrOptions ||
+        'metadata' in messageOrOptions ||
+        'actions' in messageOrOptions
+      const isEmptyObject = Object.keys(messageOrOptions).length === 0
+
+      if ((hasErrorXProperties || isEmptyObject) && !(messageOrOptions instanceof Error)) {
+        // Treat as ErrorXOptions
+        options = messageOrOptions as ErrorXOptions
+      } else {
+        // Convert unknown input using toErrorX logic
+        const converted = ErrorX.convertUnknownToOptions(messageOrOptions)
+        options = converted
+      }
+    } else if (messageOrOptions != null) {
+      // Non-object, non-string input - convert it
+      const converted = ErrorX.convertUnknownToOptions(messageOrOptions)
+      options = converted
+    }
+    // else: undefined/null - use empty options object
+
     const formattedMessage = ErrorX.formatMessage(options.message)
     super(formattedMessage, { cause: options.cause })
 
@@ -314,32 +354,15 @@ export class ErrorX extends Error {
   }
 
   /**
-   * Converts unknown input into an ErrorX instance with intelligent property extraction.
+   * Converts unknown input into ErrorXOptions with intelligent property extraction.
    * Handles strings, regular Error objects, API response objects, and unknown values.
+   * This is a private helper method used by both the constructor and toErrorX.
    *
-   * @param error - Value to convert to ErrorX
-   * @returns ErrorX instance with extracted properties
-   *
-   * @example
-   * ```typescript
-   * // Convert string error
-   * const error1 = ErrorX.toErrorX('Something went wrong')
-   *
-   * // Convert regular Error
-   * const error2 = ErrorX.toErrorX(new Error('Database failed'))
-   *
-   * // Convert API response object
-   * const apiError = {
-   *   message: 'User not found',
-   *   code: 'USER_404',
-   *   statusText: 'Not Found'
-   * }
-   * const error3 = ErrorX.toErrorX(apiError)
-   * ```
+   * @param error - Value to convert to ErrorXOptions
+   * @returns ErrorXOptions object with extracted properties
+   * @private
    */
-  public static toErrorX(error: unknown): ErrorX {
-    if (error instanceof ErrorX) return error
-
+  private static convertUnknownToOptions(error: unknown): ErrorXOptions {
     let name = ''
     let message = ''
     let code = ''
@@ -398,6 +421,37 @@ export class ErrorX extends Error {
     if (Object.keys(metadata).length > 0) options.metadata = metadata
     if (actions && actions.length > 0) options.actions = actions
 
+    return options
+  }
+
+  /**
+   * Converts unknown input into an ErrorX instance with intelligent property extraction.
+   * Handles strings, regular Error objects, API response objects, and unknown values.
+   *
+   * @param error - Value to convert to ErrorX
+   * @returns ErrorX instance with extracted properties
+   *
+   * @example
+   * ```typescript
+   * // Convert string error
+   * const error1 = ErrorX.toErrorX('Something went wrong')
+   *
+   * // Convert regular Error
+   * const error2 = ErrorX.toErrorX(new Error('Database failed'))
+   *
+   * // Convert API response object
+   * const apiError = {
+   *   message: 'User not found',
+   *   code: 'USER_404',
+   *   statusText: 'Not Found'
+   * }
+   * const error3 = ErrorX.toErrorX(apiError)
+   * ```
+   */
+  public static toErrorX(error: unknown): ErrorX {
+    if (error instanceof ErrorX) return error
+
+    const options = ErrorX.convertUnknownToOptions(error)
     return new ErrorX(options)
   }
 

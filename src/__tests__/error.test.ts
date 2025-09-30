@@ -29,6 +29,37 @@ describe('ErrorX', () => {
   })
 
   describe('Constructor', () => {
+    it('should create error with string message only', () => {
+      const error = new ErrorX('test error')
+
+      expect(error.message).toBe('Test error.')
+      expect(error.name).toBe('Error')
+      expect(error.code).toBe('ERROR')
+      expect(error.uiMessage).toBeUndefined()
+      expect(error.metadata).toBeUndefined()
+      expect(error.timestamp).toEqual(mockDate)
+      expect(error).toBeInstanceOf(Error)
+      expect(error).toBeInstanceOf(ErrorX)
+    })
+
+    it('should create error with string message and additional options', () => {
+      const metadata = { userId: 123, action: 'login' }
+
+      const error = new ErrorX('authentication failed', {
+        name: 'AuthError',
+        code: 'AUTH_FAILED',
+        uiMessage: 'Please check your credentials',
+        metadata,
+      })
+
+      expect(error.message).toBe('Authentication failed.')
+      expect(error.name).toBe('AuthError')
+      expect(error.code).toBe('AUTH_FAILED')
+      expect(error.uiMessage).toBe('Please check your credentials')
+      expect(error.metadata).toEqual(metadata)
+      expect(error.timestamp).toEqual(mockDate)
+    })
+
     it('should create error with minimal options', () => {
       const error = new ErrorX({ message: 'test error' })
 
@@ -241,6 +272,67 @@ describe('ErrorX', () => {
       expect(error.stack).not.toContain('new ErrorX')
       expect(error.stack).not.toContain('ErrorX.constructor')
       expect(error.stack).not.toContain('error-x/src/error.ts')
+    })
+
+    it('should create error from regular Error instance', () => {
+      const originalError = new Error('Original error message')
+      originalError.name = 'CustomError'
+
+      const error = new ErrorX(originalError)
+
+      expect(error.message).toBe('Original error message.')
+      expect(error.name).toBe('CustomError')
+      expect(error.cause).toBe(originalError.cause)
+    })
+
+    it('should create error from API-like object with ErrorX properties', () => {
+      const apiError = {
+        message: 'user not found',
+        name: 'NotFoundError',
+        code: 'USER_404',
+        uiMessage: 'User does not exist',
+      }
+
+      const error = new ErrorX(apiError)
+
+      expect(error.message).toBe('User not found.')
+      expect(error.name).toBe('NotFoundError')
+      expect(error.code).toBe('USER_404')
+      expect(error.uiMessage).toBe('User does not exist')
+      // When object has ErrorX properties, it's treated as ErrorXOptions directly
+      expect(error.metadata).toBeUndefined()
+    })
+
+    it('should create error from API-like object without ErrorX properties', () => {
+      const apiError = {
+        error: 'user not found',
+        status: 404,
+      }
+
+      const error = new ErrorX(apiError)
+
+      expect(error.message).toBe('User not found.')
+      expect(error.code).toBe('ERROR')
+      expect(error.metadata?.originalError).toBe(apiError)
+    })
+
+    it('should create error from object with actions', () => {
+      const apiError = {
+        message: 'Session expired',
+        name: 'SessionError',
+        code: 'SESSION_EXPIRED',
+        actions: [
+          { action: 'notify', payload: { targets: [HandlingTargets.TOAST] } },
+          { action: 'logout', payload: { clearStorage: true } },
+        ],
+      }
+
+      const error = new ErrorX(apiError)
+
+      expect(error.message).toBe('Session expired.')
+      expect(error.name).toBe('SessionError')
+      expect(error.code).toBe('SESSION_EXPIRED')
+      expect(error.actions).toEqual(apiError.actions)
     })
   })
 
