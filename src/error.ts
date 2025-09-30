@@ -481,9 +481,9 @@ export class ErrorX extends Error {
         if ('httpStatus' in error) {
           _httpStatus = error.httpStatus;
         } else if ('status' in error) {
-          _httpStatus = (error as any).status;
+          _httpStatus = error.status;
         } else if ('statusCode' in error) {
-          _httpStatus = (error as any).statusCode;
+          _httpStatus = error.statusCode;
         }
         if (_httpStatus !== undefined && _httpStatus !== null) {
           const num = typeof _httpStatus === 'number' ? _httpStatus : Number(_httpStatus);
