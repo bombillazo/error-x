@@ -3,19 +3,6 @@ name: Deploy to NPM
 on:
   workflow_dispatch:
     inputs:
-      version_type:
-        description: 'Version bump type'
-        required: true
-        default: 'patch'
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-      custom_version:
-        description: 'Custom version (optional, overrides version_type)'
-        required: false
-        type: string
       dry_run:
         description: 'Dry run (skip actual publish)'
         required: false
@@ -32,8 +19,10 @@ jobs:
       packages: write
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -51,38 +40,28 @@ jobs:
         run: |
           pnpm run typecheck
           pnpm run check
-          pnpm run build
           pnpm run test
+
+      - name: Get version from package.json
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
 
       - name: Configure Git
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
 
-      - name: Update version (custom)
-        if: ${{ inputs.custom_version != '' }}
-        run: |
-          pnpm version ${{ inputs.custom_version }} --no-git-tag-version
-          echo "NEW_VERSION=${{ inputs.custom_version }}" >> $GITHUB_ENV
-
-      - name: Update version (bump)
-        if: ${{ inputs.custom_version == '' }}
-        run: |
-          NEW_VERSION=$(pnpm version ${{ inputs.version_type }} --no-git-tag-version | sed 's/v//')
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-
-      - name: Create release commit and tag
-        run: |
-          git add package.json
-          git commit -m "chore(release): v${{ env.NEW_VERSION }}"
-          git tag "v${{ env.NEW_VERSION }}"
-
-      - name: Push changes
+      - name: Create and push tag
         if: ${{ !inputs.dry_run }}
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/bombillazo/error-x.git
-          git push origin main
-          git push origin "v${{ env.NEW_VERSION }}"
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin ${{ steps.version.outputs.tag }}
+
+      - name: Build
+        run: pnpm build
 
       - name: Set registry
         run: 'echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc'
@@ -101,8 +80,8 @@ jobs:
         if: ${{ !inputs.dry_run }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.NEW_VERSION }}
-          name: v${{ env.NEW_VERSION }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
           generate_release_notes: true
           draft: false
           prerelease: false
