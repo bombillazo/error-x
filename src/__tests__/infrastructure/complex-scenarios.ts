@@ -1,5 +1,4 @@
 import { ErrorX } from '../../index';
-import { HandlingTargets } from '../../types';
 import * as asyncOperations from './async-operations';
 
 /**
@@ -32,7 +31,7 @@ export async function complexAsyncErrorChain(): Promise<void> {
     throw new ErrorX({
       message: 'Complex async error chain from complex-scenarios.ts',
       cause: error,
-      actions: [{ action: 'notify', payload: { targets: [HandlingTargets.LOGGER] } }],
+      actions: [{ action: 'notify', targets: ['logger'] }],
     });
   }
 }
@@ -209,8 +208,8 @@ export async function finalErrorTest(): Promise<void> {
         layers: ['error-sources', 'error-handlers', 'async-operations', 'complex-scenarios'],
       },
       actions: [
-        { action: 'notify', payload: { targets: ['banner'] } },
-        { action: 'redirect', payload: { redirectURL: '/error-page' } },
+        { action: 'notify', targets: ['banner'] },
+        { action: 'redirect', redirectURL: '/error-page' },
       ],
     });
   }

@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  type ErrorAction,
-  type ErrorMetadata,
   ErrorX,
-  HandlingTargets,
-  type SerializableError,
+  ErrorXOptions,
+  type ErrorXAction,
+  type ErrorXMetadata,
+  type ErrorXSerialized,
 } from '../index.js';
 
 describe('ErrorX', () => {
@@ -111,10 +111,10 @@ describe('ErrorX', () => {
     });
 
     it('should create error with actions system', () => {
-      const actions: ErrorAction[] = [
-        { action: 'notify', payload: { targets: [HandlingTargets.MODAL] } },
-        { action: 'logout', payload: { clearStorage: true } },
-        { action: 'redirect', payload: { redirectURL: '/login', delay: 1000 } },
+      const actions: ErrorXAction[] = [
+        { action: 'notify', targets: ['modal'] },
+        { action: 'logout', clearStorage: true },
+        { action: 'redirect', redirectURL: '/login', delay: 1000 },
       ];
 
       const error = new ErrorX({
@@ -144,19 +144,12 @@ describe('ErrorX', () => {
     });
 
     it('should create error with mixed targets and custom actions', () => {
-      const actions: ErrorAction[] = [
+      const actions: ErrorXAction[] = [
         {
           action: 'notify',
-          payload: {
-            targets: [
-              HandlingTargets.TOAST,
-              'custom-sidebar',
-              HandlingTargets.CONSOLE,
-              'analytics-tracker',
-            ],
-          },
+          targets: ['toast', 'custom-sidebar', 'console', 'analytics-tracker'],
         },
-        { action: 'custom', payload: { event: 'error_occurred', severity: 'high' } },
+        { action: 'custom', event: 'error_occurred', severity: 'high' },
       ];
 
       const error = new ErrorX({
@@ -279,7 +272,7 @@ describe('ErrorX', () => {
       const originalError = new Error('Original error message');
       originalError.name = 'CustomError';
 
-      const error = new ErrorX(originalError);
+      const error = ErrorX.toErrorX(originalError);
 
       expect(error.message).toBe('Original error message.');
       expect(error.name).toBe('CustomError');
@@ -310,7 +303,7 @@ describe('ErrorX', () => {
         status: 404,
       };
 
-      const error = new ErrorX(apiError);
+      const error = ErrorX.toErrorX(apiError);
 
       expect(error.message).toBe('User not found.');
       expect(error.code).toBe('ERROR');
@@ -318,13 +311,13 @@ describe('ErrorX', () => {
     });
 
     it('should create error from object with actions', () => {
-      const apiError = {
+      const apiError: ErrorXOptions = {
         message: 'Session expired',
         name: 'SessionError',
         code: 'SESSION_EXPIRED',
         actions: [
-          { action: 'notify', payload: { targets: [HandlingTargets.TOAST] } },
-          { action: 'logout', payload: { clearStorage: true } },
+          { action: 'notify', targets: ['toast'] },
+          { action: 'logout', clearStorage: true },
         ],
       };
 
@@ -358,7 +351,7 @@ describe('ErrorX', () => {
         anotherField: 123,
       };
 
-      const error = new ErrorX(apiError);
+      const error = ErrorX.toErrorX(apiError);
 
       expect(error.message).toBe('Has extra fields.');
       expect(error.code).toBe('ERR');
@@ -372,7 +365,7 @@ describe('ErrorX', () => {
         url: '/api/users', // Not an ErrorXOptions field
       };
 
-      const error = new ErrorX(mixedObject);
+      const error = ErrorX.toErrorX(mixedObject);
 
       expect(error.message).toBe('Mixed object.');
       // Should be treated as unknown and converted
@@ -386,7 +379,7 @@ describe('ErrorX', () => {
         url: '/api/data',
       };
 
-      const error = new ErrorX(apiResponse);
+      const error = ErrorX.toErrorX(apiResponse);
 
       expect(error.message).toBe('Internal Server Error.');
       expect(error.metadata?.originalError).toBe(apiResponse);
@@ -502,8 +495,8 @@ describe('ErrorX', () => {
           name: 'SessionError',
           code: 'SESSION_EXPIRED',
           actions: [
-            { action: 'notify', payload: { targets: [HandlingTargets.TOAST] } },
-            { action: 'logout', payload: { clearStorage: true } },
+            { action: 'notify', targets: ['toast'] },
+            { action: 'logout', clearStorage: true },
           ],
         };
 
@@ -558,27 +551,6 @@ describe('ErrorX', () => {
 
         expect(convertedNull.message).toBe('Unknown error occurred.');
         expect(convertedUndefined.message).toBe('Unknown error occurred.');
-      });
-    });
-
-    describe('processStack', () => {
-      it('should process stack with delimiter', () => {
-        const error = new Error('test error');
-        error.stack =
-          'Error: test error\n    at function1 (file1.js:10:5)\n    at delimiter-function (delim.js:5:1)\n    at function2 (file2.js:15:3)';
-
-        const processed = ErrorX.processStack(error, 'delimiter-function');
-
-        expect(processed).toBe('    at function2 (file2.js:15:3)');
-      });
-
-      it('should return original stack if delimiter not found', () => {
-        const error = new Error('test error');
-        error.stack = 'Error: test error\n    at function1 (file1.js:10:5)';
-
-        const processed = ErrorX.processStack(error, 'nonexistent');
-
-        expect(processed).toBe(error.stack);
       });
     });
   });
@@ -737,6 +709,7 @@ describe('ErrorX', () => {
         const rootCause = new ErrorX({
           message: 'root cause',
           code: 'ROOT_CAUSE',
+          name: 'RootError',
         });
 
         const error = new ErrorX({
@@ -748,7 +721,8 @@ describe('ErrorX', () => {
 
         expect(json.cause).toBeDefined();
         expect(json.cause?.message).toBe('Root cause.');
-        expect(json.cause?.code).toBe('ROOT_CAUSE');
+        expect(json.cause?.name).toBe('RootError');
+        expect(json.cause?.stack).toBeDefined();
       });
 
       it('should serialize error chain with regular Error cause', () => {
@@ -765,7 +739,7 @@ describe('ErrorX', () => {
         expect(json.cause).toBeDefined();
         expect(json.cause?.name).toBe('OriginalError');
         expect(json.cause?.message).toBe('original error');
-        expect(json.cause?.code).toBe('ERROR');
+        expect(json.cause?.stack).toBeDefined();
       });
 
       it('should handle missing stack', () => {
@@ -778,10 +752,10 @@ describe('ErrorX', () => {
       });
 
       it('should serialize error with actions', () => {
-        const actions: ErrorAction[] = [
-          { action: 'notify', payload: { targets: [HandlingTargets.BANNER] } },
-          { action: 'logout', payload: { clearStorage: true } },
-          { action: 'redirect', payload: { redirectURL: '/dashboard', delay: 1000 } },
+        const actions: ErrorXAction[] = [
+          { action: 'notify', targets: ['banner'] },
+          { action: 'logout', clearStorage: true },
+          { action: 'redirect', redirectURL: '/dashboard', delay: 1000 },
         ];
 
         const error = new ErrorX({
@@ -826,7 +800,7 @@ describe('ErrorX', () => {
 
     describe('fromJSON', () => {
       it('should deserialize basic error', () => {
-        const serialized: SerializableError = {
+        const serialized: ErrorXSerialized = {
           name: 'TestError',
           message: 'Test error.',
           code: 'TEST_CODE',
@@ -848,7 +822,7 @@ describe('ErrorX', () => {
       });
 
       it('should deserialize error chain', () => {
-        const serialized: SerializableError = {
+        const serialized: ErrorXSerialized = {
           name: 'WrapperError',
           message: 'Wrapped error.',
           code: 'WRAPPER',
@@ -858,23 +832,20 @@ describe('ErrorX', () => {
           cause: {
             name: 'RootError',
             message: 'Root cause.',
-            code: 'ROOT',
-            uiMessage: 'Something went wrong. Please try again.',
-            metadata: {},
-            timestamp: '2024-01-15T10:30:45.123Z',
+            stack: 'Error: Root cause.\n    at test (file.js:1:1)',
           },
         };
 
         const error = ErrorX.fromJSON(serialized);
 
         expect(error.name).toBe('WrapperError');
-        expect(error.cause).toBeInstanceOf(ErrorX);
-        expect((error.cause as ErrorX).name).toBe('RootError');
-        expect((error.cause as ErrorX).code).toBe('ROOT');
+        expect(error.cause).toBeInstanceOf(Error);
+        expect((error.cause as Error).name).toBe('RootError');
+        expect((error.cause as Error).message).toBe('Root cause.');
       });
 
       it('should handle missing optional properties', () => {
-        const serialized: SerializableError = {
+        const serialized: ErrorXSerialized = {
           name: 'TestError',
           message: 'Test error.',
           code: 'TEST_CODE',
@@ -891,12 +862,12 @@ describe('ErrorX', () => {
       });
 
       it('should deserialize error with actions', () => {
-        const actions: ErrorAction[] = [
-          { action: 'notify', payload: { targets: [HandlingTargets.INLINE] } },
-          { action: 'redirect', payload: { redirectURL: '/error' } },
+        const actions: ErrorXAction[] = [
+          { action: 'notify', targets: ['inline'] },
+          { action: 'redirect', redirectURL: '/error' },
         ];
 
-        const serialized: SerializableError = {
+        const serialized: ErrorXSerialized = {
           name: 'ActionsError',
           message: 'Error with actions.',
           code: 'ACTIONS_ERROR',
@@ -943,12 +914,12 @@ describe('ErrorX', () => {
         expect(deserialized.metadata).toEqual(original.metadata);
         expect(deserialized.timestamp).toEqual(original.timestamp);
 
-        expect(deserialized.cause).toBeInstanceOf(ErrorX);
-        const deserializedCause = deserialized.cause as ErrorX;
+        expect(deserialized.cause).toBeInstanceOf(Error);
+        const deserializedCause = deserialized.cause as Error;
         expect(deserializedCause.name).toBe(rootCause.name);
         expect(deserializedCause.message).toBe(rootCause.message);
-        expect(deserializedCause.code).toBe(rootCause.code);
-        expect(deserializedCause.metadata).toEqual(rootCause.metadata);
+        // Cause is simplified, so code and metadata are not preserved
+        expect(deserializedCause.stack).toBeDefined();
       });
     });
   });
@@ -971,7 +942,7 @@ describe('ErrorX', () => {
     });
 
     it('should handle very large metadata objects', () => {
-      const largeMetadata: ErrorMetadata = {};
+      const largeMetadata: ErrorXMetadata = {};
       for (let i = 0; i < 1000; i++) {
         largeMetadata[`key${i}`] = `value${i}`;
       }
@@ -1158,7 +1129,7 @@ describe('ErrorX', () => {
     });
 
     it('should deserialize error with type', () => {
-      const serialized: SerializableError = {
+      const serialized: ErrorXSerialized = {
         name: 'ValidationError',
         message: 'Validation failed.',
         code: 'VAL_ERROR',
@@ -1176,7 +1147,7 @@ describe('ErrorX', () => {
     });
 
     it('should deserialize error without type', () => {
-      const serialized: SerializableError = {
+      const serialized: ErrorXSerialized = {
         name: 'GenericError',
         message: 'Generic error.',
         code: 'GENERIC',
@@ -1252,7 +1223,7 @@ describe('ErrorX', () => {
         type: 123, // number
       };
 
-      const error = new ErrorX(apiError);
+      const error = ErrorX.toErrorX(apiError);
 
       expect(error.type).toBe('123');
     });
@@ -1263,7 +1234,7 @@ describe('ErrorX', () => {
         type: '',
       };
 
-      const error = new ErrorX(apiError);
+      const error = ErrorX.toErrorX(apiError);
 
       expect(error.type).toBeUndefined();
     });

@@ -115,7 +115,7 @@ describe('HTTP', () => {
         actions: [
           {
             action: 'redirect',
-            payload: { redirectURL: '/login' },
+            redirectURL: '/login',
           },
         ],
       });
@@ -124,7 +124,7 @@ describe('HTTP', () => {
       expect(error.actions).toEqual([
         {
           action: 'redirect',
-          payload: { redirectURL: '/login' },
+          redirectURL: '/login',
         },
       ]);
     });
