@@ -9,5 +9,5 @@ Error identifier code, auto-generated from name if not provided
 **Signature:**
 
 ```typescript
-readonly code: string;
+code: string;
 ```

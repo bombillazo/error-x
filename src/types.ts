@@ -2,174 +2,22 @@
  * Metadata object containing additional context information for an error.
  * Can store any key-value pairs to provide extra debugging or business context.
  *
- * @example
+ * Users can use metadata to store application-specific behavior instructions if needed:
  * ```typescript
- * const metadata: ErrorMetadata = {
+ * const metadata = {
  *   userId: 123,
  *   operation: 'fetchUser',
- *   retryCount: 3
+ *   retryCount: 3,
+ *   // Application-specific behavior can be stored here:
+ *   shouldNotify: true,
+ *   notifyTargets: ['toast', 'banner'],
+ *   redirectTo: '/login'
  * }
  * ```
  *
  * @public
  */
-export type ErrorMetadata = Record<string, any>;
-
-/**
- * Predefined display targets for error notifications and UI feedback.
- * These enum values provide consistent, type-safe options for where errors should be displayed.
- *
- * @public
- */
-export enum HandlingTargets {
-  MODAL = 'modal',
-  TOAST = 'toast',
-  INLINE = 'inline',
-  BANNER = 'banner',
-  CONSOLE = 'console',
-  LOGGER = 'logger',
-  NOTIFICATION = 'notification',
-}
-
-/**
- * Display target type that allows both predefined enum values and custom strings.
- * This enables flexibility for custom UI components while providing standard options.
- *
- * @example
- * ```typescript
- * // Using predefined enum values
- * targets: [HandlingTargets.MODAL, HandlingTargets.TOAST]
- *
- * // Using custom strings
- * targets: ['custom-sidebar', 'my-notification-center']
- *
- * // Mixing both
- * targets: [HandlingTargets.MODAL, 'custom-popup', HandlingTargets.CONSOLE]
- * ```
- *
- * @public
- */
-export type HandlingTarget = HandlingTargets | string;
-
-/**
- * Action to display notifications in specified UI targets.
- * Used to notify applications to handle error messages through the indicated display mechanisms.
- *
- * @example
- * ```typescript
- * {
- *   action: 'notify',
- *   payload: {
- *     targets: [HandlingTargets.TOAST, 'custom-sidebar'],
- *     title: 'Error occurred',
- *     duration: 5000
- *   }
- * }
- * ```
- *
- * @public
- */
-export type NotifyAction = {
-  action: 'notify';
-  payload: {
-    targets: HandlingTarget[];
-    [key: string]: any;
-  };
-};
-
-/**
- * Action to log out the current user when an error occurs.
- * Useful for authentication errors or session expiration.
- *
- * @example
- * ```typescript
- * {
- *   action: 'logout',
- *   payload: {
- *     clearStorage: true,
- *     redirectURL: '/login'
- *   }
- * }
- * ```
- *
- * @public
- */
-export type LogoutAction = {
-  action: 'logout';
-  payload?: {
-    [key: string]: any;
-  };
-};
-
-/**
- * Action to redirect the user to a different URL when an error occurs.
- * Commonly used for navigation after authentication errors or access denied scenarios.
- *
- * @example
- * ```typescript
- * {
- *   action: 'redirect',
- *   payload: {
- *     redirectURL: '/login',
- *     delay: 2000,
- *     replace: true,
- *   }
- * }
- * ```
- *
- * @public
- */
-export type RedirectAction = {
-  action: 'redirect';
-  payload: {
-    redirectURL: string;
-    [key: string]: any;
-  };
-};
-
-/**
- * Custom action type for application-specific actions.
- * This type is essential for proper TypeScript discrimination in the ErrorAction union.
- * Without this, TypeScript cannot properly distinguish between predefined and custom actions.
- *
- * @example
- * ```typescript
- * {
- *   action: 'custom',
- *   payload: {
- *     type: 'analytics',
- *     event: 'error_occurred',
- *     category: 'authentication',
- *     severity: 'high'
- *   }
- * }
- *
- * {
- *   action: 'custom',
- *   payload: {
- *     type: 'show-modal',
- *     modalId: 'error-modal',
- *     title: 'Error',
- *     message: 'Something went wrong'
- *   }
- * }
- * ```
- *
- * @public
- */
-export type CustomAction = {
-  action: 'custom';
-  payload?: Record<string, any>;
-};
-
-/**
- * Union type of all possible error actions.
- * Includes predefined actions (NotifyAction, LogoutAction, RedirectAction)
- * and CustomAction for application-specific actions.
- *
- * @public
- */
-export type ErrorAction = NotifyAction | LogoutAction | RedirectAction | CustomAction;
+export type ErrorXMetadata = Record<string, unknown>;
 
 /**
  * Array of valid ErrorXOptions field names.
@@ -184,9 +32,11 @@ export const ERROR_X_OPTION_FIELDS = [
   'uiMessage',
   'cause',
   'metadata',
-  'actions',
   'httpStatus',
   'type',
+  'sourceUrl',
+  'docsUrl',
+  'source',
 ] as const;
 
 /**
@@ -211,6 +61,10 @@ export type ErrorXOptionField = (typeof ERROR_X_OPTION_FIELDS)[number];
  * // ✅ Works - object literal
  * const opts = { message: 'Error' }
  * new ErrorX(opts)
+ *
+ * // ✅ Works - with type-safe metadata
+ * type MyMeta = { userId: number; action: string };
+ * new ErrorX<MyMeta>({ metadata: { userId: 123, action: 'login' } })
  * ```
  *
  * If ErrorXOptions were a class, you would need to instantiate it:
@@ -225,25 +79,44 @@ export type ErrorXOptionField = (typeof ERROR_X_OPTION_FIELDS)[number];
  *
  * @public
  */
-export type ErrorXOptions = {
+export type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
   /** Technical error message (default: 'An error occurred') */
   message?: string;
   /** Error type/name (default: 'Error') */
   name?: string;
   /** Error identifier code (auto-generated from name if not provided) */
   code?: string | number;
-  /** User-friendly message for UI display (default: undefined) */
+  /** User-friendly message for UI display */
   uiMessage?: string | undefined;
   /** Original error that caused this error (preserves error chain) */
   cause?: Error | unknown;
-  /** Additional context and debugging information (default: undefined) */
-  metadata?: ErrorMetadata;
-  /** Actions to perform when this error occurs (default: undefined) */
-  actions?: ErrorAction[];
-  /** HTTP status code (100-599) for HTTP-related errors (default: undefined) */
+  /** Additional context and debugging information */
+  metadata?: TMetadata | undefined;
+  /** HTTP status code (100-599) for HTTP-related errors */
   httpStatus?: number | undefined;
   /** Error type for categorization */
   type?: string | undefined;
+  /** Source URL related to the error (API endpoint, page URL, resource URL) */
+  sourceUrl?: string | undefined;
+  /** Documentation URL for this specific error */
+  docsUrl?: string | undefined;
+  /** Where the error originated (service name, module, component) */
+  source?: string | undefined;
+};
+
+/**
+ * Simplified representation of an error cause for serialization.
+ * Used to store error chain information without circular references.
+ *
+ * @public
+ */
+export type ErrorXCause = {
+  /** Error message */
+  message: string;
+  /** Error name (optional) */
+  name?: string;
+  /** Stack trace (optional) */
+  stack?: string;
 };
 
 /**
@@ -260,21 +133,20 @@ export type ErrorXOptions = {
  *   stack: 'Error: Authentication failed.\n    at login (auth.ts:42:15)',
  *   metadata: { userId: 123, loginAttempt: 3 },
  *   timestamp: '2024-01-15T10:30:45.123Z',
- *   actions: [
- *     { action: 'logout', payload: { clearStorage: true } }
- *   ],
  *   cause: {
  *     name: 'NetworkError',
  *     message: 'Request timeout.',
- *     code: 'NETWORK_TIMEOUT',
- *     // ... other error properties
- *   }
+ *     stack: '...'
+ *   },
+ *   sourceUrl: 'https://api.example.com/auth',
+ *   docsUrl: 'https://docs.example.com/errors#auth-failed',
+ *   source: 'auth-service'
  * }
  * ```
  *
  * @public
  */
-export type SerializableError = {
+export type ErrorXSerialized = {
   /** Error type/name */
   name: string;
   /** Technical error message */
@@ -286,15 +158,19 @@ export type SerializableError = {
   /** Stack trace (optional) */
   stack?: string;
   /** Additional context and debugging information */
-  metadata: ErrorMetadata | undefined;
+  metadata: ErrorXMetadata | undefined;
   /** ISO timestamp when error was created */
   timestamp: string;
-  /** Actions to perform when this error occurs */
-  actions?: ErrorAction[];
-  /** Serialized cause error (for error chaining) */
-  cause?: SerializableError;
+  /** Simplified cause error (for error chaining) */
+  cause?: ErrorXCause;
   /** HTTP status code for HTTP-related errors */
   httpStatus?: number;
   /** Error type for categorization */
   type?: string;
+  /** Source URL related to the error */
+  sourceUrl?: string;
+  /** Documentation URL for this error */
+  docsUrl?: string;
+  /** Where the error originated */
+  source?: string;
 };

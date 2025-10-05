@@ -1,5 +1,4 @@
 import { ErrorX } from '../../index';
-import { HandlingTargets } from '../../types';
 import * as asyncOperations from './async-operations';
 
 /**
@@ -32,7 +31,6 @@ export async function complexAsyncErrorChain(): Promise<void> {
     throw new ErrorX({
       message: 'Complex async error chain from complex-scenarios.ts',
       cause: error,
-      actions: [{ action: 'notify', payload: { targets: [HandlingTargets.LOGGER] } }],
     });
   }
 }
@@ -42,7 +40,7 @@ export function errorSerializationTest(): never {
     asyncOperations.generatorError();
   } catch (error) {
     // Test that serialization/deserialization preserves stack traces
-    const errorX = ErrorX.toErrorX(error);
+    const errorX = ErrorX.from(error);
     const serialized = errorX.toJSON();
     const deserialized = ErrorX.fromJSON(serialized);
 
@@ -176,6 +174,7 @@ export function recursiveErrorTest(depth = 0): never {
 }
 
 export function errorWithCircularReference(): never {
+  // biome-ignore lint/suspicious/noExplicitAny: Test requires any type for circular reference
   const obj: any = { name: 'circular' };
   obj.self = obj;
   obj.nested = { parent: obj };
@@ -208,10 +207,6 @@ export async function finalErrorTest(): Promise<void> {
         complexity: 'maximum',
         layers: ['error-sources', 'error-handlers', 'async-operations', 'complex-scenarios'],
       },
-      actions: [
-        { action: 'notify', payload: { targets: ['banner'] } },
-        { action: 'redirect', payload: { redirectURL: '/error-page' } },
-      ],
     });
   }
 }

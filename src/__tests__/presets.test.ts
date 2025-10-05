@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { ErrorX } from '../error.js';
+import { ErrorX, http } from '../index.js';
 
-describe('HTTP', () => {
+describe('HTTP Presets', () => {
   describe('Basic preset usage', () => {
-    it('should create error with NOT_FOUND preset', () => {
-      const error = new ErrorX(ErrorX.HTTP.NOT_FOUND);
+    it('should create error with notFound preset', () => {
+      const error = new ErrorX(http.notFound);
 
       expect(error.httpStatus).toBe(404);
       expect(error.code).toBe('NOT_FOUND');
@@ -15,8 +15,8 @@ describe('HTTP', () => {
       expect(error).toBeInstanceOf(ErrorX);
     });
 
-    it('should create error with UNAUTHORIZED preset', () => {
-      const error = new ErrorX(ErrorX.HTTP.UNAUTHORIZED);
+    it('should create error with unauthorized preset', () => {
+      const error = new ErrorX(http.unauthorized);
 
       expect(error.httpStatus).toBe(401);
       expect(error.code).toBe('UNAUTHORIZED');
@@ -26,8 +26,8 @@ describe('HTTP', () => {
       expect(error.type).toBe('http');
     });
 
-    it('should create error with INTERNAL_SERVER_ERROR preset', () => {
-      const error = new ErrorX(ErrorX.HTTP.INTERNAL_SERVER_ERROR);
+    it('should create error with internalServerError preset', () => {
+      const error = new ErrorX(http.internalServerError);
 
       expect(error.httpStatus).toBe(500);
       expect(error.code).toBe('INTERNAL_SERVER_ERROR');
@@ -41,19 +41,19 @@ describe('HTTP', () => {
   describe('Preset override', () => {
     it('should override preset message', () => {
       const error = new ErrorX({
-        ...ErrorX.HTTP.NOT_FOUND,
+        ...http.notFound,
         message: 'User not found',
       });
 
       expect(error.httpStatus).toBe(404);
       expect(error.code).toBe('NOT_FOUND');
       expect(error.name).toBe('Not Found Error');
-      expect(error.message).toBe('User not found.');
+      expect(error.message).toBe('User not found');
     });
 
     it('should override preset code', () => {
       const error = new ErrorX({
-        ...ErrorX.HTTP.BAD_REQUEST,
+        ...http.badRequest,
         code: 'VALIDATION_ERROR',
       });
 
@@ -64,7 +64,7 @@ describe('HTTP', () => {
 
     it('should override preset name', () => {
       const error = new ErrorX({
-        ...ErrorX.HTTP.FORBIDDEN,
+        ...http.forbidden,
         name: 'AccessDeniedError',
       });
 
@@ -75,7 +75,7 @@ describe('HTTP', () => {
 
     it('should override multiple preset values', () => {
       const error = new ErrorX({
-        ...ErrorX.HTTP.NOT_FOUND,
+        ...http.notFound,
         message: 'Product not found',
         code: 'PRODUCT_NOT_FOUND',
         name: 'ProductNotFoundError',
@@ -84,14 +84,14 @@ describe('HTTP', () => {
       expect(error.httpStatus).toBe(404);
       expect(error.code).toBe('PRODUCT_NOT_FOUND');
       expect(error.name).toBe('ProductNotFoundError');
-      expect(error.message).toBe('Product not found.');
+      expect(error.message).toBe('Product not found');
     });
   });
 
   describe('Preset with additional options', () => {
     it('should add metadata to preset', () => {
       const error = new ErrorX({
-        ...ErrorX.HTTP.NOT_FOUND,
+        ...http.notFound,
         metadata: { userId: 123, resource: 'user' },
       });
 
@@ -101,7 +101,7 @@ describe('HTTP', () => {
 
     it('should override uiMessage from preset', () => {
       const error = new ErrorX({
-        ...ErrorX.HTTP.UNAUTHORIZED,
+        ...http.unauthorized,
         uiMessage: 'Custom message: Please log in',
       });
 
@@ -109,30 +109,10 @@ describe('HTTP', () => {
       expect(error.uiMessage).toBe('Custom message: Please log in');
     });
 
-    it('should add actions to preset', () => {
-      const error = new ErrorX({
-        ...ErrorX.HTTP.UNAUTHORIZED,
-        actions: [
-          {
-            action: 'redirect',
-            payload: { redirectURL: '/login' },
-          },
-        ],
-      });
-
-      expect(error.httpStatus).toBe(401);
-      expect(error.actions).toEqual([
-        {
-          action: 'redirect',
-          payload: { redirectURL: '/login' },
-        },
-      ]);
-    });
-
     it('should add cause to preset', () => {
       const originalError = new Error('Database connection failed');
       const error = new ErrorX({
-        ...ErrorX.HTTP.INTERNAL_SERVER_ERROR,
+        ...http.internalServerError,
         cause: originalError,
       });
 
@@ -143,29 +123,29 @@ describe('HTTP', () => {
 
   describe('Common HTTP status codes', () => {
     it('should have correct 4xx client error presets', () => {
-      expect(ErrorX.HTTP.BAD_REQUEST.httpStatus).toBe(400);
-      expect(ErrorX.HTTP.UNAUTHORIZED.httpStatus).toBe(401);
-      expect(ErrorX.HTTP.FORBIDDEN.httpStatus).toBe(403);
-      expect(ErrorX.HTTP.NOT_FOUND.httpStatus).toBe(404);
-      expect(ErrorX.HTTP.METHOD_NOT_ALLOWED.httpStatus).toBe(405);
-      expect(ErrorX.HTTP.CONFLICT.httpStatus).toBe(409);
-      expect(ErrorX.HTTP.UNPROCESSABLE_ENTITY.httpStatus).toBe(422);
-      expect(ErrorX.HTTP.TOO_MANY_REQUESTS.httpStatus).toBe(429);
+      expect(http.badRequest.httpStatus).toBe(400);
+      expect(http.unauthorized.httpStatus).toBe(401);
+      expect(http.forbidden.httpStatus).toBe(403);
+      expect(http.notFound.httpStatus).toBe(404);
+      expect(http.methodNotAllowed.httpStatus).toBe(405);
+      expect(http.conflict.httpStatus).toBe(409);
+      expect(http.unprocessableEntity.httpStatus).toBe(422);
+      expect(http.tooManyRequests.httpStatus).toBe(429);
     });
 
     it('should have correct 5xx server error presets', () => {
-      expect(ErrorX.HTTP.INTERNAL_SERVER_ERROR.httpStatus).toBe(500);
-      expect(ErrorX.HTTP.NOT_IMPLEMENTED.httpStatus).toBe(501);
-      expect(ErrorX.HTTP.BAD_GATEWAY.httpStatus).toBe(502);
-      expect(ErrorX.HTTP.SERVICE_UNAVAILABLE.httpStatus).toBe(503);
-      expect(ErrorX.HTTP.GATEWAY_TIMEOUT.httpStatus).toBe(504);
+      expect(http.internalServerError.httpStatus).toBe(500);
+      expect(http.notImplemented.httpStatus).toBe(501);
+      expect(http.badGateway.httpStatus).toBe(502);
+      expect(http.serviceUnavailable.httpStatus).toBe(503);
+      expect(http.gatewayTimeout.httpStatus).toBe(504);
     });
   });
 
   describe('Serialization', () => {
     it('should serialize preset-based error', () => {
       const error = new ErrorX({
-        ...ErrorX.HTTP.NOT_FOUND,
+        ...http.notFound,
         metadata: { userId: 123 },
       });
 
@@ -205,7 +185,7 @@ describe('HTTP', () => {
   describe('Type safety', () => {
     it('should maintain proper types when spreading presets', () => {
       const options = {
-        ...ErrorX.HTTP.BAD_REQUEST,
+        ...http.badRequest,
         metadata: { field: 'email' },
       };
 

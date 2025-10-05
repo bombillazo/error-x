@@ -9,11 +9,11 @@ Serializes the ErrorX instance to a JSON-compatible object. Recursively serializ
 **Signature:**
 
 ```typescript
-toJSON(): SerializableError;
+toJSON(): ErrorXSerialized;
 ```
 **Returns:**
 
-[SerializableError](./error-x.serializableerror.md)
+[ErrorXSerialized](./error-x.errorxserialized.md)
 
 Serializable object representation of the error
 

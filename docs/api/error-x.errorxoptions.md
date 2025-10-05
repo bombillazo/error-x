@@ -15,13 +15,15 @@ type ErrorXOptions = {
     code?: string | number;
     uiMessage?: string | undefined;
     cause?: Error | unknown;
-    metadata?: ErrorMetadata;
-    actions?: ErrorAction[];
+    metadata?: ErrorXMetadata;
     httpStatus?: number | undefined;
     type?: string | undefined;
+    sourceUrl?: string | undefined;
+    docsUrl?: string | undefined;
+    source?: string | undefined;
 };
 ```
-**References:** [ErrorMetadata](./error-x.errormetadata.md)<!-- -->, [ErrorAction](./error-x.erroraction.md)
+**References:** [ErrorXMetadata](./error-x.errorxmetadata.md)
 
 ## Remarks
 

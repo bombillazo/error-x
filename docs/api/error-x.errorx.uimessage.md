@@ -9,5 +9,5 @@ User-friendly message suitable for display in UI
 **Signature:**
 
 ```typescript
-readonly uiMessage: string | undefined;
+uiMessage: string | undefined;
 ```

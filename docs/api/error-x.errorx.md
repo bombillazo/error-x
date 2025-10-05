@@ -17,6 +17,16 @@ declare class ErrorX extends Error
 
 
 ```typescript
+// Configure globally (optional)
+ErrorX.configure({
+  source: 'my-service',
+  docsBaseURL: 'https://docs.example.com',
+  docsMap: {
+    'AUTH_FAILED': 'errors/authentication',
+    'DB_ERROR': 'errors/database'
+  }
+})
+
 // Basic usage
 const error = new ErrorX({ message: 'Database connection failed' })
 
@@ -50,7 +60,7 @@ Description
 </th></tr></thead>
 <tbody><tr><td>
 
-[(constructor)(messageOrOptions, additionalOptions)](./error-x.errorx._constructor_.md)
+[(constructor)(messageOrOptions)](./error-x.errorx._constructor_.md)
 
 
 </td><td>
@@ -89,33 +99,10 @@ Description
 </th></tr></thead>
 <tbody><tr><td>
 
-[actions](./error-x.errorx.actions.md)
-
-
-</td><td>
-
-`readonly`
-
-
-</td><td>
-
-[ErrorAction](./error-x.erroraction.md)<!-- -->\[\] \| undefined
-
-
-</td><td>
-
-Error actions for UI behavior and handling
-
-
-</td></tr>
-<tr><td>
-
 [code](./error-x.errorx.code.md)
 
 
 </td><td>
-
-`readonly`
 
 
 </td><td>
@@ -131,12 +118,29 @@ Error identifier code, auto-generated from name if not provided
 </td></tr>
 <tr><td>
 
-[httpStatus](./error-x.errorx.httpstatus.md)
+[docsUrl](./error-x.errorx.docsurl.md)
 
 
 </td><td>
 
-`readonly`
+
+</td><td>
+
+string \| undefined
+
+
+</td><td>
+
+Documentation URL for this specific error
+
+
+</td></tr>
+<tr><td>
+
+[httpStatus](./error-x.errorx.httpstatus.md)
+
+
+</td><td>
 
 
 </td><td>
@@ -157,12 +161,10 @@ HTTP status code (100-599) for HTTP-related errors
 
 </td><td>
 
-`readonly`
-
 
 </td><td>
 
-[ErrorMetadata](./error-x.errormetadata.md) \| undefined
+[ErrorXMetadata](./error-x.errorxmetadata.md) \| undefined
 
 
 </td><td>
@@ -173,12 +175,48 @@ Additional context and metadata associated with the error
 </td></tr>
 <tr><td>
 
-[timestamp](./error-x.errorx.timestamp.md)
+[source](./error-x.errorx.source.md)
 
 
 </td><td>
 
-`readonly`
+
+</td><td>
+
+string \| undefined
+
+
+</td><td>
+
+Where the error originated (service name, module, component)
+
+
+</td></tr>
+<tr><td>
+
+[sourceUrl](./error-x.errorx.sourceurl.md)
+
+
+</td><td>
+
+
+</td><td>
+
+string \| undefined
+
+
+</td><td>
+
+Source URL related to the error (API endpoint, page URL, resource URL)
+
+
+</td></tr>
+<tr><td>
+
+[timestamp](./error-x.errorx.timestamp.md)
+
+
+</td><td>
 
 
 </td><td>
@@ -199,8 +237,6 @@ Timestamp when the error was created
 
 </td><td>
 
-`readonly`
-
 
 </td><td>
 
@@ -219,8 +255,6 @@ Error type for categorization
 
 
 </td><td>
-
-`readonly`
 
 
 </td><td>
@@ -270,6 +304,38 @@ Creates a new ErrorX instance with cleaned stack trace using the specified delim
 </td></tr>
 <tr><td>
 
+[configure(config)](./error-x.errorx.configure.md)
+
+
+</td><td>
+
+`static`
+
+
+</td><td>
+
+Configure global ErrorX settings. This method allows you to set defaults for all ErrorX instances.
+
+
+</td></tr>
+<tr><td>
+
+[from(error)](./error-x.errorx.from.md)
+
+
+</td><td>
+
+`static`
+
+
+</td><td>
+
+Converts unknown input into an ErrorX instance with intelligent property extraction. Handles strings, regular Error objects, API response objects, and unknown values.
+
+
+</td></tr>
+<tr><td>
+
 [fromJSON(serialized)](./error-x.errorx.fromjson.md)
 
 
@@ -281,6 +347,22 @@ Creates a new ErrorX instance with cleaned stack trace using the specified delim
 </td><td>
 
 Deserializes a JSON object back into an ErrorX instance. Recursively reconstructs the error chain and restores all properties.
+
+
+</td></tr>
+<tr><td>
+
+[getConfig()](./error-x.errorx.getconfig.md)
+
+
+</td><td>
+
+`static`
+
+
+</td><td>
+
+Get the current global configuration. Returns null if no configuration has been set.
 
 
 </td></tr>
@@ -313,38 +395,6 @@ Type guard that checks if a value is an ErrorX instance.
 </td><td>
 
 Validates if an object is a valid ErrorXOptions object. Checks that the object only contains accepted ErrorXOptions fields.
-
-
-</td></tr>
-<tr><td>
-
-[processStack(error, delimiter)](./error-x.errorx.processstack.md)
-
-
-</td><td>
-
-`static`
-
-
-</td><td>
-
-Public wrapper for processing error stack traces with delimiter. Delegates to the private processErrorStack method for implementation.
-
-
-</td></tr>
-<tr><td>
-
-[toErrorX(error)](./error-x.errorx.toerrorx.md)
-
-
-</td><td>
-
-`static`
-
-
-</td><td>
-
-Converts unknown input into an ErrorX instance with intelligent property extraction. Handles strings, regular Error objects, API response objects, and unknown values.
 
 
 </td></tr>

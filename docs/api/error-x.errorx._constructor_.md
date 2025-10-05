@@ -9,7 +9,7 @@ Creates a new ErrorX instance with enhanced error handling capabilities.
 **Signature:**
 
 ```typescript
-constructor(messageOrOptions?: string | ErrorXOptions | unknown, additionalOptions?: Partial<ErrorXOptions>);
+constructor(messageOrOptions?: string | ErrorXOptions);
 ```
 
 ## Parameters
@@ -37,28 +37,12 @@ messageOrOptions
 
 </td><td>
 
-string \| [ErrorXOptions](./error-x.errorxoptions.md) \| unknown
+string \| [ErrorXOptions](./error-x.errorxoptions.md)
 
 
 </td><td>
 
-_(Optional)_ Error message string, ErrorXOptions object, or any value to convert to ErrorX
-
-
-</td></tr>
-<tr><td>
-
-additionalOptions
-
-
-</td><td>
-
-Partial&lt;[ErrorXOptions](./error-x.errorxoptions.md)<!-- -->&gt;
-
-
-</td><td>
-
-_(Optional)_ Additional options when first parameter is a string (optional)
+_(Optional)_ Error message string or ErrorXOptions object (optional)
 
 
 </td></tr>
@@ -68,32 +52,23 @@ _(Optional)_ Additional options when first parameter is a string (optional)
 
 
 ```typescript
-// Create with string message only
-const error1 = new ErrorX('Database query failed')
+// Create with default message
+const error1 = new ErrorX()
 
-// Create with string message and additional options
-const error2 = new ErrorX('Database query failed', {
+// Create with string message only
+const error2 = new ErrorX('Database query failed')
+
+// Create with options object
+const error3 = new ErrorX({
+  message: 'Database query failed',
   name: 'DatabaseError',
   code: 'DB_QUERY_FAILED',
   uiMessage: 'Unable to load data. Please try again.',
   metadata: { query: 'SELECT * FROM users', timeout: 5000 }
 })
 
-// Create with options object (backward compatible)
-const error3 = new ErrorX({
-  message: 'Database query failed',
-  name: 'DatabaseError',
-  code: 'DB_QUERY_FAILED',
-  actions: [
-    { action: 'notify', payload: { targets: [HandlingTargets.TOAST] } }
-  ]
-})
-
-// Create with unknown input (smart conversion)
+// For converting unknown errors, use ErrorX.from()
 const apiError = { message: 'User not found', code: 404 }
-const error4 = new ErrorX(apiError)
-
-// Create with no options (uses defaults)
-const error5 = new ErrorX()
+const error4 = ErrorX.from(apiError)
 ```
 

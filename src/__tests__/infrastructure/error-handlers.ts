@@ -36,10 +36,10 @@ export function tryCatchRethrowWithErrorXWrap(): never {
   try {
     errorSources.throwStringError();
   } catch (error) {
-    // Use ErrorX.toErrorX to convert and rethrow
-    const errorX = ErrorX.toErrorX(error);
+    // Use ErrorX.from to convert and rethrow
+    const errorX = ErrorX.from(error);
     throw new ErrorX({
-      message: 'Wrapped with toErrorX in error-handlers.ts',
+      message: 'Wrapped with from in error-handlers.ts',
       cause: errorX,
     });
   }
@@ -76,7 +76,7 @@ export function tryCatchWithAdditionalProcessing(): never {
   } catch (error) {
     // Some processing that might affect stack trace
     console.log('Processing error...'); // Side effect
-    const processed = error instanceof ErrorX ? error : ErrorX.toErrorX(error);
+    const processed = error instanceof ErrorX ? error : ErrorX.from(error);
 
     throw processed.withMetadata({
       processedIn: 'error-handlers.ts',

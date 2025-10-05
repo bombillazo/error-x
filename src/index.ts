@@ -1,14 +1,8 @@
-export { ErrorX } from './error.js';
-
+export { ErrorX, type ErrorXConfig } from './error';
+export { http } from './presets';
 export type {
-  CustomAction,
-  ErrorAction,
-  ErrorMetadata,
+  ErrorXCause,
+  ErrorXMetadata,
   ErrorXOptions,
-  HandlingTarget,
-  LogoutAction,
-  NotifyAction,
-  RedirectAction,
-  SerializableError,
-} from './types.js';
-export { HandlingTargets } from './types.js';
+  ErrorXSerialized,
+} from './types';
