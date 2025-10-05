@@ -145,6 +145,57 @@ All presets use **camelCase naming** and include:
 **5xx Server Errors:**
 `internalServerError`, `notImplemented`, `badGateway`, `serviceUnavailable`, `gatewayTimeout`, `httpVersionNotSupported`, `variantAlsoNegotiates`, `insufficientStorage`, `loopDetected`, `notExtended`, `networkAuthenticationRequired`
 
+#### Creating Your Own Presets
+
+HTTP presets work well because HTTP status codes are universally standardized. For domain-specific errors (database, validation, authentication, business logic), create your own presets:
+
+```typescript
+import { type ErrorXOptions } from '@bombillazo/error-x'
+
+// Define your application-specific presets
+export const dbErrors = {
+  connectionFailed: {
+    name: 'DatabaseError',
+    code: 'DB_CONNECTION_FAILED',
+    message: 'Database connection failed.',
+    uiMessage: 'Unable to connect to database. Please try again later.',
+    type: 'database',
+  },
+  queryTimeout: {
+    name: 'DatabaseError',
+    code: 'DB_QUERY_TIMEOUT',
+    message: 'Database query timeout.',
+    uiMessage: 'The operation took too long. Please try again.',
+    type: 'database',
+  },
+} satisfies Record<string, ErrorXOptions>;
+
+export const authErrors = {
+  invalidToken: {
+    name: 'AuthenticationError',
+    code: 'AUTH_INVALID_TOKEN',
+    message: 'Invalid authentication token.',
+    uiMessage: 'Your session has expired. Please log in again.',
+    httpStatus: 401,
+    type: 'authentication',
+  },
+  insufficientPermissions: {
+    name: 'AuthorizationError',
+    code: 'AUTH_INSUFFICIENT_PERMISSIONS',
+    message: 'Insufficient permissions.',
+    uiMessage: 'You do not have permission to perform this action.',
+    httpStatus: 403,
+    type: 'authorization',
+  },
+} satisfies Record<string, ErrorXOptions>;
+
+// Use them just like http presets
+throw new ErrorX(dbErrors.connectionFailed);
+throw new ErrorX({ ...authErrors.invalidToken, metadata: { userId: 123 } });
+```
+
+This approach keeps your error handling consistent while remaining flexible for your specific domain.
+
 ### Static Methods
 
 #### `ErrorX.from(error: unknown): ErrorX`
