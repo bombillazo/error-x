@@ -184,10 +184,7 @@ export class ErrorX extends Error {
   } | null {
     try {
       // Check if running in Node.js environment
-      const envConfig =
-        process?.env?.ERROR_X_CONFIG
-          ? process.env.ERROR_X_CONFIG
-          : undefined;
+      const envConfig = process?.env?.ERROR_X_CONFIG ? process.env.ERROR_X_CONFIG : undefined;
 
       if (!envConfig) return null;
 
@@ -643,7 +640,6 @@ export class ErrorX extends Error {
     const options = ErrorX.convertUnknownToOptions(error);
     return new ErrorX(options);
   }
-
 
   /**
    * Creates a new ErrorX instance with cleaned stack trace using the specified delimiter.

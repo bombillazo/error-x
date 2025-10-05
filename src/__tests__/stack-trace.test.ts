@@ -383,14 +383,11 @@ describe('Stack Trace Preservation', () => {
         expect(errorX.actions).toBeDefined();
         const actions = errorX.actions || [];
         expect(
-          actions.some(
-            (action) => action.action === 'notify' && action.targets?.includes('banner')
-          )
+          actions.some((action) => action.action === 'notify' && action.targets?.includes('banner'))
         ).toBe(true);
         expect(
           actions.some(
-            (action) =>
-              action.action === 'redirect' && action.redirectURL === '/error-page'
+            (action) => action.action === 'redirect' && action.redirectURL === '/error-page'
           )
         ).toBe(true);
       }
