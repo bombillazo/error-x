@@ -31,7 +31,6 @@ export async function complexAsyncErrorChain(): Promise<void> {
     throw new ErrorX({
       message: 'Complex async error chain from complex-scenarios.ts',
       cause: error,
-      actions: [{ action: 'notify', targets: ['logger'] }],
     });
   }
 }
@@ -41,7 +40,7 @@ export function errorSerializationTest(): never {
     asyncOperations.generatorError();
   } catch (error) {
     // Test that serialization/deserialization preserves stack traces
-    const errorX = ErrorX.toErrorX(error);
+    const errorX = ErrorX.from(error);
     const serialized = errorX.toJSON();
     const deserialized = ErrorX.fromJSON(serialized);
 
@@ -207,10 +206,6 @@ export async function finalErrorTest(): Promise<void> {
         complexity: 'maximum',
         layers: ['error-sources', 'error-handlers', 'async-operations', 'complex-scenarios'],
       },
-      actions: [
-        { action: 'notify', targets: ['banner'] },
-        { action: 'redirect', redirectURL: '/error-page' },
-      ],
     });
   }
 }

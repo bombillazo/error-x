@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ErrorX,
-  ErrorXOptions,
-  type ErrorXAction,
   type ErrorXMetadata,
+  type ErrorXOptions,
   type ErrorXSerialized,
 } from '../index.js';
 
@@ -43,10 +42,11 @@ describe('ErrorX', () => {
       expect(error).toBeInstanceOf(ErrorX);
     });
 
-    it('should create error with string message and additional options', () => {
+    it('should create error with options including message', () => {
       const metadata = { userId: 123, action: 'login' };
 
-      const error = new ErrorX('authentication failed', {
+      const error = new ErrorX({
+        message: 'authentication failed',
         name: 'AuthError',
         code: 'AUTH_FAILED',
         uiMessage: 'Please check your credentials',
@@ -110,27 +110,7 @@ describe('ErrorX', () => {
       expect(error.uiMessage).toBe('Page not found');
     });
 
-    it('should create error with actions system', () => {
-      const actions: ErrorXAction[] = [
-        { action: 'notify', targets: ['modal'] },
-        { action: 'logout', clearStorage: true },
-        { action: 'redirect', redirectURL: '/login', delay: 1000 },
-      ];
-
-      const error = new ErrorX({
-        message: 'Authentication expired',
-        name: 'AuthExpiredError',
-        code: 'AUTH_EXPIRED',
-        actions,
-      });
-
-      expect(error.message).toBe('Authentication expired.');
-      expect(error.name).toBe('AuthExpiredError');
-      expect(error.code).toBe('AUTH_EXPIRED');
-      expect(error.actions).toEqual(actions);
-    });
-
-    it('should create error without actions', () => {
+    it('should create error', () => {
       const error = new ErrorX({
         message: 'Simple test',
         name: 'SimpleError',
@@ -140,29 +120,6 @@ describe('ErrorX', () => {
       expect(error.message).toBe('Simple test.');
       expect(error.name).toBe('SimpleError');
       expect(error.code).toBe('SIMPLE_TEST');
-      expect(error.actions).toBeUndefined();
-    });
-
-    it('should create error with mixed targets and custom actions', () => {
-      const actions: ErrorXAction[] = [
-        {
-          action: 'notify',
-          targets: ['toast', 'custom-sidebar', 'console', 'analytics-tracker'],
-        },
-        { action: 'custom', event: 'error_occurred', severity: 'high' },
-      ];
-
-      const error = new ErrorX({
-        message: 'Mixed actions test',
-        name: 'MixedError',
-        code: 'MIXED_ACTIONS',
-        actions,
-      });
-
-      expect(error.message).toBe('Mixed actions test.');
-      expect(error.name).toBe('MixedError');
-      expect(error.code).toBe('MIXED_ACTIONS');
-      expect(error.actions).toEqual(actions);
     });
 
     it('should create error with no options', () => {
@@ -173,7 +130,6 @@ describe('ErrorX', () => {
       expect(error.code).toBe('ERROR');
       expect(error.uiMessage).toBeUndefined();
       expect(error.metadata).toBeUndefined();
-      expect(error.actions).toBeUndefined();
       expect(error.timestamp).toEqual(mockDate);
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ErrorX);
@@ -187,7 +143,6 @@ describe('ErrorX', () => {
       expect(error.code).toBe('ERROR');
       expect(error.uiMessage).toBeUndefined();
       expect(error.metadata).toBeUndefined();
-      expect(error.actions).toBeUndefined();
       expect(error.timestamp).toEqual(mockDate);
     });
 
@@ -199,7 +154,6 @@ describe('ErrorX', () => {
       expect(error.code).toBe('CUSTOM_ERROR');
       expect(error.uiMessage).toBeUndefined();
       expect(error.metadata).toBeUndefined();
-      expect(error.actions).toBeUndefined();
     });
 
     it('should format messages correctly', () => {
@@ -216,6 +170,50 @@ describe('ErrorX', () => {
         { input: 'ends with paren)', expected: 'Ends with paren)' },
         { input: '', expected: 'An error occurred' },
         { input: '   ', expected: 'An error occurred' },
+      ];
+
+      for (const { input, expected } of testCases) {
+        const error = new ErrorX({ message: input });
+        expect(error.message).toBe(expected);
+      }
+    });
+
+    it('should allow opting out of message formatting', () => {
+      const error = new ErrorX({
+        message: 'this is a lowercase message without period',
+        formatMessage: false,
+      });
+
+      expect(error.message).toBe('this is a lowercase message without period');
+    });
+
+    it('should format message by default when formatMessage is not specified', () => {
+      const error = new ErrorX({
+        message: 'this is a test',
+      });
+
+      expect(error.message).toBe('This is a test.');
+    });
+
+    it('should format message when formatMessage is explicitly true', () => {
+      const error = new ErrorX({
+        message: 'another test',
+        formatMessage: true,
+      });
+
+      expect(error.message).toBe('Another test.');
+    });
+
+    it('should handle abbreviations correctly in message formatting', () => {
+      const testCases = [
+        { input: 'Dr. Smith is unavailable', expected: 'Dr. Smith is unavailable.' },
+        { input: 'contact Mr. Jones', expected: 'Contact Mr. Jones.' },
+        { input: 'in the U.S. only', expected: 'In the U.S. only.' },
+        {
+          input: 'error in database. contact Dr. Admin',
+          expected: 'Error in database. Contact Dr. Admin.',
+        },
+        { input: 'Ph.D. required for this role', expected: 'Ph.D. required for this role.' },
       ];
 
       for (const { input, expected } of testCases) {
@@ -272,7 +270,7 @@ describe('ErrorX', () => {
       const originalError = new Error('Original error message');
       originalError.name = 'CustomError';
 
-      const error = ErrorX.toErrorX(originalError);
+      const error = ErrorX.from(originalError);
 
       expect(error.message).toBe('Original error message.');
       expect(error.name).toBe('CustomError');
@@ -303,30 +301,11 @@ describe('ErrorX', () => {
         status: 404,
       };
 
-      const error = ErrorX.toErrorX(apiError);
+      const error = ErrorX.from(apiError);
 
       expect(error.message).toBe('User not found.');
       expect(error.code).toBe('ERROR');
       expect(error.metadata?.originalError).toBe(apiError);
-    });
-
-    it('should create error from object with actions', () => {
-      const apiError: ErrorXOptions = {
-        message: 'Session expired',
-        name: 'SessionError',
-        code: 'SESSION_EXPIRED',
-        actions: [
-          { action: 'notify', targets: ['toast'] },
-          { action: 'logout', clearStorage: true },
-        ],
-      };
-
-      const error = new ErrorX(apiError);
-
-      expect(error.message).toBe('Session expired.');
-      expect(error.name).toBe('SessionError');
-      expect(error.code).toBe('SESSION_EXPIRED');
-      expect(error.actions).toEqual(apiError.actions);
     });
 
     it('should treat object with only ErrorXOptions fields as ErrorXOptions', () => {
@@ -351,7 +330,7 @@ describe('ErrorX', () => {
         anotherField: 123,
       };
 
-      const error = ErrorX.toErrorX(apiError);
+      const error = ErrorX.from(apiError);
 
       expect(error.message).toBe('Has extra fields.');
       expect(error.code).toBe('ERR');
@@ -365,7 +344,7 @@ describe('ErrorX', () => {
         url: '/api/users', // Not an ErrorXOptions field
       };
 
-      const error = ErrorX.toErrorX(mixedObject);
+      const error = ErrorX.from(mixedObject);
 
       expect(error.message).toBe('Mixed object.');
       // Should be treated as unknown and converted
@@ -379,7 +358,7 @@ describe('ErrorX', () => {
         url: '/api/data',
       };
 
-      const error = ErrorX.toErrorX(apiResponse);
+      const error = ErrorX.from(apiResponse);
 
       expect(error.message).toBe('Internal Server Error.');
       expect(error.metadata?.originalError).toBe(apiResponse);
@@ -429,10 +408,10 @@ describe('ErrorX', () => {
       });
     });
 
-    describe('toErrorX', () => {
+    describe('from', () => {
       it('should return same ErrorX instance', () => {
         const original = new ErrorX({ message: 'test' });
-        const result = ErrorX.toErrorX(original);
+        const result = ErrorX.from(original);
         expect(result).toBe(original);
       });
 
@@ -440,7 +419,7 @@ describe('ErrorX', () => {
         const error = new Error('test error');
         error.name = 'CustomError';
 
-        const converted = ErrorX.toErrorX(error);
+        const converted = ErrorX.from(error);
 
         expect(converted.message).toBe('Test error.');
         expect(converted.name).toBe('CustomError');
@@ -448,7 +427,7 @@ describe('ErrorX', () => {
       });
 
       it('should convert string to ErrorX', () => {
-        const converted = ErrorX.toErrorX('simple string error');
+        const converted = ErrorX.from('simple string error');
 
         expect(converted.message).toBe('Simple string error.');
         expect(converted.metadata?.originalError).toBe('simple string error');
@@ -464,7 +443,7 @@ describe('ErrorX', () => {
           endpoint: '/api/users/123',
         };
 
-        const converted = ErrorX.toErrorX(apiError);
+        const converted = ErrorX.from(apiError);
 
         expect(converted.message).toBe('User not found.');
         expect(converted.name).toBe('NotFoundError');
@@ -481,7 +460,7 @@ describe('ErrorX', () => {
           statusText: 'Internal Server Error',
         };
 
-        const converted = ErrorX.toErrorX(apiError);
+        const converted = ErrorX.from(apiError);
 
         expect(converted.message).toBe('HTTP request failed.');
         expect(converted.name).toBe('HTTPError');
@@ -489,39 +468,18 @@ describe('ErrorX', () => {
         expect(converted.metadata?.originalError).toBe(apiError);
       });
 
-      it('should extract actions from objects', () => {
-        const apiError = {
-          message: 'Session expired',
-          name: 'SessionError',
-          code: 'SESSION_EXPIRED',
-          actions: [
-            { action: 'notify', targets: ['toast'] },
-            { action: 'logout', clearStorage: true },
-          ],
-        };
-
-        const converted = ErrorX.toErrorX(apiError);
-
-        expect(converted.message).toBe('Session expired.');
-        expect(converted.name).toBe('SessionError');
-        expect(converted.code).toBe('SESSION_EXPIRED');
-        expect(converted.actions).toEqual(apiError.actions);
-        expect(converted.metadata?.originalError).toBe(apiError);
-      });
-
-      it('should handle objects without actions', () => {
+      it('should handle objects', () => {
         const apiError = {
           message: 'Session expired',
           name: 'SessionError',
           code: 'SESSION_EXPIRED',
         };
 
-        const converted = ErrorX.toErrorX(apiError);
+        const converted = ErrorX.from(apiError);
 
         expect(converted.message).toBe('Session expired.');
         expect(converted.name).toBe('SessionError');
         expect(converted.code).toBe('SESSION_EXPIRED');
-        expect(converted.actions).toBeUndefined();
         expect(converted.metadata?.originalError).toBe(apiError);
       });
 
@@ -534,20 +492,20 @@ describe('ErrorX', () => {
         ];
 
         for (const errorObj of testCases) {
-          const converted = ErrorX.toErrorX(errorObj);
+          const converted = ErrorX.from(errorObj);
           expect(converted.message).toBeTruthy();
           expect(converted.metadata?.originalError).toBe(errorObj);
         }
       });
 
       it('should handle empty objects', () => {
-        const converted = ErrorX.toErrorX({});
+        const converted = ErrorX.from({});
         expect(converted.message).toBe('Unknown error occurred.');
       });
 
       it('should handle null and undefined', () => {
-        const convertedNull = ErrorX.toErrorX(null);
-        const convertedUndefined = ErrorX.toErrorX(undefined);
+        const convertedNull = ErrorX.from(null);
+        const convertedUndefined = ErrorX.from(undefined);
 
         expect(convertedNull.message).toBe('Unknown error occurred.');
         expect(convertedUndefined.message).toBe('Unknown error occurred.');
@@ -751,28 +709,7 @@ describe('ErrorX', () => {
         expect(json.stack).toBeUndefined();
       });
 
-      it('should serialize error with actions', () => {
-        const actions: ErrorXAction[] = [
-          { action: 'notify', targets: ['banner'] },
-          { action: 'logout', clearStorage: true },
-          { action: 'redirect', redirectURL: '/dashboard', delay: 1000 },
-        ];
-
-        const error = new ErrorX({
-          message: 'Permission denied',
-          name: 'PermissionError',
-          code: 'PERMISSION_DENIED',
-          actions,
-        });
-
-        const json = error.toJSON();
-
-        expect(json.actions).toEqual(actions);
-        expect(json.name).toBe('PermissionError');
-        expect(json.code).toBe('PERMISSION_DENIED');
-      });
-
-      it('should serialize error without actions', () => {
+      it('should serialize error', () => {
         const error = new ErrorX({
           message: 'Simple error',
           name: 'SimpleError',
@@ -781,20 +718,8 @@ describe('ErrorX', () => {
 
         const json = error.toJSON();
 
-        expect(json.actions).toBeUndefined();
         expect(json.name).toBe('SimpleError');
         expect(json.code).toBe('SIMPLE_ERROR');
-      });
-
-      it('should not include actions in serialization if empty', () => {
-        const error = new ErrorX({
-          message: 'Simple error',
-          code: 'SIMPLE',
-        });
-
-        const json = error.toJSON();
-
-        expect(json.actions).toBeUndefined();
       });
     });
 
@@ -859,30 +784,6 @@ describe('ErrorX', () => {
         // Stack will be generated but since no stack was provided in serialized data, it should be the new error's stack
         expect(error.stack).toBeDefined();
         expect(error.cause).toBeUndefined();
-      });
-
-      it('should deserialize error with actions', () => {
-        const actions: ErrorXAction[] = [
-          { action: 'notify', targets: ['inline'] },
-          { action: 'redirect', redirectURL: '/error' },
-        ];
-
-        const serialized: ErrorXSerialized = {
-          name: 'ActionsError',
-          message: 'Error with actions.',
-          code: 'ACTIONS_ERROR',
-          uiMessage: 'Something went wrong',
-          metadata: {},
-          timestamp: '2024-01-15T10:30:45.123Z',
-          actions,
-        };
-
-        const error = ErrorX.fromJSON(serialized);
-
-        expect(error.name).toBe('ActionsError');
-        expect(error.message).toBe('Error with actions.');
-        expect(error.code).toBe('ACTIONS_ERROR');
-        expect(error.actions).toEqual(actions);
       });
     });
 
@@ -1000,7 +901,7 @@ describe('ErrorX', () => {
       nullProtoError.message = 'null proto error';
       nullProtoError.code = 'NULL_PROTO';
 
-      const converted = ErrorX.toErrorX(nullProtoError);
+      const converted = ErrorX.from(nullProtoError);
 
       expect(converted.message).toBe('Null proto error.');
       expect(converted.code).toBe('NULL_PROTO');
@@ -1223,7 +1124,7 @@ describe('ErrorX', () => {
         type: 123, // number
       };
 
-      const error = ErrorX.toErrorX(apiError);
+      const error = ErrorX.from(apiError);
 
       expect(error.type).toBe('123');
     });
@@ -1234,9 +1135,113 @@ describe('ErrorX', () => {
         type: '',
       };
 
-      const error = ErrorX.toErrorX(apiError);
+      const error = ErrorX.from(apiError);
 
       expect(error.type).toBeUndefined();
+    });
+  });
+
+  describe('Configuration API', () => {
+    it('should return null when no configuration is set initially', () => {
+      const config = ErrorX.getConfig();
+      expect(config).toBeNull();
+    });
+
+    it('should allow setting global configuration', () => {
+      ErrorX.configure({
+        source: 'test-service',
+        docsBaseURL: 'https://docs.test.com',
+        docsMap: {
+          TEST_ERROR: 'errors/test',
+        },
+      });
+
+      const config = ErrorX.getConfig();
+      expect(config).toEqual({
+        source: 'test-service',
+        docsBaseURL: 'https://docs.test.com',
+        docsMap: {
+          TEST_ERROR: 'errors/test',
+        },
+      });
+    });
+
+    it('should use configured source as default', () => {
+      ErrorX.configure({
+        source: 'my-api',
+      });
+
+      const error = new ErrorX({ message: 'test error' });
+      expect(error.source).toBe('my-api');
+    });
+
+    it('should allow overriding configured source', () => {
+      ErrorX.configure({
+        source: 'my-api',
+      });
+
+      const error = new ErrorX({
+        message: 'test error',
+        source: 'custom-source',
+      });
+      expect(error.source).toBe('custom-source');
+    });
+
+    it('should generate docsUrl from configured docsBaseURL and docsMap', () => {
+      ErrorX.configure({
+        docsBaseURL: 'https://docs.example.com',
+        docsMap: {
+          AUTH_FAILED: 'errors/authentication',
+        },
+      });
+
+      const error = new ErrorX({
+        message: 'auth failed',
+        code: 'AUTH_FAILED',
+      });
+
+      expect(error.docsUrl).toBe('https://docs.example.com/errors/authentication');
+    });
+
+    it('should normalize slashes in docsUrl generation', () => {
+      ErrorX.configure({
+        docsBaseURL: 'https://docs.example.com/',
+        docsMap: {
+          TEST_ERROR: '/errors/test',
+        },
+      });
+
+      const error = new ErrorX({
+        message: 'test',
+        code: 'TEST_ERROR',
+      });
+
+      expect(error.docsUrl).toBe('https://docs.example.com/errors/test');
+    });
+
+    it('should allow overriding generated docsUrl', () => {
+      ErrorX.configure({
+        docsBaseURL: 'https://docs.example.com',
+        docsMap: {
+          TEST_ERROR: 'errors/test',
+        },
+      });
+
+      const error = new ErrorX({
+        message: 'test',
+        code: 'TEST_ERROR',
+        docsUrl: 'https://custom.com/error',
+      });
+
+      expect(error.docsUrl).toBe('https://custom.com/error');
+    });
+
+    it('should update configuration when configure is called multiple times', () => {
+      ErrorX.configure({ source: 'service-1' });
+      expect(ErrorX.getConfig()?.source).toBe('service-1');
+
+      ErrorX.configure({ source: 'service-2' });
+      expect(ErrorX.getConfig()?.source).toBe('service-2');
     });
   });
 });

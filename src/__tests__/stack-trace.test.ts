@@ -342,7 +342,11 @@ describe('Stack Trace Preservation', () => {
         expect(errorX.message).toContain('Error with circular reference from complex-scenarios.ts');
 
         // The circular reference should either be preserved or safely handled
-        if (errorX.metadata?.circular) {
+        if (
+          errorX.metadata?.circular &&
+          typeof errorX.metadata.circular === 'object' &&
+          'name' in errorX.metadata.circular
+        ) {
           expect(errorX.metadata?.circular.name).toBe('circular');
         } else {
           // If circular reference was replaced with safe value
@@ -379,17 +383,7 @@ describe('Stack Trace Preservation', () => {
           'complex-scenarios',
         ]);
 
-        // Should have actions
-        expect(errorX.actions).toBeDefined();
-        const actions = errorX.actions || [];
-        expect(
-          actions.some((action) => action.action === 'notify' && action.targets?.includes('banner'))
-        ).toBe(true);
-        expect(
-          actions.some(
-            (action) => action.action === 'redirect' && action.redirectURL === '/error-page'
-          )
-        ).toBe(true);
+        expect(errorX.metadata).toBeDefined();
       }
     });
   });
@@ -432,7 +426,7 @@ describe('Stack Trace Preservation', () => {
         expect(error).toBeInstanceOf(ErrorX);
         const errorX = error as ErrorX;
 
-        expect(errorX.message).toContain('Wrapped with toErrorX in error-handlers.ts');
+        expect(errorX.message).toContain('Wrapped with from in error-handlers.ts');
         expect(errorX.cause).toBeInstanceOf(ErrorX);
 
         const converted = errorX.cause as ErrorX;

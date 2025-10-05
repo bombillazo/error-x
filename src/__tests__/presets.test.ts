@@ -109,26 +109,6 @@ describe('HTTP', () => {
       expect(error.uiMessage).toBe('Custom message: Please log in');
     });
 
-    it('should add actions to preset', () => {
-      const error = new ErrorX({
-        ...ErrorX.HTTP.UNAUTHORIZED,
-        actions: [
-          {
-            action: 'redirect',
-            redirectURL: '/login',
-          },
-        ],
-      });
-
-      expect(error.httpStatus).toBe(401);
-      expect(error.actions).toEqual([
-        {
-          action: 'redirect',
-          redirectURL: '/login',
-        },
-      ]);
-    });
-
     it('should add cause to preset', () => {
       const originalError = new Error('Database connection failed');
       const error = new ErrorX({
