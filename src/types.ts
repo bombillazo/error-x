@@ -85,7 +85,7 @@ export type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
   /** Error type/name (default: 'Error') */
   name?: string;
   /** Error identifier code (auto-generated from name if not provided) */
-  code?: string;
+  code?: string | number;
   /** User-friendly message for UI display */
   uiMessage?: string | undefined;
   /** Original error that caused this error (preserves error chain) */
