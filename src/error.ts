@@ -767,14 +767,8 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     // Using a try-catch to fallback to safe serialization if needed
     let safeMetadata: ErrorXMetadata | undefined;
     if (this.metadata) {
-      try {
-        // Try direct serialization first (most common case, fastest)
-        JSON.stringify(this.metadata);
-        safeMetadata = this.metadata;
-      } catch {
-        // Fallback to safe stringify for circular references
-        safeMetadata = JSON.parse(safeStringify(this.metadata));
-      }
+      // Always use safeStringify to handle circular references and ensure a plain object
+      safeMetadata = JSON.parse(safeStringify(this.metadata));
     }
 
     const serialized: ErrorXSerialized = {
