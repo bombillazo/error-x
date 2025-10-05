@@ -9,7 +9,7 @@ Creates a new ErrorX instance with additional metadata merged with existing meta
 **Signature:**
 
 ```typescript
-withMetadata(additionalMetadata: ErrorMetadata): ErrorX;
+withMetadata(additionalMetadata: ErrorXMetadata): ErrorX;
 ```
 
 ## Parameters
@@ -37,7 +37,7 @@ additionalMetadata
 
 </td><td>
 
-[ErrorMetadata](./error-x.errormetadata.md)
+[ErrorXMetadata](./error-x.errorxmetadata.md)
 
 
 </td><td>

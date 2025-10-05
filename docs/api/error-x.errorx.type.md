@@ -9,5 +9,5 @@ Error type for categorization
 **Signature:**
 
 ```typescript
-readonly type: string | undefined;
+type: string | undefined;
 ```

@@ -37,7 +37,7 @@ yarn add @bombillazo/error-x
 ## Quick Start
 
 ```typescript
-import { ErrorX, HandlingTargets, type HandlingTarget, type ErrorAction } from 'error-x'
+import { ErrorX, type ErrorXAction } from '@bombillazo/error-x'
 
 // Minimal usage (all parameters optional)
 const error = new ErrorX()
@@ -50,10 +50,12 @@ const error = new ErrorX('User authentication failed', {
   name: 'AuthError',
   code: 'AUTH_FAILED',
   uiMessage: 'Please check your credentials and try again',
-  metadata: { userId: 123, loginAttempt: 3 }
+  metadata: { userId: 123, loginAttempt: 3 },
+  url: 'https://api.example.com/auth',
+  source: 'auth-service'
 })
 
-// Options object (backward compatible)
+// Options object
 const error = new ErrorX({
   message: 'User authentication failed',
   name: 'AuthError',
@@ -65,10 +67,14 @@ const error = new ErrorX({
     loginAttempt: 3,
   },
   actions: [
-    { action: 'notify', payload: { targets: [HandlingTargets.TOAST, HandlingTargets.BANNER] } },
-    { action: 'redirect', payload: { redirectURL: '/login', delay: 1000 } },
-    { action: 'custom', payload: { type: 'analytics', event: 'auth_failed', userId: 123, category: 'errors', severity: 'high' } }
-  ]
+    { action: 'notify', targets: ['toast', 'banner'] },
+    { action: 'redirect', redirectURL: '/login', delay: 1000 },
+    { action: 'custom', type: 'analytics', event: 'auth_failed', userId: 123, category: 'errors', severity: 'high' }
+  ],
+  url: 'https://api.example.com/auth',
+  href: 'https://docs.example.com/errors#auth-failed',
+  source: 'auth-service',
+  httpStatus: 401
 })
 
 // Smart conversion from unknown errors
@@ -109,9 +115,18 @@ new ErrorX(options?: {
   metadata?: Record<string, any>     // Optional: Additional context data
   actions?: ErrorAction[]            // Optional: Configuration for application actions to perform when error occurs
 })
+```
 
-// Smart conversion signature (converts any unknown input)
-new ErrorX(input: unknown)
+**For converting unknown errors** (like caught errors, API responses, etc.), use the static `toErrorX()` method:
+
+```typescript
+// Convert unknown error to ErrorX
+try {
+  await someOperation()
+} catch (error) {
+  const errorX = ErrorX.toErrorX(error) // Smart conversion from any error type
+  throw errorX
+}
 ```
 
 **All parameters are optional** - ErrorX uses sensible defaults and auto-generates missing values.
@@ -120,40 +135,45 @@ new ErrorX(input: unknown)
 
 | Property  | Type                         | Default Value                         | Description                                                       |
 | --------- | ---------------------------- | ------------------------------------- | ----------------------------------------------------------------- |
-| name      | `string`                     | `'Error'`                             | Error type/title                                                  |
-| code      | `string`                     | Auto-generated from name or `'ERROR'` | Error identifier (auto-generated from name in UPPER_SNAKE_CASE)   |
-| message   | `string`                     | `'An error occurred'`                 | Auto-formatted technical error message                            |
-| uiMessage | `string \| undefined`        | `undefined`                           | User-friendly message for display                                 |
-| stack     | `string`                     | Auto-generated                        | Stack trace with preservation and cleaning (inherited from Error) |
+| actions   | `ErrorAction[] \| undefined` | `undefined`                           | Array of actions to perform when error occurs                     |
 | cause     | `unknown`                    | `undefined`                           | Original error that caused this (preserves full error chain)      |
-| timestamp | `Date`                       | `new Date()`                          | When the error was created (readonly)                             |
+| code      | `string`                     | Auto-generated from name or `'ERROR'` | Error identifier (auto-generated from name in UPPER_SNAKE_CASE)   |
+| href      | `string \| undefined`        | `undefined`                           | Documentation URL for this specific error                         |
+| httpStatus | `number \| undefined`       | `undefined`                           | HTTP status code (100-599) for HTTP-related errors               |
+| message   | `string`                     | `'An error occurred'`                 | Auto-formatted technical error message                            |
 | metadata  | `Record<string, any> \| undefined` | `undefined`                        | Additional context and data                                       |
-| actions   | `ErrorAction[] \| undefined` | `undefined`                           | Array of actions to perform when error occurs (readonly)          |
+| name      | `string`                     | `'Error'`                             | Error type/title                                                  |
+| source    | `string \| undefined`        | `undefined` or from `ERROR_X_CONFIG`  | Where the error originated (service name, module, component)      |
+| stack     | `string`                     | Auto-generated                        | Stack trace with preservation and cleaning (inherited from Error) |
+| timestamp | `Date`                       | `new Date()`                          | When the error was created                                        |
+| type      | `string \| undefined`        | `undefined`                           | Error type for categorization                                     |
+| uiMessage | `string \| undefined`        | `undefined`                           | User-friendly message for display                                 |
+| url       | `string \| undefined`        | `undefined`                           | URL related to the error (API endpoint, page URL, resource URL)   |
 
 ### Actions System
 
 The `actions` property allows errors to trigger application logic, passing along the necessary data. Your application error handler can route or execute these actions to achieve the desired behavior.
 
-`actions` accepts an array of `ErrorAction` objects. The library provides predefined action types with type-safe payloads, and a `CustomAction` type for application-specific actions.
+`actions` accepts an array of `ErrorAction` objects. The library provides predefined action types with type-safe properties, and a `CustomAction` type for application-specific actions.
 
 #### Action Types
 
-| Action Type | Action Value | Required Payload | Description |
-| ----------- | ------------ | ---------------- | ----------- |
-| NotifyAction | `'notify'` | `{ targets: HandlingTarget[], ...any }` | Display notification in specified UI targets |
-| LogoutAction | `'logout'` | `{ ...any }` (optional) | Log out the current user |
-| RedirectAction | `'redirect'` | `{ redirectURL: string, ...any }` | Redirect to a specific URL |
-| CustomAction | `'custom'` | `{ ...any }` (optional) | Application-specific actions with flexible payload structure |
+| Action Type | Action Value | Required Properties | Description |
+| ----------- | ------------ | ------------------- | ----------- |
+| CustomAction | `'custom'` | Any additional properties | Application-specific actions with flexible structure |
+| LogoutAction | `'logout'` | Any additional properties | Log out the current user |
+| NotifyAction | `'notify'` | `targets: string[]` + any additional properties | Display notification in specified UI targets |
+| RedirectAction | `'redirect'` | `redirectURL: string` + any additional properties | Redirect to a specific URL |
 
 ```typescript
-import { HandlingTargets, type ErrorAction, type CustomAction } from 'error-x'
+import { type ErrorAction, type CustomAction } from 'error-x'
 
-// Predefined actions with typed payloads
+// Predefined actions with typed properties
 const error1 = new ErrorX({
   message: 'Payment failed',
   actions: [
-    { action: 'notify', payload: { targets: [HandlingTargets.MODAL] } },
-    { action: 'redirect', payload: { redirectURL: '/payment', delay: 2000 } }
+    { action: 'notify', targets: ['modal'] },
+    { action: 'redirect', redirectURL: '/payment', delay: 2000 }
   ]
 })
 
@@ -161,8 +181,8 @@ const error1 = new ErrorX({
 const error2 = new ErrorX({
   message: 'Session expired',
   actions: [
-    { action: 'logout', payload: { clearStorage: true } },
-    { action: 'notify', payload: { targets: [HandlingTargets.TOAST] } }
+    { action: 'logout', clearStorage: true },
+    { action: 'notify', targets: ['toast'] }
   ]
 })
 
@@ -170,30 +190,24 @@ const error2 = new ErrorX({
 const error3 = new ErrorX({
   message: 'API rate limit exceeded',
   actions: [
-    { 
-      action: 'custom', 
-      payload: { 
-        type: 'show-rate-limit-modal', 
-        resetTime: Date.now() + 60000,
-        message: 'Too many requests. Please wait.' 
-      } 
+    {
+      action: 'custom',
+      type: 'show-rate-limit-modal',
+      resetTime: Date.now() + 60000,
+      message: 'Too many requests. Please wait.'
     },
-    { 
-      action: 'custom', 
-      payload: { 
-        type: 'analytics-track', 
-        event: 'rate_limit_hit', 
-        severity: 'warning',
-        category: 'api'
-      } 
+    {
+      action: 'custom',
+      type: 'analytics-track',
+      event: 'rate_limit_hit',
+      severity: 'warning',
+      category: 'api'
     },
-    { 
-      action: 'custom', 
-      payload: { 
-        type: 'cache-request', 
-        retryAfter: 60,
-        endpoint: '/api/users'
-      } 
+    {
+      action: 'custom',
+      type: 'cache-request',
+      retryAfter: 60,
+      endpoint: '/api/users'
     }
   ]
 })
@@ -216,21 +230,17 @@ For the `NotifyAction`, notify targets can be predefined enum values or custom s
 | NOTIFICATION | `'notification'` | System notification |
 
 ```typescript
-import { HandlingTargets, type HandlingTarget } from 'error-x'
-
 const error = new ErrorX({
   message: 'Mixed error',
   actions: [
-    { 
-      action: 'notify', 
-      payload: { 
-        targets: [
-          HandlingTargets.CONSOLE,  // Predefined
-          'my-custom-logger',       // Custom
-          HandlingTargets.BANNER,   // Predefined
-          'analytics-tracker'       // Custom
-        ]
-      }
+    {
+      action: 'notify',
+      targets: [
+        'console',
+        'my-custom-logger',
+        'banner',
+        'analytics-tracker'
+      ]
     }
   ]
 })
@@ -284,8 +294,8 @@ throw new ErrorX({
   ...ErrorX.HTTP.UNAUTHORIZED,
   metadata: { attemptedAction: 'viewProfile', userId: 456 },
   actions: [
-    { action: 'logout', payload: { clearStorage: true } },
-    { action: 'redirect', payload: { redirectURL: '/login' } }
+    { action: 'logout', clearStorage: true },
+    { action: 'redirect', redirectURL: '/login' }
   ]
 })
 ```
@@ -387,7 +397,7 @@ const requireAuth = (req, res, next) => {
     throw new ErrorX({
       ...ErrorX.HTTP.UNAUTHORIZED,
       actions: [
-        { action: 'redirect', payload: { redirectURL: '/login' } }
+        { action: 'redirect', redirectURL: '/login' }
       ]
     })
   }
@@ -408,6 +418,69 @@ if (isRateLimited(req.ip)) {
   })
 }
 ```
+
+## Environment Configuration
+
+ErrorX can be configured via the `ERROR_X_CONFIG` environment variable to set default values across your application.
+
+### Configuration Structure
+
+Set the `ERROR_X_CONFIG` environment variable to a JSON string with the following structure:
+
+```json
+{
+  "source": "my-service-name",
+  "docsBaseURL": "https://docs.example.com/errors/",
+  "docsMap": {
+    "AUTH_FAILED": "authentication#auth-failed",
+    "NOT_FOUND": "common#not-found",
+    "VALIDATION_ERROR": "validation#errors"
+  }
+}
+```
+
+### Configuration Options
+
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `source` | `string` | Default source value for all ErrorX instances in your application |
+| `docsBaseURL` | `string` | Base URL for error documentation |
+| `docsMap` | `Record<string, string>` | Maps error codes to documentation paths |
+
+### How It Works
+
+1. **Default Source**: If `source` is configured and not provided when creating an error, the configured value is used
+2. **Auto-Generated href**: If both `docsBaseURL` and `docsMap` are configured, and the error's code matches a key in `docsMap`, the `href` is automatically generated as: `docsBaseURL + docsMap[code]`
+3. **Manual Override**: Values provided directly to ErrorX constructor take precedence over environment config
+
+### Example Usage
+
+```bash
+# Set environment variable
+export ERROR_X_CONFIG='{"source":"auth-service","docsBaseURL":"https://docs.example.com/errors/","docsMap":{"AUTH_FAILED":"auth#failed"}}'
+```
+
+```typescript
+// This error will have:
+// - source: 'auth-service' (from config)
+// - href: 'https://docs.example.com/errors/auth#failed' (auto-generated)
+const error = new ErrorX({
+  message: 'Authentication failed',
+  code: 'AUTH_FAILED'
+})
+
+// Manual values override config
+const error2 = new ErrorX({
+  message: 'Another auth error',
+  code: 'AUTH_FAILED',
+  source: 'custom-service', // Overrides config
+  href: 'https://custom-docs.com/auth' // Overrides auto-generated href
+})
+```
+
+### Node.js and Isomorphic Support
+
+The environment configuration works in Node.js environments where `process.env` is available. In browser environments, the configuration is safely ignored (no errors thrown).
 
 ## Smart Features
 
@@ -436,6 +509,33 @@ new ErrorX({ message: 'database connection failed' })
 
 new ErrorX({ message: 'user not found. please check credentials' })
 // message: 'User not found. Please check credentials.'
+```
+
+### Smart Error Conversion
+
+The `ErrorX.toErrorX()` static method intelligently converts any error type to ErrorX:
+
+```typescript
+// Convert Error instances
+try {
+  throw new Error('Something failed')
+} catch (error) {
+  const errorX = ErrorX.toErrorX(error)
+  // Preserves name, message, cause, and stack
+}
+
+// Convert API error responses
+const apiError = {
+  status: 404,
+  statusText: 'Not Found',
+  error: 'User not found'
+}
+const errorX = ErrorX.toErrorX(apiError)
+// Extracts: message, httpStatus, and stores original in metadata
+
+// Convert any unknown value
+const errorX = ErrorX.toErrorX('Something went wrong')
+// Creates ErrorX with the string as the message
 ```
 
 ## Usage Examples
@@ -473,7 +573,7 @@ async function fetchUser(id: string) {
     return response.json()
   } catch (error) {
     // Convert any error to ErrorX and add context
-    const errorX = new ErrorX(error)
+    const errorX = ErrorX.toErrorX(error)
     throw errorX.withMetadata({
       userId: id,
       operation: 'fetchUser',
@@ -514,38 +614,38 @@ try {
 
 ### Why use action type "custom" instead of an open string type for CustomAction?
 
-The `ErrorAction` type uses a discriminated union based on the `action` property. When you use arbitrary values instead of the predefined action types (`'notify'`, `'logout'`, `'redirect'`, `'custom'`), it breaks TypeScript's ability to properly narrow the payload types.
+The `ErrorAction` type uses a discriminated union based on the `action` property. When you use arbitrary values instead of the predefined action types (`notify`, `logout`, `redirect`, `custom`), it breaks TypeScript's ability to properly narrow the property types.
 
-**The Problem:** If `ErrorAction` allowed any string as the action type, TypeScript would default to the most permissive payload type (`{ ...any }`) for all actions, causing type definition to leak between different action types.
+**The Problem:** If `ErrorAction` allowed any string as the action type, TypeScript would default to the most permissive type (`{ ...any }`) for all actions, causing type definition to leak between different action types.
 
 ```typescript
 // ❌ Cannot be done - breaks discriminated union
 const error = new ErrorX({
   actions: [
-    { action: 'analytics', payload: { event: 'error' } }, // Loses type safety
-    { action: 'notify', payload: { targets: ['toast'] } }, // Payload type becomes too permissive
-    { action: 'redirect', payload: { redirectURL: '/home' } } // Required properties not enforced
+    { action: 'analytics', event: 'error' }, // Loses type safety
+    { action: 'notify', targets: ['toast'] }, // Type becomes too permissive
+    { action: 'redirect', redirectURL: '/home' } // Required properties not enforced
   ]
 })
 
 // ✅ Do this - maintains proper type discrimination
 const error = new ErrorX({
   actions: [
-    { action: 'custom', payload: { type: 'analytics', event: 'error' } },
-    { action: 'notify', payload: { targets: ['toast'] } }, // Properly typed with required 'targets'
-    { action: 'redirect', payload: { redirectURL: '/home' } } // Properly typed with required 'redirectURL'
+    { action: 'custom', type: 'analytics', event: 'error' },
+    { action: 'notify', targets: ['toast'] }, // Properly typed with required 'targets'
+    { action: 'redirect', redirectURL: '/home' } // Properly typed with required 'redirectURL'
   ]
 })
 ```
 
-**The Solution:** Using `action: 'custom'` with a discriminating `type` property in the payload preserves the discriminated union while allowing unlimited flexibility for custom actions. This approach:
+**The Solution:** Using `action: 'custom'` with a discriminating `type` property preserves the discriminated union while allowing unlimited flexibility for custom actions. This approach:
 
 - Maintains type safety for predefined actions (`notify`, `logout`, `redirect`)
 - Provides a structured way to handle custom application logic
 - Allows your error handlers to properly switch on action types
-- Enables you to create your own discriminated unions within custom payloads
+- Enables you to create your own discriminated unions within custom actions
 
-Ideally, we would support custom action types directly in the action. If there is a solution to this problem, we are more than happy to review it. Please open an issue or PR!.
+Ideally, we would support custom action types directly. If there is a solution to this problem, we are more than happy to review it. Please open an issue or PR!.
 
 ## License
 

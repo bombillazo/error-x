@@ -9,5 +9,5 @@ HTTP status code (100-599) for HTTP-related errors
 **Signature:**
 
 ```typescript
-readonly httpStatus: number | undefined;
+httpStatus: number | undefined;
 ```

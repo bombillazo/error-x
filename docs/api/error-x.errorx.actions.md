@@ -9,5 +9,5 @@ Error actions for UI behavior and handling
 **Signature:**
 
 ```typescript
-readonly actions: ErrorAction[] | undefined;
+actions: ErrorXAction[] | undefined;
 ```

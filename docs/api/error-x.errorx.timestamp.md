@@ -9,5 +9,5 @@ Timestamp when the error was created
 **Signature:**
 
 ```typescript
-readonly timestamp: Date;
+timestamp: Date;
 ```

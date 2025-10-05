@@ -9,7 +9,7 @@ Creates a new ErrorX instance with enhanced error handling capabilities.
 **Signature:**
 
 ```typescript
-constructor(messageOrOptions?: string | ErrorXOptions | unknown, additionalOptions?: Partial<ErrorXOptions>);
+constructor(messageOrOptions?: string | ErrorXOptions, additionalOptions?: Partial<ErrorXOptions>);
 ```
 
 ## Parameters
@@ -37,12 +37,12 @@ messageOrOptions
 
 </td><td>
 
-string \| [ErrorXOptions](./error-x.errorxoptions.md) \| unknown
+string \| [ErrorXOptions](./error-x.errorxoptions.md)
 
 
 </td><td>
 
-_(Optional)_ Error message string, ErrorXOptions object, or any value to convert to ErrorX
+_(Optional)_ Error message string or ErrorXOptions object
 
 
 </td></tr>
@@ -79,21 +79,21 @@ const error2 = new ErrorX('Database query failed', {
   metadata: { query: 'SELECT * FROM users', timeout: 5000 }
 })
 
-// Create with options object (backward compatible)
+// Create with options object
 const error3 = new ErrorX({
   message: 'Database query failed',
   name: 'DatabaseError',
   code: 'DB_QUERY_FAILED',
   actions: [
-    { action: 'notify', payload: { targets: [HandlingTargets.TOAST] } }
+    { action: 'notify', targets: ['toast'] }
   ]
 })
 
-// Create with unknown input (smart conversion)
-const apiError = { message: 'User not found', code: 404 }
-const error4 = new ErrorX(apiError)
-
 // Create with no options (uses defaults)
-const error5 = new ErrorX()
+const error4 = new ErrorX()
+
+// For converting unknown errors, use ErrorX.toErrorX()
+const apiError = { message: 'User not found', code: 404 }
+const error5 = ErrorX.toErrorX(apiError)
 ```
 
