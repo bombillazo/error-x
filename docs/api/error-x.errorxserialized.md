@@ -17,16 +17,15 @@ type ErrorXSerialized = {
     stack?: string;
     metadata: ErrorXMetadata | undefined;
     timestamp: string;
-    actions?: ErrorXAction[];
     cause?: ErrorXCause;
     httpStatus?: number;
     type?: string;
-    url?: string;
-    href?: string;
+    sourceUrl?: string;
+    docsUrl?: string;
     source?: string;
 };
 ```
-**References:** [ErrorXMetadata](./error-x.errorxmetadata.md)<!-- -->, [ErrorXAction](./error-x.errorxaction.md)<!-- -->, [ErrorXCause](./error-x.errorxcause.md)
+**References:** [ErrorXMetadata](./error-x.errorxmetadata.md)<!-- -->, [ErrorXCause](./error-x.errorxcause.md)
 
 ## Example
 
@@ -40,9 +39,6 @@ const serialized: SerializableError = {
   stack: 'Error: Authentication failed.\n    at login (auth.ts:42:15)',
   metadata: { userId: 123, loginAttempt: 3 },
   timestamp: '2024-01-15T10:30:45.123Z',
-  actions: [
-    { action: 'logout', clearStorage: true }
-  ],
   cause: {
     name: 'NetworkError',
     message: 'Request timeout.',

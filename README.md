@@ -4,19 +4,19 @@
 [![npm](https://img.shields.io/npm/dt/@bombillazo/error-x.svg?style=for-the-badge)](https://www.npmjs.com/package/@bombillazo/error-x)
 [![npm](https://img.shields.io/npm/l/@bombillazo/error-x?style=for-the-badge)](https://github.com/bombillazo/error-x/blob/master/LICENSE)
 
-A smart, isomorphic, and opinionated error library for TypeScript applications. Provides type-safe error handling with great DX, solving common pain points like unknown error types, lost stack traces, async error handling, and error serialization.
+A smart, isomorphic, and type-safe error library for TypeScript applications. Provides excellent DX with intelligent error conversion, stack trace preservation, serialization support, and HTTP error presets.
 
 ## Features
 
-- 🎯 **Type-safe error handling** for great DX
+- 🎯 **Type-safe error handling** with full TypeScript support
 - 🔄 **Smart error conversion** from various formats (API responses, strings, Error objects)
-- 📝 **Auto-formatted messages and error codes** with proper capitalization and punctuation
 - 👤 **User-friendly messages** separate from technical messages
 - 🔗 **Error chaining** with cause preservation and stack trace preservation
 - 📊 **Flexible metadata** for additional context
-- 🎛️ **Error handling options** for UI behavior and application actions
-- 📦 **Serialization/deserialization** support for network transfer and storage
-- 🎨 **Pre-configured error presets** for common error types
+- 📦 **Serialization/deserialization** for network transfer and storage
+- 🎨 **HTTP error presets** for all status codes (400-511)
+- 🌐 **Isomorphic** - works in Node.js and browsers
+- ⚙️ **Global configuration** for defaults and documentation URLs
 
 ## Installation
 
@@ -37,505 +37,218 @@ yarn add @bombillazo/error-x
 ## Quick Start
 
 ```typescript
-import { ErrorX, type ErrorXAction } from '@bombillazo/error-x'
+import { ErrorX, http } from '@bombillazo/error-x'
 
-// Minimal usage (all parameters optional)
-const error = new ErrorX()
+// Simple usage
+throw new ErrorX('Database connection failed')
 
-// Simple string message
-const error = new ErrorX('Database connection failed')
-
-// String message with additional options
-const error = new ErrorX('User authentication failed', {
-  name: 'AuthError',
-  code: 'AUTH_FAILED',
-  uiMessage: 'Please check your credentials and try again',
-  metadata: { userId: 123, loginAttempt: 3 },
-  url: 'https://api.example.com/auth',
-  source: 'auth-service'
-})
-
-// Options object
-const error = new ErrorX({
+// With options
+throw new ErrorX({
   message: 'User authentication failed',
   name: 'AuthError',
   code: 'AUTH_FAILED',
   uiMessage: 'Please check your credentials and try again',
-  cause: originalError, // Chain errors while preserving stack traces
-  metadata: {
-    userId: 123,
-    loginAttempt: 3,
-  },
-  actions: [
-    { action: 'notify', targets: ['toast', 'banner'] },
-    { action: 'redirect', redirectURL: '/login', delay: 1000 },
-    { action: 'custom', type: 'analytics', event: 'auth_failed', userId: 123, category: 'errors', severity: 'high' }
-  ],
-  url: 'https://api.example.com/auth',
-  href: 'https://docs.example.com/errors#auth-failed',
+  metadata: { userId: 123, loginAttempt: 3 },
+  sourceUrl: 'https://api.example.com/auth',
   source: 'auth-service',
   httpStatus: 401
 })
 
+// Using HTTP presets
+throw new ErrorX(http.notFound)
+
+// Customizing presets
+throw new ErrorX({
+  ...http.unauthorized,
+  message: 'Session expired',
+  metadata: { userId: 123 }
+})
+
 // Smart conversion from unknown errors
-const apiError = { message: 'User not found', code: 404, statusText: 'Not Found' }
-const error = new ErrorX(apiError)
+try {
+  await someOperation()
+} catch (error) {
+  const errorX = ErrorX.from(error)
+  throw errorX.withMetadata({ context: 'additional info' })
+}
 ```
 
 ## Documentation
 
-### API Reference
-
-For complete API documentation with detailed descriptions, examples, and type information, see:
-
-- **[📖 Complete API Documentation](docs/api/error-x.md)** - Full API reference with examples
-- **[🏗️ ErrorX Class](docs/api/error-x.errorx.md)** - Main ErrorX class documentation
-- **[🔧 Types](docs/api/error-x.md#type-aliases)** - All available types and interfaces
-
 ### Constructor
 
 ```typescript
-// String message signature
-new ErrorX(message: string, options?: {
-  name?: string                      // Optional: Error type
-  code?: string | number             // Optional: Error code (auto-generated from name if not provided)
-  uiMessage?: string                 // Optional: User-friendly message
-  cause?: Error | unknown            // Optional: Original error that caused this (preserves stack traces)
-  metadata?: Record<string, any>     // Optional: Additional context data
-  actions?: ErrorAction[]            // Optional: Configuration for application actions to perform when error occurs
-})
-
-// Options object signature (backward compatible)
-new ErrorX(options?: {
-  name?: string                      // Optional: Error type
-  message?: string                   // Optional: Technical error message (default: 'An error occurred')
-  code?: string | number             // Optional: Error code (auto-generated from name if not provided)
-  uiMessage?: string                 // Optional: User-friendly message
-  cause?: Error | unknown            // Optional: Original error that caused this (preserves stack traces)
-  metadata?: Record<string, any>     // Optional: Additional context data
-  actions?: ErrorAction[]            // Optional: Configuration for application actions to perform when error occurs
-})
+new ErrorX(message?: string | ErrorXOptions)
 ```
 
-**For converting unknown errors** (like caught errors, API responses, etc.), use the static `toErrorX()` method:
-
-```typescript
-// Convert unknown error to ErrorX
-try {
-  await someOperation()
-} catch (error) {
-  const errorX = ErrorX.toErrorX(error) // Smart conversion from any error type
-  throw errorX
-}
-```
-
-**All parameters are optional** - ErrorX uses sensible defaults and auto-generates missing values.
-
-### Properties
+All parameters are optional. ErrorX uses sensible defaults:
 
 | Property  | Type                         | Default Value                         | Description                                                       |
 | --------- | ---------------------------- | ------------------------------------- | ----------------------------------------------------------------- |
-| actions   | `ErrorAction[] \| undefined` | `undefined`                           | Array of actions to perform when error occurs                     |
-| cause     | `unknown`                    | `undefined`                           | Original error that caused this (preserves full error chain)      |
-| code      | `string`                     | Auto-generated from name or `'ERROR'` | Error identifier (auto-generated from name in UPPER_SNAKE_CASE)   |
-| href      | `string \| undefined`        | `undefined`                           | Documentation URL for this specific error                         |
-| httpStatus | `number \| undefined`       | `undefined`                           | HTTP status code (100-599) for HTTP-related errors               |
-| message   | `string`                     | `'An error occurred'`                 | Auto-formatted technical error message                            |
-| metadata  | `Record<string, any> \| undefined` | `undefined`                        | Additional context and data                                       |
+| message   | `string`                     | `'An error occurred'`                 | Technical error message (pass-through, no auto-formatting)        |
 | name      | `string`                     | `'Error'`                             | Error type/title                                                  |
-| source    | `string \| undefined`        | `undefined` or from `ERROR_X_CONFIG`  | Where the error originated (service name, module, component)      |
-| stack     | `string`                     | Auto-generated                        | Stack trace with preservation and cleaning (inherited from Error) |
-| timestamp | `Date`                       | `new Date()`                          | When the error was created                                        |
-| type      | `string \| undefined`        | `undefined`                           | Error type for categorization                                     |
+| code      | `string \| number`           | Auto-generated from name or `'ERROR'` | Error identifier (auto-generated from name in UPPER_SNAKE_CASE)   |
 | uiMessage | `string \| undefined`        | `undefined`                           | User-friendly message for display                                 |
-| url       | `string \| undefined`        | `undefined`                           | URL related to the error (API endpoint, page URL, resource URL)   |
+| cause     | `Error \| unknown`           | `undefined`                           | Original error that caused this (preserves full error chain)      |
+| metadata  | `Record<string, unknown> \| undefined` | `undefined`                        | Additional context and data                                       |
+| httpStatus | `number \| undefined`       | `undefined`                           | HTTP status code (100-599) for HTTP-related errors               |
+| type      | `string \| undefined`        | `undefined`                           | Error type for categorization (e.g., 'http', 'validation')       |
+| sourceUrl | `string \| undefined`        | `undefined`                           | URL related to the error (API endpoint, page URL, resource URL)   |
+| docsUrl   | `string \| undefined`        | `undefined` or auto-generated         | Documentation URL for this specific error                         |
+| source    | `string \| undefined`        | `undefined` or from config            | Where the error originated (service name, module, component)      |
+| timestamp | `Date`                       | `new Date()`                          | When the error was created (read-only)                            |
+| stack     | `string`                     | Auto-generated                        | Stack trace with preservation and cleaning (inherited from Error) |
 
-### Actions System
+### HTTP Error Presets
 
-The `actions` property allows errors to trigger application logic, passing along the necessary data. Your application error handler can route or execute these actions to achieve the desired behavior.
-
-`actions` accepts an array of `ErrorAction` objects. The library provides predefined action types with type-safe properties, and a `CustomAction` type for application-specific actions.
-
-#### Action Types
-
-| Action Type | Action Value | Required Properties | Description |
-| ----------- | ------------ | ------------------- | ----------- |
-| CustomAction | `'custom'` | Any additional properties | Application-specific actions with flexible structure |
-| LogoutAction | `'logout'` | Any additional properties | Log out the current user |
-| NotifyAction | `'notify'` | `targets: string[]` + any additional properties | Display notification in specified UI targets |
-| RedirectAction | `'redirect'` | `redirectURL: string` + any additional properties | Redirect to a specific URL |
+ErrorX provides pre-configured error templates via the `http` export:
 
 ```typescript
-import { type ErrorAction, type CustomAction } from 'error-x'
+import { ErrorX, http } from '@bombillazo/error-x'
 
-// Predefined actions with typed properties
-const error1 = new ErrorX({
-  message: 'Payment failed',
-  actions: [
-    { action: 'notify', targets: ['modal'] },
-    { action: 'redirect', redirectURL: '/payment', delay: 2000 }
-  ]
-})
+// Use preset directly
+throw new ErrorX(http.notFound)
+// Result: 404 error with message "Not found.", code "NOT_FOUND", etc.
 
-// Logout action
-const error2 = new ErrorX({
-  message: 'Session expired',
-  actions: [
-    { action: 'logout', clearStorage: true },
-    { action: 'notify', targets: ['toast'] }
-  ]
-})
-
-// Custom actions for application-specific logic
-const error3 = new ErrorX({
-  message: 'API rate limit exceeded',
-  actions: [
-    {
-      action: 'custom',
-      type: 'show-rate-limit-modal',
-      resetTime: Date.now() + 60000,
-      message: 'Too many requests. Please wait.'
-    },
-    {
-      action: 'custom',
-      type: 'analytics-track',
-      event: 'rate_limit_hit',
-      severity: 'warning',
-      category: 'api'
-    },
-    {
-      action: 'custom',
-      type: 'cache-request',
-      retryAfter: 60,
-      endpoint: '/api/users'
-    }
-  ]
-})
-```
-
-### Notify Targets
-
-For the `NotifyAction`, notify targets can be predefined enum values or custom strings for flexibility:
-
-#### Predefined Display Targets
-
-| Target | Enum Value | Description |
-| ------ | ---------- | ----------- |
-| MODAL | `'modal'` | Display in a modal dialog |
-| TOAST | `'toast'` | Display as a toast notification |
-| INLINE | `'inline'` | Display inline with content |
-| BANNER | `'banner'` | Display as a banner/alert bar |
-| CONSOLE | `'console'` | Log to browser/server console |
-| LOGGER | `'logger'` | Send to logging service |
-| NOTIFICATION | `'notification'` | System notification |
-
-```typescript
-const error = new ErrorX({
-  message: 'Mixed error',
-  actions: [
-    {
-      action: 'notify',
-      targets: [
-        'console',
-        'my-custom-logger',
-        'banner',
-        'analytics-tracker'
-      ]
-    }
-  ]
-})
-```
-
-## Error Presets
-
-ErrorX provides pre-configured error templates for common scenarios, making it easy to create consistent, well-structured errors without repetition. All HTTP presets (400-511) are included with proper status codes, messages, and user-friendly text.
-
-### Features
-
-- ✅ **Pre-configured templates** with httpStatus, code, name, message, and uiMessage
-- ✅ **Type-safe** with full TypeScript support
-- ✅ **Fully customizable** via destructuring and override pattern
-- ✅ **Categorized by type** - all HTTP presets include `type: 'http'` for easy filtering
-- ✅ **User-friendly messages** included for all presets
-
-### Usage Patterns
-
-#### 1. Direct Usage
-
-Use a preset as-is without modifications:
-
-```typescript
-import { ErrorX } from '@bombillazo/error-x'
-
-// Simple usage
-throw new ErrorX(ErrorX.HTTP.NOT_FOUND)
-// Result: 404 error with default message and UI message
-```
-
-#### 2. Override Specific Fields
-
-Customize the error while keeping other preset values:
-
-```typescript
+// Override specific fields
 throw new ErrorX({
-  ...ErrorX.HTTP.NOT_FOUND,
+  ...http.notFound,
   message: 'User not found',
   metadata: { userId: 123 }
 })
-// Result: 404 error with custom message but keeps httpStatus, code, name, uiMessage, type
-```
 
-#### 3. Add Metadata and Actions
-
-Enhance presets with additional context and behaviors:
-
-```typescript
-throw new ErrorX({
-  ...ErrorX.HTTP.UNAUTHORIZED,
-  metadata: { attemptedAction: 'viewProfile', userId: 456 },
-  actions: [
-    { action: 'logout', clearStorage: true },
-    { action: 'redirect', redirectURL: '/login' }
-  ]
-})
-```
-
-#### 4. Add Error Cause
-
-Chain errors by adding a cause:
-
-```typescript
+// Add error cause
 try {
   // some operation
 } catch (originalError) {
   throw new ErrorX({
-    ...ErrorX.HTTP.INTERNAL_SERVER_ERROR,
+    ...http.internalServerError,
     cause: originalError,
     metadata: { operation: 'database-query' }
   })
 }
 ```
 
-### Available HTTP Presets
+#### Available Presets
 
-#### 4xx Client Errors
+All presets use **camelCase naming** and include:
+- `httpStatus`: HTTP status code
+- `code`: Error code in UPPER_SNAKE_CASE
+- `name`: Descriptive error name
+- `message`: Technical message with proper sentence casing and period
+- `uiMessage`: User-friendly message
+- `type`: Set to `'http'` for all HTTP presets
 
-| Preset | Status | Description |
-| ------ | ------ | ----------- |
-| BAD_REQUEST | 400 | Invalid request data |
-| UNAUTHORIZED | 401 | Authentication required |
-| PAYMENT_REQUIRED | 402 | Payment required to access resource |
-| FORBIDDEN | 403 | Insufficient permissions |
-| NOT_FOUND | 404 | Resource not found |
-| METHOD_NOT_ALLOWED | 405 | HTTP method not allowed |
-| NOT_ACCEPTABLE | 406 | Requested format not supported |
-| PROXY_AUTHENTICATION_REQUIRED | 407 | Proxy authentication required |
-| REQUEST_TIMEOUT | 408 | Request took too long |
-| CONFLICT | 409 | Resource conflict |
-| GONE | 410 | Resource no longer available |
-| LENGTH_REQUIRED | 411 | Missing length information |
-| PRECONDITION_FAILED | 412 | Required condition not met |
-| PAYLOAD_TOO_LARGE | 413 | Request payload too large |
-| URI_TOO_LONG | 414 | Request URL too long |
-| UNSUPPORTED_MEDIA_TYPE | 415 | File type not supported |
-| RANGE_NOT_SATISFIABLE | 416 | Requested range cannot be satisfied |
-| EXPECTATION_FAILED | 417 | Server cannot meet request requirements |
-| IM_A_TEAPOT | 418 | I'm a teapot (RFC 2324) |
-| UNPROCESSABLE_ENTITY | 422 | Validation failed |
-| LOCKED | 423 | Resource is locked |
-| FAILED_DEPENDENCY | 424 | Request failed due to dependency error |
-| TOO_EARLY | 425 | Request sent too early |
-| UPGRADE_REQUIRED | 426 | Upgrade required to continue |
-| PRECONDITION_REQUIRED | 428 | Required conditions missing |
-| TOO_MANY_REQUESTS | 429 | Rate limit exceeded |
-| REQUEST_HEADER_FIELDS_TOO_LARGE | 431 | Request headers too large |
-| UNAVAILABLE_FOR_LEGAL_REASONS | 451 | Content unavailable for legal reasons |
+**4xx Client Errors:**
+`badRequest`, `unauthorized`, `paymentRequired`, `forbidden`, `notFound`, `methodNotAllowed`, `notAcceptable`, `proxyAuthenticationRequired`, `requestTimeout`, `conflict`, `gone`, `lengthRequired`, `preconditionFailed`, `payloadTooLarge`, `uriTooLong`, `unsupportedMediaType`, `rangeNotSatisfiable`, `expectationFailed`, `imATeapot`, `unprocessableEntity`, `locked`, `failedDependency`, `tooEarly`, `upgradeRequired`, `preconditionRequired`, `tooManyRequests`, `requestHeaderFieldsTooLarge`, `unavailableForLegalReasons`
 
-#### 5xx Server Errors
+**5xx Server Errors:**
+`internalServerError`, `notImplemented`, `badGateway`, `serviceUnavailable`, `gatewayTimeout`, `httpVersionNotSupported`, `variantAlsoNegotiates`, `insufficientStorage`, `loopDetected`, `notExtended`, `networkAuthenticationRequired`
 
-| Preset | Status | Description |
-| ------ | ------ | ----------- |
-| INTERNAL_SERVER_ERROR | 500 | Unexpected server error |
-| NOT_IMPLEMENTED | 501 | Feature not implemented |
-| BAD_GATEWAY | 502 | Upstream server error |
-| SERVICE_UNAVAILABLE | 503 | Service temporarily down |
-| GATEWAY_TIMEOUT | 504 | Upstream timeout |
-| HTTP_VERSION_NOT_SUPPORTED | 505 | HTTP version not supported |
-| VARIANT_ALSO_NEGOTIATES | 506 | Internal configuration error |
-| INSUFFICIENT_STORAGE | 507 | Insufficient storage |
-| LOOP_DETECTED | 508 | Infinite loop detected |
-| NOT_EXTENDED | 510 | Additional extensions required |
-| NETWORK_AUTHENTICATION_REQUIRED | 511 | Network authentication required |
+### Static Methods
 
-### Real-World Examples
+#### `ErrorX.from(error: unknown): ErrorX`
 
-#### API Endpoint
-
-```typescript
-import { ErrorX } from '@bombillazo/error-x'
-
-app.get('/users/:id', async (req, res) => {
-  const user = await db.users.findById(req.params.id)
-
-  if (!user) {
-    throw new ErrorX({
-      ...ErrorX.HTTP.NOT_FOUND,
-      message: 'User not found',
-      metadata: { userId: req.params.id }
-    })
-  }
-
-  res.json(user)
-})
-```
-
-#### Authentication Middleware
-
-```typescript
-const requireAuth = (req, res, next) => {
-  if (!req.user) {
-    throw new ErrorX({
-      ...ErrorX.HTTP.UNAUTHORIZED,
-      actions: [
-        { action: 'redirect', redirectURL: '/login' }
-      ]
-    })
-  }
-  next()
-}
-```
-
-#### Rate Limiting
-
-```typescript
-if (isRateLimited(req.ip)) {
-  throw new ErrorX({
-    ...ErrorX.HTTP.TOO_MANY_REQUESTS,
-    metadata: {
-      ip: req.ip,
-      retryAfter: 60
-    }
-  })
-}
-```
-
-## Environment Configuration
-
-ErrorX can be configured via the `ERROR_X_CONFIG` environment variable to set default values across your application.
-
-### Configuration Structure
-
-Set the `ERROR_X_CONFIG` environment variable to a JSON string with the following structure:
-
-```json
-{
-  "source": "my-service-name",
-  "docsBaseURL": "https://docs.example.com/errors/",
-  "docsMap": {
-    "AUTH_FAILED": "authentication#auth-failed",
-    "NOT_FOUND": "common#not-found",
-    "VALIDATION_ERROR": "validation#errors"
-  }
-}
-```
-
-### Configuration Options
-
-| Option | Type | Description |
-| ------ | ---- | ----------- |
-| `source` | `string` | Default source value for all ErrorX instances in your application |
-| `docsBaseURL` | `string` | Base URL for error documentation |
-| `docsMap` | `Record<string, string>` | Maps error codes to documentation paths |
-
-### How It Works
-
-1. **Default Source**: If `source` is configured and not provided when creating an error, the configured value is used
-2. **Auto-Generated href**: If both `docsBaseURL` and `docsMap` are configured, and the error's code matches a key in `docsMap`, the `href` is automatically generated as: `docsBaseURL + docsMap[code]`
-3. **Manual Override**: Values provided directly to ErrorX constructor take precedence over environment config
-
-### Example Usage
-
-```bash
-# Set environment variable
-export ERROR_X_CONFIG='{"source":"auth-service","docsBaseURL":"https://docs.example.com/errors/","docsMap":{"AUTH_FAILED":"auth#failed"}}'
-```
-
-```typescript
-// This error will have:
-// - source: 'auth-service' (from config)
-// - href: 'https://docs.example.com/errors/auth#failed' (auto-generated)
-const error = new ErrorX({
-  message: 'Authentication failed',
-  code: 'AUTH_FAILED'
-})
-
-// Manual values override config
-const error2 = new ErrorX({
-  message: 'Another auth error',
-  code: 'AUTH_FAILED',
-  source: 'custom-service', // Overrides config
-  href: 'https://custom-docs.com/auth' // Overrides auto-generated href
-})
-```
-
-### Node.js and Isomorphic Support
-
-The environment configuration works in Node.js environments where `process.env` is available. In browser environments, the configuration is safely ignored (no errors thrown).
-
-## Smart Features
-
-### Auto Code Generation
-
-Error codes are automatically generated from the error name:
-
-```typescript
-new ErrorX({ message: 'Failed', name: 'DatabaseError' })
-// code: 'DATABASE_ERROR'
-
-new ErrorX({ message: 'Failed', name: 'userAuthError' })
-// code: 'USER_AUTH_ERROR'
-
-new ErrorX({ message: 'Failed', name: 'API Timeout' })
-// code: 'API_TIMEOUT'
-```
-
-### Message Formatting
-
-Messages are automatically formatted with proper capitalization and punctuation:
-
-```typescript
-new ErrorX({ message: 'database connection failed' })
-// message: 'Database connection failed.'
-
-new ErrorX({ message: 'user not found. please check credentials' })
-// message: 'User not found. Please check credentials.'
-```
-
-### Smart Error Conversion
-
-The `ErrorX.toErrorX()` static method intelligently converts any error type to ErrorX:
+Converts any error type to ErrorX with intelligent property extraction:
 
 ```typescript
 // Convert Error instances
-try {
-  throw new Error('Something failed')
-} catch (error) {
-  const errorX = ErrorX.toErrorX(error)
-  // Preserves name, message, cause, and stack
-}
+const error = new Error('Something failed')
+const errorX = ErrorX.from(error)
+// Preserves: name, message, cause, stack
 
-// Convert API error responses
-const apiError = {
-  status: 404,
-  statusText: 'Not Found',
-  error: 'User not found'
-}
-const errorX = ErrorX.toErrorX(apiError)
-// Extracts: message, httpStatus, and stores original in metadata
+// Convert API responses
+const apiError = { status: 404, statusText: 'Not Found', error: 'User not found' }
+const errorX = ErrorX.from(apiError)
+// Extracts: message, httpStatus, stores original in metadata
 
-// Convert any unknown value
-const errorX = ErrorX.toErrorX('Something went wrong')
-// Creates ErrorX with the string as the message
+// Convert strings
+const errorX = ErrorX.from('Something went wrong')
+// Creates ErrorX with string as message
+
+// Already ErrorX? Returns as-is
+const errorX = ErrorX.from(new ErrorX('test'))
+// Returns the same instance
+```
+
+#### `ErrorX.isErrorX(value: unknown): value is ErrorX`
+
+Type guard to check if a value is an ErrorX instance:
+
+```typescript
+if (ErrorX.isErrorX(error)) {
+  console.log(error.code, error.uiMessage)
+}
+```
+
+#### `ErrorX.configure(config: ErrorXConfig): void`
+
+Set global defaults for all ErrorX instances:
+
+```typescript
+ErrorX.configure({
+  source: 'my-api-service',
+  docsBaseURL: 'https://docs.example.com',
+  docsMap: {
+    'AUTH_FAILED': 'errors/authentication',
+    'NOT_FOUND': 'errors/not-found'
+  }
+})
+
+// Now all errors automatically get:
+// - source: 'my-api-service' (unless overridden)
+// - docsUrl: auto-generated from docsBaseURL + docsMap[code]
+```
+
+#### `ErrorX.getConfig(): ErrorXConfig | null`
+
+Get the current global configuration:
+
+```typescript
+const config = ErrorX.getConfig()
+console.log(config?.source) // 'my-api-service'
+```
+
+### Instance Methods
+
+#### `withMetadata(additionalMetadata: Record<string, unknown>): ErrorX`
+
+Creates a new ErrorX instance with merged metadata:
+
+```typescript
+const error = new ErrorX({ message: 'test', metadata: { a: 1 } })
+const enriched = error.withMetadata({ b: 2 })
+// enriched.metadata = { a: 1, b: 2 }
+```
+
+#### `cleanStackTrace(delimiter?: string): ErrorX`
+
+Removes stack trace lines before a delimiter:
+
+```typescript
+const error = new ErrorX('test')
+const cleaned = error.cleanStackTrace('my-app-boundary')
+// Stack trace only includes lines after 'my-app-boundary'
+```
+
+#### `toJSON(): ErrorXSerialized`
+
+Serializes the error for network transfer:
+
+```typescript
+const error = new ErrorX({ message: 'test', code: 'TEST' })
+const json = error.toJSON()
+// Returns plain object with all error properties
+```
+
+#### `fromJSON(serialized: ErrorXSerialized): ErrorX`
+
+Deserializes a JSON object back to ErrorX:
+
+```typescript
+const json = { name: 'TestError', message: 'test', code: 'TEST', ... }
+const error = ErrorX.fromJSON(json)
+// Returns fully reconstructed ErrorX instance
 ```
 
 ## Usage Examples
@@ -543,11 +256,12 @@ const errorX = ErrorX.toErrorX('Something went wrong')
 ### Basic Error Handling
 
 ```typescript
-import { ErrorX } from 'error-x'
+import { ErrorX } from '@bombillazo/error-x'
 
 function validateUser(user: unknown) {
   if (!user) {
-    throw new ErrorX('User validation failed: user is required', {
+    throw new ErrorX({
+      message: 'User validation failed: user is required',
       name: 'ValidationError',
       code: 'USER_REQUIRED',
       uiMessage: 'Please provide user information',
@@ -564,25 +278,20 @@ async function fetchUser(id: string) {
   try {
     const response = await fetch(`/api/users/${id}`)
     if (!response.ok) {
-      throw new ErrorX(`Failed to fetch user: ${response.statusText}`, {
-        code: `HTTP_${response.status}`,
-        uiMessage: 'Unable to load user data',
+      throw new ErrorX({
+        ...http[response.status === 404 ? 'notFound' : 'internalServerError'],
         metadata: { status: response.status, statusText: response.statusText }
       })
     }
     return response.json()
   } catch (error) {
-    // Convert any error to ErrorX and add context
-    const errorX = ErrorX.toErrorX(error)
-    throw errorX.withMetadata({
-      userId: id,
-      operation: 'fetchUser',
-    })
+    const errorX = ErrorX.from(error)
+    throw errorX.withMetadata({ userId: id, operation: 'fetchUser' })
   }
 }
 ```
 
-### Error Chaining and Stack Trace Preservation
+### Error Chaining
 
 ```typescript
 try {
@@ -590,62 +299,58 @@ try {
     await tx.users.create(userData)
   })
 } catch (dbError) {
-  // Create new ErrorX while preserving the original error in the cause chain
-  const error = new ErrorX('User creation failed', {
+  throw new ErrorX({
+    message: 'User creation failed',
     name: 'UserCreationError',
     code: 'USER_CREATE_FAILED',
     uiMessage: 'Unable to create user account',
-    cause: dbError, // Preserves original stack trace and error details
+    cause: dbError, // Preserves original stack trace
     metadata: {
       operation: 'userRegistration',
-      userData: { email: userData.email } // Don't log sensitive data
+      email: userData.email
     }
-  })
-
-  // Add more context while preserving the error chain
-  throw error.withMetadata({
-    requestId: generateRequestId(),
-    userAgent: request.headers['user-agent']
   })
 }
 ```
 
-## FAQ
+## Message Formatting
 
-### Why use action type "custom" instead of an open string type for CustomAction?
-
-The `ErrorAction` type uses a discriminated union based on the `action` property. When you use arbitrary values instead of the predefined action types (`notify`, `logout`, `redirect`, `custom`), it breaks TypeScript's ability to properly narrow the property types.
-
-**The Problem:** If `ErrorAction` allowed any string as the action type, TypeScript would default to the most permissive type (`{ ...any }`) for all actions, causing type definition to leak between different action types.
+**Important:** ErrorX does NOT auto-format messages. Messages are passed through as-is:
 
 ```typescript
-// ❌ Cannot be done - breaks discriminated union
-const error = new ErrorX({
-  actions: [
-    { action: 'analytics', event: 'error' }, // Loses type safety
-    { action: 'notify', targets: ['toast'] }, // Type becomes too permissive
-    { action: 'redirect', redirectURL: '/home' } // Required properties not enforced
-  ]
-})
+new ErrorX({ message: 'test error' })
+// message: 'test error' (exactly as provided)
 
-// ✅ Do this - maintains proper type discrimination
-const error = new ErrorX({
-  actions: [
-    { action: 'custom', type: 'analytics', event: 'error' },
-    { action: 'notify', targets: ['toast'] }, // Properly typed with required 'targets'
-    { action: 'redirect', redirectURL: '/home' } // Properly typed with required 'redirectURL'
-  ]
-})
+new ErrorX({ message: 'Test error.' })
+// message: 'Test error.' (exactly as provided)
 ```
 
-**The Solution:** Using `action: 'custom'` with a discriminating `type` property preserves the discriminated union while allowing unlimited flexibility for custom actions. This approach:
+Empty or whitespace-only messages default to `'An error occurred'`:
 
-- Maintains type safety for predefined actions (`notify`, `logout`, `redirect`)
-- Provides a structured way to handle custom application logic
-- Allows your error handlers to properly switch on action types
-- Enables you to create your own discriminated unions within custom actions
+```typescript
+new ErrorX({ message: '' })
+// message: 'An error occurred'
 
-Ideally, we would support custom action types directly. If there is a solution to this problem, we are more than happy to review it. Please open an issue or PR!.
+new ErrorX({ message: '   ' })
+// message: 'An error occurred'
+```
+
+HTTP presets provide properly formatted messages with sentence casing and periods.
+
+## Auto Code Generation
+
+Error codes are automatically generated from names when not provided:
+
+```typescript
+new ErrorX({ message: 'Failed', name: 'DatabaseError' })
+// code: 'DATABASE_ERROR'
+
+new ErrorX({ message: 'Failed', name: 'userAuthError' })
+// code: 'USER_AUTH_ERROR'
+
+new ErrorX({ message: 'Failed', name: 'API Timeout' })
+// code: 'API_TIMEOUT'
+```
 
 ## License
 

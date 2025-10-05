@@ -17,6 +17,16 @@ declare class ErrorX extends Error
 
 
 ```typescript
+// Configure globally (optional)
+ErrorX.configure({
+  source: 'my-service',
+  docsBaseURL: 'https://docs.example.com',
+  docsMap: {
+    'AUTH_FAILED': 'errors/authentication',
+    'DB_ERROR': 'errors/database'
+  }
+})
+
 // Basic usage
 const error = new ErrorX({ message: 'Database connection failed' })
 
@@ -50,7 +60,7 @@ Description
 </th></tr></thead>
 <tbody><tr><td>
 
-[(constructor)(messageOrOptions, additionalOptions)](./error-x.errorx._constructor_.md)
+[(constructor)(messageOrOptions)](./error-x.errorx._constructor_.md)
 
 
 </td><td>
@@ -89,25 +99,6 @@ Description
 </th></tr></thead>
 <tbody><tr><td>
 
-[actions](./error-x.errorx.actions.md)
-
-
-</td><td>
-
-
-</td><td>
-
-[ErrorXAction](./error-x.errorxaction.md)<!-- -->\[\] \| undefined
-
-
-</td><td>
-
-Error actions for UI behavior and handling
-
-
-</td></tr>
-<tr><td>
-
 [code](./error-x.errorx.code.md)
 
 
@@ -127,7 +118,7 @@ Error identifier code, auto-generated from name if not provided
 </td></tr>
 <tr><td>
 
-[href](./error-x.errorx.href.md)
+[docsUrl](./error-x.errorx.docsurl.md)
 
 
 </td><td>
@@ -141,80 +132,6 @@ string \| undefined
 </td><td>
 
 Documentation URL for this specific error
-
-
-</td></tr>
-<tr><td>
-
-[HTTP](./error-x.errorx.http.md)
-
-
-</td><td>
-
-`static`
-
-`readonly`
-
-
-</td><td>
-
-{ readonly BAD\_REQUEST: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly UNAUTHORIZED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly PAYMENT\_REQUIRED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly FORBIDDEN: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly NOT\_FOUND: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly METHOD\_NOT\_ALLOWED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly NOT\_ACCEPTABLE: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly PROXY\_AUTHENTICATION\_REQUIRED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly REQUEST\_TIMEOUT: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly CONFLICT: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly GONE: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly LENGTH\_REQUIRED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly PRECONDITION\_FAILED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly PAYLOAD\_TOO\_LARGE: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly URI\_TOO\_LONG: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly UNSUPPORTED\_MEDIA\_TYPE: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly RANGE\_NOT\_SATISFIABLE: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly EXPECTATION\_FAILED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly IM\_A\_TEAPOT: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly UNPROCESSABLE\_ENTITY: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly LOCKED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly FAILED\_DEPENDENCY: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly TOO\_EARLY: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly UPGRADE\_REQUIRED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly PRECONDITION\_REQUIRED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly TOO\_MANY\_REQUESTS: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly REQUEST\_HEADER\_FIELDS\_TOO\_LARGE: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly UNAVAILABLE\_FOR\_LEGAL\_REASONS: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly INTERNAL\_SERVER\_ERROR: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly NOT\_IMPLEMENTED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly BAD\_GATEWAY: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly SERVICE\_UNAVAILABLE: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly GATEWAY\_TIMEOUT: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly HTTP\_VERSION\_NOT\_SUPPORTED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly VARIANT\_ALSO\_NEGOTIATES: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly INSUFFICIENT\_STORAGE: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly LOOP\_DETECTED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly NOT\_EXTENDED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; readonly NETWORK\_AUTHENTICATION\_REQUIRED: { httpStatus: number; code: string; name: string; message: string; uiMessage: string; type: string; }; }
-
-
-</td><td>
-
-HTTP error presets for common HTTP status codes.
-
-\#\# Features - \*\*Pre-configured error templates\*\* for common HTTP status codes (400-511) - \*\*Type-safe\*\* with TypeScript support - \*\*Fully customizable\*\* via destructuring and override pattern - \*\*User-friendly messages\*\* included for all presets - \*\*Categorized by type\*\* - all HTTP presets include `type: 'http'`
-
-\#\# Usage Patterns
-
-\#\#\# 1. Direct Usage Use a preset as-is without any modifications:
-
-```typescript
-throw new ErrorX(ErrorX.HTTP.NOT_FOUND)
-// Result: 404 error with default message and UI message
-```
-\#\#\# 2. Override Specific Fields Customize the error while keeping other preset values:
-
-```typescript
-throw new ErrorX({
-  ...ErrorX.HTTP.NOT_FOUND,
-  message: 'User not found',
-  metadata: { userId: 123 }
-})
-// Result: 404 error with custom message but keeps httpStatus, code, name, uiMessage, type
-```
-\#\#\# 3. Add Metadata and Actions Enhance presets with additional context and behaviors:
-
-```typescript
-throw new ErrorX({
-  ...ErrorX.HTTP.UNAUTHORIZED,
-  metadata: { attemptedAction: 'viewProfile', userId: 456 },
-  actions: [
-    { action: 'logout', payload: { clearStorage: true } },
-    { action: 'redirect', payload: { redirectURL: '/login' } }
-  ]
-})
-```
-\#\#\# 4. Add Error Cause Chain errors by adding a cause:
-
-```typescript
-try {
-  // some operation
-} catch (originalError) {
-  throw new ErrorX({
-    ...ErrorX.HTTP.INTERNAL_SERVER_ERROR,
-    cause: originalError,
-    metadata: { operation: 'database-query' }
-  })
-}
-```
-\#\# Common HTTP Presets
-
-\#\#\# 4xx Client Errors - `BAD_REQUEST` (400) - Invalid request data - `UNAUTHORIZED` (401) - Authentication required - `FORBIDDEN` (403) - Insufficient permissions - `NOT_FOUND` (404) - Resource not found - `METHOD_NOT_ALLOWED` (405) - HTTP method not allowed - `CONFLICT` (409) - Resource conflict - `UNPROCESSABLE_ENTITY` (422) - Validation failed - `TOO_MANY_REQUESTS` (429) - Rate limit exceeded
-
-\#\#\# 5xx Server Errors - `INTERNAL_SERVER_ERROR` (500) - Unexpected server error - `NOT_IMPLEMENTED` (501) - Feature not implemented - `BAD_GATEWAY` (502) - Upstream server error - `SERVICE_UNAVAILABLE` (503) - Service temporarily down - `GATEWAY_TIMEOUT` (504) - Upstream timeout
 
 
 </td></tr>
@@ -277,6 +194,25 @@ Where the error originated (service name, module, component)
 </td></tr>
 <tr><td>
 
+[sourceUrl](./error-x.errorx.sourceurl.md)
+
+
+</td><td>
+
+
+</td><td>
+
+string \| undefined
+
+
+</td><td>
+
+Source URL related to the error (API endpoint, page URL, resource URL)
+
+
+</td></tr>
+<tr><td>
+
 [timestamp](./error-x.errorx.timestamp.md)
 
 
@@ -332,25 +268,6 @@ User-friendly message suitable for display in UI
 
 
 </td></tr>
-<tr><td>
-
-[url](./error-x.errorx.url.md)
-
-
-</td><td>
-
-
-</td><td>
-
-string \| undefined
-
-
-</td><td>
-
-URL related to the error (API endpoint, page URL, resource URL)
-
-
-</td></tr>
 </tbody></table>
 
 ## Methods
@@ -387,6 +304,38 @@ Creates a new ErrorX instance with cleaned stack trace using the specified delim
 </td></tr>
 <tr><td>
 
+[configure(config)](./error-x.errorx.configure.md)
+
+
+</td><td>
+
+`static`
+
+
+</td><td>
+
+Configure global ErrorX settings. This method allows you to set defaults for all ErrorX instances.
+
+
+</td></tr>
+<tr><td>
+
+[from(error)](./error-x.errorx.from.md)
+
+
+</td><td>
+
+`static`
+
+
+</td><td>
+
+Converts unknown input into an ErrorX instance with intelligent property extraction. Handles strings, regular Error objects, API response objects, and unknown values.
+
+
+</td></tr>
+<tr><td>
+
 [fromJSON(serialized)](./error-x.errorx.fromjson.md)
 
 
@@ -398,6 +347,22 @@ Creates a new ErrorX instance with cleaned stack trace using the specified delim
 </td><td>
 
 Deserializes a JSON object back into an ErrorX instance. Recursively reconstructs the error chain and restores all properties.
+
+
+</td></tr>
+<tr><td>
+
+[getConfig()](./error-x.errorx.getconfig.md)
+
+
+</td><td>
+
+`static`
+
+
+</td><td>
+
+Get the current global configuration. Returns null if no configuration has been set.
 
 
 </td></tr>
@@ -430,22 +395,6 @@ Type guard that checks if a value is an ErrorX instance.
 </td><td>
 
 Validates if an object is a valid ErrorXOptions object. Checks that the object only contains accepted ErrorXOptions fields.
-
-
-</td></tr>
-<tr><td>
-
-[toErrorX(error)](./error-x.errorx.toerrorx.md)
-
-
-</td><td>
-
-`static`
-
-
-</td><td>
-
-Converts unknown input into an ErrorX instance with intelligent property extraction. Handles strings, regular Error objects, API response objects, and unknown values.
 
 
 </td></tr>

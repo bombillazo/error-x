@@ -9,7 +9,7 @@ Creates a new ErrorX instance with enhanced error handling capabilities.
 **Signature:**
 
 ```typescript
-constructor(messageOrOptions?: string | ErrorXOptions, additionalOptions?: Partial<ErrorXOptions>);
+constructor(messageOrOptions?: string | ErrorXOptions);
 ```
 
 ## Parameters
@@ -42,23 +42,7 @@ string \| [ErrorXOptions](./error-x.errorxoptions.md)
 
 </td><td>
 
-_(Optional)_ Error message string or ErrorXOptions object
-
-
-</td></tr>
-<tr><td>
-
-additionalOptions
-
-
-</td><td>
-
-Partial&lt;[ErrorXOptions](./error-x.errorxoptions.md)<!-- -->&gt;
-
-
-</td><td>
-
-_(Optional)_ Additional options when first parameter is a string (optional)
+_(Optional)_ Error message string or ErrorXOptions object (optional)
 
 
 </td></tr>
@@ -68,32 +52,23 @@ _(Optional)_ Additional options when first parameter is a string (optional)
 
 
 ```typescript
-// Create with string message only
-const error1 = new ErrorX('Database query failed')
+// Create with default message
+const error1 = new ErrorX()
 
-// Create with string message and additional options
-const error2 = new ErrorX('Database query failed', {
-  name: 'DatabaseError',
-  code: 'DB_QUERY_FAILED',
-  uiMessage: 'Unable to load data. Please try again.',
-  metadata: { query: 'SELECT * FROM users', timeout: 5000 }
-})
+// Create with string message only
+const error2 = new ErrorX('Database query failed')
 
 // Create with options object
 const error3 = new ErrorX({
   message: 'Database query failed',
   name: 'DatabaseError',
   code: 'DB_QUERY_FAILED',
-  actions: [
-    { action: 'notify', targets: ['toast'] }
-  ]
+  uiMessage: 'Unable to load data. Please try again.',
+  metadata: { query: 'SELECT * FROM users', timeout: 5000 }
 })
 
-// Create with no options (uses defaults)
-const error4 = new ErrorX()
-
-// For converting unknown errors, use ErrorX.toErrorX()
+// For converting unknown errors, use ErrorX.from()
 const apiError = { message: 'User not found', code: 404 }
-const error5 = ErrorX.toErrorX(apiError)
+const error4 = ErrorX.from(apiError)
 ```
 

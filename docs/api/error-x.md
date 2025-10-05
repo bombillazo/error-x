@@ -30,6 +30,105 @@ Enhanced Error class with rich metadata, type-safe error handling, and intellige
 </td></tr>
 </tbody></table>
 
+## Interfaces
+
+<table><thead><tr><th>
+
+Interface
+
+
+</th><th>
+
+Description
+
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[ErrorXConfig](./error-x.errorxconfig.md)
+
+
+</td><td>
+
+Configuration interface for ErrorX global settings
+
+
+</td></tr>
+</tbody></table>
+
+## Variables
+
+<table><thead><tr><th>
+
+Variable
+
+
+</th><th>
+
+Description
+
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[http](./error-x.http.md)
+
+
+</td><td>
+
+HTTP error presets for common HTTP status codes.
+
+These presets provide pre-configured error options for standard HTTP error responses, including appropriate status codes, error codes, names, messages (sentence case), and user-friendly UI messages.
+
+\#\# Usage Patterns
+
+\#\#\# 1. Use Preset Directly Create an error with all preset values:
+
+```typescript
+throw new ErrorX(http.notFound)
+// Result: 404 error with message "Not found.", code, name, uiMessage, and type
+```
+\#\#\# 2. Override Specific Fields Customize the error while keeping other preset values:
+
+```typescript
+throw new ErrorX({
+  ...http.notFound,
+  message: 'User not found',
+  metadata: { userId: 123 }
+})
+// Result: 404 error with custom message but keeps httpStatus, code, name, uiMessage, type
+```
+\#\#\# 3. Add Metadata Enhance presets with additional context:
+
+```typescript
+throw new ErrorX({
+  ...http.unauthorized,
+  metadata: { attemptedAction: 'viewProfile', userId: 456 }
+})
+```
+\#\#\# 4. Add Error Cause Chain errors by adding a cause:
+
+```typescript
+try {
+  // some operation
+} catch (originalError) {
+  throw new ErrorX({
+    ...http.internalServerError,
+    cause: originalError,
+    metadata: { operation: 'database-query' }
+  })
+}
+```
+\#\# Common HTTP Presets
+
+\#\#\# 4xx Client Errors - `badRequest` (400) - Invalid request data - `unauthorized` (401) - Authentication required - `forbidden` (403) - Insufficient permissions - `notFound` (404) - Resource not found - `methodNotAllowed` (405) - HTTP method not allowed - `conflict` (409) - Resource conflict - `unprocessableEntity` (422) - Validation failed - `tooManyRequests` (429) - Rate limit exceeded
+
+\#\#\# 5xx Server Errors - `internalServerError` (500) - Unexpected server error - `notImplemented` (501) - Feature not implemented - `badGateway` (502) - Upstream server error - `serviceUnavailable` (503) - Service temporarily down - `gatewayTimeout` (504) - Upstream timeout
+
+
+</td></tr>
+</tbody></table>
+
 ## Type Aliases
 
 <table><thead><tr><th>
@@ -44,61 +143,6 @@ Description
 
 </th></tr></thead>
 <tbody><tr><td>
-
-[ErrorXAction](./error-x.errorxaction.md)
-
-
-</td><td>
-
-Union type of all possible error actions. Includes predefined actions (NotifyAction, LogoutAction, RedirectAction) and CustomAction for application-specific actions.
-
-
-</td></tr>
-<tr><td>
-
-[ErrorXActionCustom](./error-x.errorxactioncustom.md)
-
-
-</td><td>
-
-Custom action type for application-specific actions. This type is essential for proper TypeScript discrimination in the ErrorAction union. Without this, TypeScript cannot properly distinguish between predefined and custom actions.
-
-
-</td></tr>
-<tr><td>
-
-[ErrorXActionLogout](./error-x.errorxactionlogout.md)
-
-
-</td><td>
-
-Action to log out the current user when an error occurs. Useful for authentication errors or session expiration.
-
-
-</td></tr>
-<tr><td>
-
-[ErrorXActionNotify](./error-x.errorxactionnotify.md)
-
-
-</td><td>
-
-Action to display notifications in specified UI targets. Used to notify applications to handle error messages through the indicated display mechanisms.
-
-
-</td></tr>
-<tr><td>
-
-[ErrorXActionRedirect](./error-x.errorxactionredirect.md)
-
-
-</td><td>
-
-Action to redirect the user to a different URL when an error occurs. Commonly used for navigation after authentication errors or access denied scenarios.
-
-
-</td></tr>
-<tr><td>
 
 [ErrorXCause](./error-x.errorxcause.md)
 
@@ -117,6 +161,20 @@ Simplified representation of an error cause for serialization. Used to store err
 </td><td>
 
 Metadata object containing additional context information for an error. Can store any key-value pairs to provide extra debugging or business context.
+
+Users can use metadata to store application-specific behavior instructions if needed:
+
+```typescript
+const metadata = {
+  userId: 123,
+  operation: 'fetchUser',
+  retryCount: 3,
+  // Application-specific behavior can be stored here:
+  shouldNotify: true,
+  notifyTargets: ['toast', 'banner'],
+  redirectTo: '/login'
+}
+```
 
 
 </td></tr>

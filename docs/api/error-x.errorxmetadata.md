@@ -6,20 +6,22 @@
 
 Metadata object containing additional context information for an error. Can store any key-value pairs to provide extra debugging or business context.
 
-**Signature:**
+Users can use metadata to store application-specific behavior instructions if needed:
 
 ```typescript
-type ErrorXMetadata = Record<string, any>;
-```
-
-## Example
-
-
-```typescript
-const metadata: ErrorMetadata = {
+const metadata = {
   userId: 123,
   operation: 'fetchUser',
-  retryCount: 3
+  retryCount: 3,
+  // Application-specific behavior can be stored here:
+  shouldNotify: true,
+  notifyTargets: ['toast', 'banner'],
+  redirectTo: '/login'
 }
 ```
 
+**Signature:**
+
+```typescript
+type ErrorXMetadata = Record<string, unknown>;
+```
