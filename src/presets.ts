@@ -461,4 +461,3 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 } as const;
-
