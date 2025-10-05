@@ -1,10 +1,11 @@
 import safeStringify from 'safe-stringify';
 import type {
-  ErrorAction,
-  ErrorMetadata,
+  ErrorXAction,
+  ErrorXCause,
+  ErrorXMetadata,
   ErrorXOptionField,
   ErrorXOptions,
-  SerializableError,
+  ErrorXSerialized,
 } from './types.js';
 import { ERROR_X_OPTION_FIELDS } from './types.js';
 
@@ -33,24 +34,30 @@ const acceptedFields = new Set(ERROR_X_OPTION_FIELDS);
  */
 export class ErrorX extends Error {
   /** Error identifier code, auto-generated from name if not provided */
-  public readonly code: string;
+  public code: string;
   /** User-friendly message suitable for display in UI */
-  public readonly uiMessage: string | undefined;
+  public uiMessage: string | undefined;
   /** Additional context and metadata associated with the error */
-  public readonly metadata: ErrorMetadata | undefined;
+  public metadata: ErrorXMetadata | undefined;
   /** Timestamp when the error was created */
-  public readonly timestamp: Date;
+  public timestamp: Date;
   /** Error actions for UI behavior and handling */
-  public readonly actions: ErrorAction[] | undefined;
+  public actions: ErrorXAction[] | undefined;
   /** HTTP status code (100-599) for HTTP-related errors */
-  public readonly httpStatus: number | undefined;
+  public httpStatus: number | undefined;
   /** Error type for categorization */
-  public readonly type: string | undefined;
+  public type: string | undefined;
+  /** URL related to the error (API endpoint, page URL, resource URL) */
+  public url: string | undefined;
+  /** Documentation URL for this specific error */
+  public href: string | undefined;
+  /** Where the error originated (service name, module, component) */
+  public source: string | undefined;
 
   /**
    * Creates a new ErrorX instance with enhanced error handling capabilities.
    *
-   * @param messageOrOptions - Error message string, ErrorXOptions object, or any value to convert to ErrorX
+   * @param messageOrOptions - Error message string or ErrorXOptions object
    * @param additionalOptions - Additional options when first parameter is a string (optional)
    *
    * @example
@@ -66,26 +73,26 @@ export class ErrorX extends Error {
    *   metadata: { query: 'SELECT * FROM users', timeout: 5000 }
    * })
    *
-   * // Create with options object (backward compatible)
+   * // Create with options object
    * const error3 = new ErrorX({
    *   message: 'Database query failed',
    *   name: 'DatabaseError',
    *   code: 'DB_QUERY_FAILED',
    *   actions: [
-   *     { action: 'notify', payload: { targets: [HandlingTargets.TOAST] } }
+   *     { action: 'notify', targets: ['toast'] }
    *   ]
    * })
    *
-   * // Create with unknown input (smart conversion)
-   * const apiError = { message: 'User not found', code: 404 }
-   * const error4 = new ErrorX(apiError)
-   *
    * // Create with no options (uses defaults)
-   * const error5 = new ErrorX()
+   * const error4 = new ErrorX()
+   *
+   * // For converting unknown errors, use ErrorX.toErrorX()
+   * const apiError = { message: 'User not found', code: 404 }
+   * const error5 = ErrorX.toErrorX(apiError)
    * ```
    */
   constructor(
-    messageOrOptions?: string | ErrorXOptions | unknown,
+    messageOrOptions?: string | ErrorXOptions,
     additionalOptions?: Partial<ErrorXOptions>
   ) {
     let options: ErrorXOptions = {};
@@ -97,17 +104,17 @@ export class ErrorX extends Error {
         message: messageOrOptions,
         ...additionalOptions,
       };
-    } else if (ErrorX.isErrorXOptions(messageOrOptions)) {
-      // Valid ErrorXOptions object - use directly
-      options = messageOrOptions;
     } else if (messageOrOptions != null) {
-      // Unknown input - convert using smart conversion
-      options = ErrorX.convertUnknownToOptions(messageOrOptions);
+      // ErrorXOptions object - use directly
+      options = messageOrOptions;
     }
     // else: undefined/null - use empty options object
 
     const formattedMessage = ErrorX.formatMessage(options.message);
     super(formattedMessage, { cause: options.cause });
+
+    // Read environment config for defaults
+    const envConfig = ErrorX.getEnvConfig();
 
     this.name = options.name ?? ErrorX.getDefaultName();
     this.code =
@@ -118,6 +125,20 @@ export class ErrorX extends Error {
     this.httpStatus = ErrorX.validateHttpStatus(options.httpStatus);
     this.type = ErrorX.validateType(options.type);
     this.timestamp = new Date();
+
+    // Set new fields
+    this.url = options.url;
+    this.source = options.source ?? envConfig?.source;
+
+    // Auto-generate href from environment config if available
+    let generatedHref: string | undefined;
+    if (envConfig?.docsBaseURL && envConfig?.docsMap && this.code) {
+      const docPath = envConfig.docsMap[this.code];
+      if (docPath) {
+        generatedHref = `${envConfig.docsBaseURL}/${docPath}`;
+      }
+    }
+    this.href = options.href ?? generatedHref;
 
     // Handle stack trace preservation
     if (options.cause instanceof Error) {
@@ -138,6 +159,50 @@ export class ErrorX extends Error {
    */
   private static getDefaultName(): string {
     return 'Error';
+  }
+
+  /**
+   * Reads and parses the ERROR_X_CONFIG environment variable.
+   * Supports both Node.js and browser environments (isomorphic).
+   *
+   * Expected config structure:
+   * {
+   *   "source": "my-service-name",
+   *   "docsBaseURL": "https://docs.example.com/errors/",
+   *   "docsMap": {
+   *     "AUTH_FAILED": "authentication#auth-failed",
+   *     "NOT_FOUND": "common#not-found"
+   *   }
+   * }
+   *
+   * @returns Parsed config object or null if not available or invalid
+   */
+  private static getEnvConfig(): {
+    source?: string;
+    docsBaseURL?: string;
+    docsMap?: Record<string, string>;
+  } | null {
+    try {
+      // Check if running in Node.js environment
+      const envConfig =
+        process?.env?.ERROR_X_CONFIG
+          ? process.env.ERROR_X_CONFIG
+          : undefined;
+
+      if (!envConfig) return null;
+
+      const parsed = JSON.parse(envConfig);
+
+      // Validate parsed config has expected shape
+      if (typeof parsed !== 'object' || parsed === null) {
+        return null;
+      }
+
+      return parsed;
+    } catch {
+      // Failed to parse JSON or access environment
+      return null;
+    }
   }
 
   /**
@@ -376,7 +441,7 @@ export class ErrorX extends Error {
    * // Result: metadata = { endpoint: '/users', retryCount: 3, userId: 123 }
    * ```
    */
-  public withMetadata(additionalMetadata: ErrorMetadata): ErrorX {
+  public withMetadata(additionalMetadata: ErrorXMetadata): ErrorX {
     const options: ErrorXOptions = {
       message: this.message,
       name: this.name,
@@ -386,6 +451,9 @@ export class ErrorX extends Error {
       metadata: { ...(this.metadata ?? {}), ...additionalMetadata },
       httpStatus: this.httpStatus,
       type: this.type,
+      url: this.url,
+      href: this.href,
+      source: this.source,
     };
     if (this.actions) {
       options.actions = this.actions;
@@ -436,10 +504,13 @@ export class ErrorX extends Error {
     let code = '';
     let uiMessage = '';
     let cause: unknown;
-    let metadata: ErrorMetadata = {};
-    let actions: ErrorAction[] | undefined;
+    let metadata: ErrorXMetadata = {};
+    let actions: ErrorXAction[] | undefined;
     let httpStatus: number | undefined;
     let type: string | undefined;
+    let url: string | undefined;
+    let href: string | undefined;
+    let source: string | undefined;
 
     if (error) {
       if (typeof error === 'string') {
@@ -473,7 +544,7 @@ export class ErrorX extends Error {
 
         // Extract actions
         if ('actions' in error && Array.isArray(error.actions)) {
-          actions = error.actions as ErrorAction[];
+          actions = error.actions as ErrorXAction[];
         }
 
         let _httpStatus: unknown;
@@ -495,6 +566,29 @@ export class ErrorX extends Error {
           type = ErrorX.validateType(String(error.type));
         }
 
+        // Extract url
+        if ('url' in error && error.url) {
+          url = String(error.url);
+        }
+
+        // Extract href
+        if ('href' in error && error.href) {
+          href = String(error.href);
+        } else if ('docsUrl' in error && error.docsUrl) {
+          href = String(error.docsUrl);
+        } else if ('documentationUrl' in error && error.documentationUrl) {
+          href = String(error.documentationUrl);
+        }
+
+        // Extract source
+        if ('source' in error && error.source) {
+          source = String(error.source);
+        } else if ('service' in error && error.service) {
+          source = String(error.service);
+        } else if ('component' in error && error.component) {
+          source = String(error.component);
+        }
+
         // Store original object as metadata if it has additional properties
         metadata = { originalError: error };
       }
@@ -512,6 +606,9 @@ export class ErrorX extends Error {
     if (actions && actions.length > 0) options.actions = actions;
     if (httpStatus) options.httpStatus = httpStatus;
     if (type) options.type = type;
+    if (url) options.url = url;
+    if (href) options.href = href;
+    if (source) options.source = source;
 
     return options;
   }
@@ -547,24 +644,6 @@ export class ErrorX extends Error {
     return new ErrorX(options);
   }
 
-  /**
-   * Public wrapper for processing error stack traces with delimiter.
-   * Delegates to the private processErrorStack method for implementation.
-   *
-   * @param error - Error whose stack to process
-   * @param delimiter - String to search for in stack lines
-   * @returns Processed stack trace starting after the delimiter
-   *
-   * @example
-   * ```typescript
-   * const error = new Error('Something failed')
-   * const cleanStack = ErrorX.processStack(error, 'my-app-entry')
-   * // Returns stack trace starting after the line containing 'my-app-entry'
-   * ```
-   */
-  public static processStack(error: Error, delimiter: string): string {
-    return ErrorX.processErrorStack(error, delimiter);
-  }
 
   /**
    * Creates a new ErrorX instance with cleaned stack trace using the specified delimiter.
@@ -590,6 +669,9 @@ export class ErrorX extends Error {
         cause: this.cause,
         httpStatus: this.httpStatus,
         type: this.type,
+        url: this.url,
+        href: this.href,
+        source: this.source,
       };
       if (this.metadata !== undefined) {
         options.metadata = this.metadata;
@@ -671,15 +753,15 @@ export class ErrorX extends Error {
    * // Can be safely passed to JSON.stringify() or sent over network
    * ```
    */
-  public toJSON(): SerializableError {
+  public toJSON(): ErrorXSerialized {
     // Handle metadata serialization with circular reference protection
 
     // Use safe stringify to parse the metadata and remove circular references
-    const safeMetadata: ErrorMetadata | undefined = this.metadata
+    const safeMetadata: ErrorXMetadata | undefined = this.metadata
       ? JSON.parse(safeStringify(this.metadata))
       : undefined;
 
-    const serialized: SerializableError = {
+    const serialized: ErrorXSerialized = {
       name: this.name,
       message: this.message,
       code: this.code,
@@ -705,28 +787,57 @@ export class ErrorX extends Error {
       serialized.type = this.type;
     }
 
+    // Include url if present
+    if (this.url !== undefined) {
+      serialized.url = this.url;
+    }
+
+    // Include href if present
+    if (this.href !== undefined) {
+      serialized.href = this.href;
+    }
+
+    // Include source if present
+    if (this.source !== undefined) {
+      serialized.source = this.source;
+    }
+
     // Include stack if available
     if (this.stack) {
       serialized.stack = this.stack;
     }
 
-    // Recursively serialize cause if it's an ErrorX
+    // Serialize cause as simplified format
     if (this.cause) {
-      if (this.cause instanceof ErrorX) {
-        serialized.cause = this.cause.toJSON();
-      } else if (this.cause instanceof Error) {
-        const causeData: SerializableError = {
-          name: this.cause.name,
+      if (this.cause instanceof Error) {
+        const cause: ErrorXCause = {
           message: this.cause.message,
-          code: 'ERROR',
-          uiMessage: undefined,
-          metadata: {},
-          timestamp: new Date().toISOString(),
         };
-        if (this.cause.stack) {
-          causeData.stack = this.cause.stack;
+        if (this.cause.name) {
+          cause.name = this.cause.name;
         }
-        serialized.cause = causeData;
+        if (this.cause.stack) {
+          cause.stack = this.cause.stack;
+        }
+        serialized.cause = cause;
+      } else if (typeof this.cause === 'object' && this.cause !== null) {
+        // Handle non-Error objects
+        const causeObj = this.cause as any;
+        const cause: ErrorXCause = {
+          message: String(causeObj.message || causeObj),
+        };
+        if (causeObj.name) {
+          cause.name = String(causeObj.name);
+        }
+        if (causeObj.stack) {
+          cause.stack = String(causeObj.stack);
+        }
+        serialized.cause = cause;
+      } else {
+        // Handle primitives
+        serialized.cause = {
+          message: String(this.cause),
+        };
       }
     }
 
@@ -755,7 +866,7 @@ export class ErrorX extends Error {
    * // Fully restored ErrorX instance with all properties
    * ```
    */
-  public static fromJSON(serialized: SerializableError): ErrorX {
+  public static fromJSON(serialized: ErrorXSerialized): ErrorX {
     const options: ErrorXOptions = {
       message: serialized.message,
       name: serialized.name,
@@ -763,6 +874,9 @@ export class ErrorX extends Error {
       uiMessage: serialized.uiMessage,
       httpStatus: serialized.httpStatus,
       type: serialized.type,
+      url: serialized.url,
+      href: serialized.href,
+      source: serialized.source,
     };
     if (serialized.metadata !== undefined) {
       options.metadata = serialized.metadata;
@@ -778,17 +892,22 @@ export class ErrorX extends Error {
     if (serialized.stack) {
       error.stack = serialized.stack;
     }
-    // Use Object.defineProperty to set readonly properties
-    Object.defineProperty(error, 'timestamp', {
-      value: new Date(serialized.timestamp),
-      writable: false,
-    });
+    // Properties are now mutable, so we can set directly
+    error.timestamp = new Date(serialized.timestamp);
 
-    // Restore cause chain
+    // Restore cause from simplified format
     if (serialized.cause) {
+      const causeError = new Error(serialized.cause.message);
+      if (serialized.cause.name) {
+        causeError.name = serialized.cause.name;
+      }
+      if (serialized.cause.stack) {
+        causeError.stack = serialized.cause.stack;
+      }
+
       Object.defineProperty(error, 'cause', {
-        value: ErrorX.fromJSON(serialized.cause),
-        writable: false,
+        value: causeError,
+        writable: true,
       });
     }
 

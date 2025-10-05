@@ -1,14 +1,13 @@
-export { ErrorX } from './error.js';
+export { ErrorX } from './error';
 
 export type {
-  CustomAction,
-  ErrorAction,
-  ErrorMetadata,
+  ErrorXAction,
+  ErrorXActionCustom,
+  ErrorXActionLogout,
+  ErrorXActionNotify,
+  ErrorXActionRedirect,
+  ErrorXCause,
+  ErrorXMetadata,
   ErrorXOptions,
-  HandlingTarget,
-  LogoutAction,
-  NotifyAction,
-  RedirectAction,
-  SerializableError,
-} from './types.js';
-export { HandlingTargets } from './types.js';
+  ErrorXSerialized,
+} from './types';
