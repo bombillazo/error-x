@@ -227,7 +227,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    * ```
    */
   public static configure(config: ErrorXConfig): void {
-    ErrorX._config = config;
+    ErrorX._config = { ...(ErrorX._config || {}), ...config };
   }
 
   /**
