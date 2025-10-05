@@ -1,11 +1,6 @@
-export { ErrorX } from './error';
-
+export { ErrorX, type ErrorXConfig } from './error';
+export { http } from './presets';
 export type {
-  ErrorXAction,
-  ErrorXActionCustom,
-  ErrorXActionLogout,
-  ErrorXActionNotify,
-  ErrorXActionRedirect,
   ErrorXCause,
   ErrorXMetadata,
   ErrorXOptions,

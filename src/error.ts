@@ -1,6 +1,5 @@
 import safeStringify from 'safe-stringify';
 import type {
-  ErrorXAction,
   ErrorXCause,
   ErrorXMetadata,
   ErrorXOptionField,
@@ -13,10 +12,41 @@ import { ERROR_X_OPTION_FIELDS } from './types.js';
 const acceptedFields = new Set(ERROR_X_OPTION_FIELDS);
 
 /**
+ * Configuration interface for ErrorX global settings
+ *
+ * @public
+ */
+export interface ErrorXConfig {
+  /** Default source identifier for all errors (e.g., service name, module name) */
+  source?: string;
+  /** Base URL for error documentation */
+  docsBaseURL?: string;
+  /** Mapping of error codes to documentation paths */
+  docsMap?: Record<string, string>;
+  /**
+   * Control stack trace cleaning behavior
+   * - true: Enable automatic stack trace cleaning (default)
+   * - false: Disable stack trace cleaning entirely
+   * - string[]: Custom patterns to match and remove from stack traces
+   */
+  cleanStack?: boolean | string[];
+}
+
+/**
  * Enhanced Error class with rich metadata, type-safe error handling, and intelligent error conversion.
  *
  * @example
  * ```typescript
+ * // Configure globally (optional)
+ * ErrorX.configure({
+ *   source: 'my-service',
+ *   docsBaseURL: 'https://docs.example.com',
+ *   docsMap: {
+ *     'AUTH_FAILED': 'errors/authentication',
+ *     'DB_ERROR': 'errors/database'
+ *   }
+ * })
+ *
  * // Basic usage
  * const error = new ErrorX({ message: 'Database connection failed' })
  *
@@ -33,6 +63,9 @@ const acceptedFields = new Set(ERROR_X_OPTION_FIELDS);
  * @public
  */
 export class ErrorX extends Error {
+  /** Global configuration for all ErrorX instances */
+  private static _config: ErrorXConfig | null = null;
+
   /** Error identifier code, auto-generated from name if not provided */
   public code: string;
   /** User-friendly message suitable for display in UI */
@@ -41,104 +74,103 @@ export class ErrorX extends Error {
   public metadata: ErrorXMetadata | undefined;
   /** Timestamp when the error was created */
   public timestamp: Date;
-  /** Error actions for UI behavior and handling */
-  public actions: ErrorXAction[] | undefined;
   /** HTTP status code (100-599) for HTTP-related errors */
   public httpStatus: number | undefined;
   /** Error type for categorization */
   public type: string | undefined;
-  /** URL related to the error (API endpoint, page URL, resource URL) */
-  public url: string | undefined;
+  /** Source URL related to the error (API endpoint, page URL, resource URL) */
+  public sourceUrl: string | undefined;
   /** Documentation URL for this specific error */
-  public href: string | undefined;
+  public docsUrl: string | undefined;
   /** Where the error originated (service name, module, component) */
   public source: string | undefined;
 
   /**
    * Creates a new ErrorX instance with enhanced error handling capabilities.
    *
-   * @param messageOrOptions - Error message string or ErrorXOptions object
-   * @param additionalOptions - Additional options when first parameter is a string (optional)
+   * @param messageOrOptions - Error message string or ErrorXOptions object (optional)
    *
    * @example
    * ```typescript
-   * // Create with string message only
-   * const error1 = new ErrorX('Database query failed')
+   * // Create with default message
+   * const error1 = new ErrorX()
    *
-   * // Create with string message and additional options
-   * const error2 = new ErrorX('Database query failed', {
-   *   name: 'DatabaseError',
-   *   code: 'DB_QUERY_FAILED',
-   *   uiMessage: 'Unable to load data. Please try again.',
-   *   metadata: { query: 'SELECT * FROM users', timeout: 5000 }
-   * })
+   * // Create with string message only
+   * const error2 = new ErrorX('Database query failed')
    *
    * // Create with options object
    * const error3 = new ErrorX({
    *   message: 'Database query failed',
    *   name: 'DatabaseError',
    *   code: 'DB_QUERY_FAILED',
-   *   actions: [
-   *     { action: 'notify', targets: ['toast'] }
-   *   ]
+   *   uiMessage: 'Unable to load data. Please try again.',
+   *   metadata: { query: 'SELECT * FROM users', timeout: 5000 }
    * })
    *
-   * // Create with no options (uses defaults)
-   * const error4 = new ErrorX()
-   *
-   * // For converting unknown errors, use ErrorX.toErrorX()
+   * // For converting unknown errors, use ErrorX.from()
    * const apiError = { message: 'User not found', code: 404 }
-   * const error5 = ErrorX.toErrorX(apiError)
+   * const error4 = ErrorX.from(apiError)
    * ```
    */
-  constructor(
-    messageOrOptions?: string | ErrorXOptions,
-    additionalOptions?: Partial<ErrorXOptions>
-  ) {
+  constructor(messageOrOptions?: string | ErrorXOptions) {
     let options: ErrorXOptions = {};
 
     // Handle different input types
     if (typeof messageOrOptions === 'string') {
-      // String message provided - merge with additional options
-      options = {
-        message: messageOrOptions,
-        ...additionalOptions,
-      };
+      // String message provided
+      options = { message: messageOrOptions };
     } else if (messageOrOptions != null) {
       // ErrorXOptions object - use directly
       options = messageOrOptions;
     }
     // else: undefined/null - use empty options object
 
-    const formattedMessage = ErrorX.formatMessage(options.message);
-    super(formattedMessage, { cause: options.cause });
-
     // Read environment config for defaults
-    const envConfig = ErrorX.getEnvConfig();
+    const envConfig = ErrorX.getConfig();
+
+    // Use default message if not provided or if it's empty/whitespace-only
+    const message = options.message?.trim() ? options.message : 'An error occurred';
+
+    // For pre-ES2022 environments that don't support Error.cause option
+    // We pass the cause option but manually set it afterwards as a fallback
+    super(message, { cause: options.cause });
+
+    // Polyfill for environments that don't support error.cause (pre-ES2022)
+    // This ensures the cause property is always set correctly
+    if (options.cause !== undefined && !Object.hasOwn(this, 'cause')) {
+      Object.defineProperty(this, 'cause', {
+        value: options.cause,
+        writable: true,
+        enumerable: false,
+        configurable: true,
+      });
+    }
 
     this.name = options.name ?? ErrorX.getDefaultName();
     this.code =
       options.code != null ? String(options.code) : ErrorX.generateDefaultCode(options.name);
     this.uiMessage = options.uiMessage;
     this.metadata = options.metadata;
-    this.actions = options.actions;
     this.httpStatus = ErrorX.validateHttpStatus(options.httpStatus);
     this.type = ErrorX.validateType(options.type);
     this.timestamp = new Date();
 
     // Set new fields
-    this.url = options.url;
+    this.sourceUrl = options.sourceUrl;
     this.source = options.source ?? envConfig?.source;
 
-    // Auto-generate href from environment config if available
-    let generatedHref: string | undefined;
+    // Auto-generate docsUrl from environment config if available
+    let generatedDocsUrl: string | undefined;
     if (envConfig?.docsBaseURL && envConfig?.docsMap && this.code) {
       const docPath = envConfig.docsMap[this.code];
       if (docPath) {
-        generatedHref = `${envConfig.docsBaseURL}/${docPath}`;
+        // Normalize URL construction to avoid double slashes
+        const base = envConfig.docsBaseURL.replace(/\/+$/, ''); // Remove trailing slashes
+        const path = docPath.replace(/^\/+/, ''); // Remove leading slashes
+        generatedDocsUrl = `${base}/${path}`;
       }
     }
-    this.href = options.href ?? generatedHref;
+    this.docsUrl = options.docsUrl ?? generatedDocsUrl;
 
     // Handle stack trace preservation
     if (options.cause instanceof Error) {
@@ -162,44 +194,33 @@ export class ErrorX extends Error {
   }
 
   /**
-   * Reads and parses the ERROR_X_CONFIG environment variable.
-   * Supports both Node.js and browser environments (isomorphic).
+   * Configure global ErrorX settings.
+   * This method allows you to set defaults for all ErrorX instances.
    *
-   * Expected config structure:
-   * {
-   *   "source": "my-service-name",
-   *   "docsBaseURL": "https://docs.example.com/errors/",
-   *   "docsMap": {
-   *     "AUTH_FAILED": "authentication#auth-failed",
-   *     "NOT_FOUND": "common#not-found"
+   * @param config - Configuration object
+   *
+   * @example
+   * ```typescript
+   * ErrorX.configure({
+   *   source: 'my-api-service',
+   *   docsBaseURL: 'https://docs.example.com/errors',
+   *   docsMap: {
+   *     'AUTH_FAILED': 'authentication-errors',
+   *     'DB_ERROR': 'database-errors'
    *   }
-   * }
-   *
-   * @returns Parsed config object or null if not available or invalid
+   * })
+   * ```
    */
-  private static getEnvConfig(): {
-    source?: string;
-    docsBaseURL?: string;
-    docsMap?: Record<string, string>;
-  } | null {
-    try {
-      // Check if running in Node.js environment
-      const envConfig = process?.env?.ERROR_X_CONFIG ? process.env.ERROR_X_CONFIG : undefined;
+  public static configure(config: ErrorXConfig): void {
+    ErrorX._config = config;
+  }
 
-      if (!envConfig) return null;
-
-      const parsed = JSON.parse(envConfig);
-
-      // Validate parsed config has expected shape
-      if (typeof parsed !== 'object' || parsed === null) {
-        return null;
-      }
-
-      return parsed;
-    } catch {
-      // Failed to parse JSON or access environment
-      return null;
-    }
+  /**
+   * Get the current global configuration.
+   * Returns null if no configuration has been set.
+   */
+  public static getConfig(): ErrorXConfig | null {
+    return ErrorX._config;
   }
 
   /**
@@ -331,18 +352,33 @@ export class ErrorX extends Error {
   private static cleanStack(stack?: string): string {
     if (!stack) return '';
 
+    const config = ErrorX.getConfig();
+    const cleanStackConfig = config?.cleanStack ?? true; // Default to true
+
+    // If cleanStack is explicitly disabled, return original stack
+    if (cleanStackConfig === false) {
+      return stack;
+    }
+
     const stackLines = stack.split('\n');
     const cleanedLines: string[] = [];
 
+    // Default patterns to remove
+    const defaultPatterns = [
+      'new ErrorX',
+      'ErrorX.constructor',
+      'ErrorX.from',
+      'error-x/dist/',
+      'error-x/src/error.ts',
+    ];
+
+    // Use custom patterns if provided, otherwise use defaults
+    const patterns = Array.isArray(cleanStackConfig) ? cleanStackConfig : defaultPatterns;
+
     for (const line of stackLines) {
-      // Skip lines that contain ErrorX constructor or internal methods
-      if (
-        line.includes('new ErrorX') ||
-        line.includes('ErrorX.constructor') ||
-        line.includes('ErrorX.toErrorX') ||
-        line.includes('error-x/dist/') ||
-        line.includes('error-x/src/error.ts')
-      ) {
+      // Skip lines that match any of the patterns
+      const shouldSkip = patterns.some((pattern) => line.includes(pattern));
+      if (shouldSkip) {
         continue;
       }
       cleanedLines.push(line);
@@ -380,44 +416,6 @@ export class ErrorX extends Error {
   }
 
   /**
-   * Formats error messages with proper capitalization and punctuation.
-   * Ensures consistent message formatting across all ErrorX instances.
-   *
-   * @param message - Raw error message to format (optional)
-   * @returns Formatted message with proper capitalization and punctuation
-   *
-   * @example
-   * ```typescript
-   * formatMessage('database connection failed') // 'Database connection failed.'
-   * formatMessage('user not found. please check credentials') // 'User not found. Please check credentials.'
-   * formatMessage() // 'An error occurred'
-   * ```
-   */
-  private static formatMessage(message?: string): string {
-    if (!message || typeof message !== 'string' || !message.trim()) {
-      return 'An error occurred';
-    }
-
-    // Split by sentences and capitalize each
-    let formatted = message
-      .split('. ')
-      .map((sentence) => {
-        const trimmed = sentence.trim();
-        if (!trimmed) return trimmed;
-        return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-      })
-      .join('. ');
-
-    // Add period at the end if it doesn't have proper punctuation
-    const endsWithPunctuation = /[.!?)\]]$/.test(formatted);
-    if (!endsWithPunctuation) {
-      formatted = `${formatted}.`;
-    }
-
-    return formatted;
-  }
-
-  /**
    * Creates a new ErrorX instance with additional metadata merged with existing metadata.
    * The original error properties are preserved while extending the metadata.
    *
@@ -448,13 +446,10 @@ export class ErrorX extends Error {
       metadata: { ...(this.metadata ?? {}), ...additionalMetadata },
       httpStatus: this.httpStatus,
       type: this.type,
-      url: this.url,
-      href: this.href,
+      sourceUrl: this.sourceUrl,
+      docsUrl: this.docsUrl,
       source: this.source,
     };
-    if (this.actions) {
-      options.actions = this.actions;
-    }
     const newError = new ErrorX(options);
 
     // Preserve the original stack trace
@@ -502,7 +497,6 @@ export class ErrorX extends Error {
     let uiMessage = '';
     let cause: unknown;
     let metadata: ErrorXMetadata = {};
-    let actions: ErrorXAction[] | undefined;
     let httpStatus: number | undefined;
     let type: string | undefined;
     let url: string | undefined;
@@ -539,11 +533,6 @@ export class ErrorX extends Error {
         if ('uiMessage' in error && error.uiMessage) uiMessage = String(error.uiMessage);
         else if ('userMessage' in error && error.userMessage) uiMessage = String(error.userMessage);
 
-        // Extract actions
-        if ('actions' in error && Array.isArray(error.actions)) {
-          actions = error.actions as ErrorXAction[];
-        }
-
         let _httpStatus: unknown;
         // Extract HTTP status
         if ('httpStatus' in error) {
@@ -563,16 +552,18 @@ export class ErrorX extends Error {
           type = ErrorX.validateType(String(error.type));
         }
 
-        // Extract url
-        if ('url' in error && error.url) {
+        // Extract sourceUrl
+        if ('sourceUrl' in error && error.sourceUrl) {
+          url = String(error.sourceUrl);
+        } else if ('url' in error && error.url) {
           url = String(error.url);
         }
 
-        // Extract href
-        if ('href' in error && error.href) {
-          href = String(error.href);
-        } else if ('docsUrl' in error && error.docsUrl) {
+        // Extract docsUrl
+        if ('docsUrl' in error && error.docsUrl) {
           href = String(error.docsUrl);
+        } else if ('href' in error && error.href) {
+          href = String(error.href);
         } else if ('documentationUrl' in error && error.documentationUrl) {
           href = String(error.documentationUrl);
         }
@@ -600,11 +591,10 @@ export class ErrorX extends Error {
     if (uiMessage) options.uiMessage = uiMessage;
     if (cause) options.cause = cause;
     if (Object.keys(metadata).length > 0) options.metadata = metadata;
-    if (actions && actions.length > 0) options.actions = actions;
     if (httpStatus) options.httpStatus = httpStatus;
     if (type) options.type = type;
-    if (url) options.url = url;
-    if (href) options.href = href;
+    if (url) options.sourceUrl = url;
+    if (href) options.docsUrl = href;
     if (source) options.source = source;
 
     return options;
@@ -620,10 +610,10 @@ export class ErrorX extends Error {
    * @example
    * ```typescript
    * // Convert string error
-   * const error1 = ErrorX.toErrorX('Something went wrong')
+   * const error1 = ErrorX.from('Something went wrong')
    *
    * // Convert regular Error
-   * const error2 = ErrorX.toErrorX(new Error('Database failed'))
+   * const error2 = ErrorX.from(new Error('Database failed'))
    *
    * // Convert API response object
    * const apiError = {
@@ -631,10 +621,10 @@ export class ErrorX extends Error {
    *   code: 'USER_404',
    *   statusText: 'Not Found'
    * }
-   * const error3 = ErrorX.toErrorX(apiError)
+   * const error3 = ErrorX.from(apiError)
    * ```
    */
-  public static toErrorX(error: unknown): ErrorX {
+  public static from(error: unknown): ErrorX {
     if (error instanceof ErrorX) return error;
 
     const options = ErrorX.convertUnknownToOptions(error);
@@ -665,15 +655,12 @@ export class ErrorX extends Error {
         cause: this.cause,
         httpStatus: this.httpStatus,
         type: this.type,
-        url: this.url,
-        href: this.href,
+        sourceUrl: this.sourceUrl,
+        docsUrl: this.docsUrl,
         source: this.source,
       };
       if (this.metadata !== undefined) {
         options.metadata = this.metadata;
-      }
-      if (this.actions) {
-        options.actions = this.actions;
       }
       const newError = new ErrorX(options);
       newError.stack = ErrorX.processErrorStack(this, delimiter);
@@ -751,11 +738,20 @@ export class ErrorX extends Error {
    */
   public toJSON(): ErrorXSerialized {
     // Handle metadata serialization with circular reference protection
-
-    // Use safe stringify to parse the metadata and remove circular references
-    const safeMetadata: ErrorXMetadata | undefined = this.metadata
-      ? JSON.parse(safeStringify(this.metadata))
-      : undefined;
+    // safeStringify already handles circular references, but we need to
+    // return a plain object (not a string) for toJSON()
+    // Using a try-catch to fallback to safe serialization if needed
+    let safeMetadata: ErrorXMetadata | undefined;
+    if (this.metadata) {
+      try {
+        // Try direct serialization first (most common case, fastest)
+        JSON.stringify(this.metadata);
+        safeMetadata = this.metadata;
+      } catch {
+        // Fallback to safe stringify for circular references
+        safeMetadata = JSON.parse(safeStringify(this.metadata));
+      }
+    }
 
     const serialized: ErrorXSerialized = {
       name: this.name,
@@ -765,13 +761,6 @@ export class ErrorX extends Error {
       metadata: safeMetadata,
       timestamp: this.timestamp.toISOString(),
     };
-
-    // Include actions if present
-    if (this.actions && this.actions.length > 0) {
-      // Use safe stringify to parse the actions and remove circular references
-      const stringified = safeStringify(this.actions);
-      serialized.actions = JSON.parse(stringified);
-    }
 
     // Include httpStatus if present
     if (this.httpStatus !== undefined) {
@@ -784,13 +773,13 @@ export class ErrorX extends Error {
     }
 
     // Include url if present
-    if (this.url !== undefined) {
-      serialized.url = this.url;
+    if (this.sourceUrl !== undefined) {
+      serialized.sourceUrl = this.sourceUrl;
     }
 
     // Include href if present
-    if (this.href !== undefined) {
-      serialized.href = this.href;
+    if (this.docsUrl !== undefined) {
+      serialized.docsUrl = this.docsUrl;
     }
 
     // Include source if present
@@ -818,7 +807,7 @@ export class ErrorX extends Error {
         serialized.cause = cause;
       } else if (typeof this.cause === 'object' && this.cause !== null) {
         // Handle non-Error objects
-        const causeObj = this.cause as any;
+        const causeObj = this.cause as Record<string, unknown>;
         const cause: ErrorXCause = {
           message: String(causeObj.message || causeObj),
         };
@@ -870,16 +859,12 @@ export class ErrorX extends Error {
       uiMessage: serialized.uiMessage,
       httpStatus: serialized.httpStatus,
       type: serialized.type,
-      url: serialized.url,
-      href: serialized.href,
+      sourceUrl: serialized.sourceUrl,
+      docsUrl: serialized.docsUrl,
       source: serialized.source,
     };
     if (serialized.metadata !== undefined) {
       options.metadata = serialized.metadata;
-    }
-
-    if (serialized.actions && serialized.actions.length > 0) {
-      options.actions = serialized.actions;
     }
 
     const error = new ErrorX(options);
@@ -909,479 +894,4 @@ export class ErrorX extends Error {
 
     return error;
   }
-
-  /**
-   * HTTP error presets for common HTTP status codes.
-   *
-   * ## Features
-   * - **Pre-configured error templates** for common HTTP status codes (400-511)
-   * - **Type-safe** with TypeScript support
-   * - **Fully customizable** via destructuring and override pattern
-   * - **User-friendly messages** included for all presets
-   * - **Categorized by type** - all HTTP presets include `type: 'http'`
-   *
-   * ## Usage Patterns
-   *
-   * ### 1. Direct Usage
-   * Use a preset as-is without any modifications:
-   * ```typescript
-   * throw new ErrorX(ErrorX.HTTP.NOT_FOUND)
-   * // Result: 404 error with default message and UI message
-   * ```
-   *
-   * ### 2. Override Specific Fields
-   * Customize the error while keeping other preset values:
-   * ```typescript
-   * throw new ErrorX({
-   *   ...ErrorX.HTTP.NOT_FOUND,
-   *   message: 'User not found',
-   *   metadata: { userId: 123 }
-   * })
-   * // Result: 404 error with custom message but keeps httpStatus, code, name, uiMessage, type
-   * ```
-   *
-   * ### 3. Add Metadata and Actions
-   * Enhance presets with additional context and behaviors:
-   * ```typescript
-   * throw new ErrorX({
-   *   ...ErrorX.HTTP.UNAUTHORIZED,
-   *   metadata: { attemptedAction: 'viewProfile', userId: 456 },
-   *   actions: [
-   *     { action: 'logout', payload: { clearStorage: true } },
-   *     { action: 'redirect', payload: { redirectURL: '/login' } }
-   *   ]
-   * })
-   * ```
-   *
-   * ### 4. Add Error Cause
-   * Chain errors by adding a cause:
-   * ```typescript
-   * try {
-   *   // some operation
-   * } catch (originalError) {
-   *   throw new ErrorX({
-   *     ...ErrorX.HTTP.INTERNAL_SERVER_ERROR,
-   *     cause: originalError,
-   *     metadata: { operation: 'database-query' }
-   *   })
-   * }
-   * ```
-   *
-   * ## Common HTTP Presets
-   *
-   * ### 4xx Client Errors
-   * - `BAD_REQUEST` (400) - Invalid request data
-   * - `UNAUTHORIZED` (401) - Authentication required
-   * - `FORBIDDEN` (403) - Insufficient permissions
-   * - `NOT_FOUND` (404) - Resource not found
-   * - `METHOD_NOT_ALLOWED` (405) - HTTP method not allowed
-   * - `CONFLICT` (409) - Resource conflict
-   * - `UNPROCESSABLE_ENTITY` (422) - Validation failed
-   * - `TOO_MANY_REQUESTS` (429) - Rate limit exceeded
-   *
-   * ### 5xx Server Errors
-   * - `INTERNAL_SERVER_ERROR` (500) - Unexpected server error
-   * - `NOT_IMPLEMENTED` (501) - Feature not implemented
-   * - `BAD_GATEWAY` (502) - Upstream server error
-   * - `SERVICE_UNAVAILABLE` (503) - Service temporarily down
-   * - `GATEWAY_TIMEOUT` (504) - Upstream timeout
-   *
-   * @example
-   * ```typescript
-   * // API endpoint example
-   * app.get('/users/:id', async (req, res) => {
-   *   const user = await db.users.findById(req.params.id)
-   *
-   *   if (!user) {
-   *     throw new ErrorX({
-   *       ...ErrorX.HTTP.NOT_FOUND,
-   *       message: 'User not found',
-   *       metadata: { userId: req.params.id }
-   *     })
-   *   }
-   *
-   *   res.json(user)
-   * })
-   *
-   * // Authentication middleware example
-   * const requireAuth = (req, res, next) => {
-   *   if (!req.user) {
-   *     throw new ErrorX({
-   *       ...ErrorX.HTTP.UNAUTHORIZED,
-   *       actions: [
-   *         { action: 'redirect', payload: { redirectURL: '/login' } }
-   *       ]
-   *     })
-   *   }
-   *   next()
-   * }
-   *
-   * // Rate limiting example
-   * if (isRateLimited(req.ip)) {
-   *   throw new ErrorX({
-   *     ...ErrorX.HTTP.TOO_MANY_REQUESTS,
-   *     metadata: {
-   *       ip: req.ip,
-   *       retryAfter: 60
-   *     }
-   *   })
-   * }
-   * ```
-   *
-   * @public
-   */
-  public static readonly HTTP = {
-    // 4xx Client Errors
-    BAD_REQUEST: {
-      httpStatus: 400,
-      code: 'BAD_REQUEST',
-      name: 'Bad Request Error',
-      message: 'bad request',
-      uiMessage: 'The request could not be processed. Please check your input and try again.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    UNAUTHORIZED: {
-      httpStatus: 401,
-      code: 'UNAUTHORIZED',
-      name: 'Unauthorized Error',
-      message: 'unauthorized',
-      uiMessage: 'Authentication required. Please log in to continue.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    PAYMENT_REQUIRED: {
-      httpStatus: 402,
-      code: 'PAYMENT_REQUIRED',
-      name: 'Payment Required Error',
-      message: 'payment required',
-      uiMessage: 'Payment is required to access this resource.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    FORBIDDEN: {
-      httpStatus: 403,
-      code: 'FORBIDDEN',
-      name: 'Forbidden Error',
-      message: 'forbidden',
-      uiMessage: 'You do not have permission to access this resource.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    NOT_FOUND: {
-      httpStatus: 404,
-      code: 'NOT_FOUND',
-      name: 'Not Found Error',
-      message: 'not found',
-      uiMessage: 'The requested resource could not be found.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    METHOD_NOT_ALLOWED: {
-      httpStatus: 405,
-      code: 'METHOD_NOT_ALLOWED',
-      name: 'Method Not Allowed Error',
-      message: 'method not allowed',
-      uiMessage: 'This action is not allowed for the requested resource.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    NOT_ACCEPTABLE: {
-      httpStatus: 406,
-      code: 'NOT_ACCEPTABLE',
-      name: 'Not Acceptable Error',
-      message: 'not acceptable',
-      uiMessage: 'The requested format is not supported.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    PROXY_AUTHENTICATION_REQUIRED: {
-      httpStatus: 407,
-      code: 'PROXY_AUTHENTICATION_REQUIRED',
-      name: 'Proxy Authentication Required Error',
-      message: 'proxy authentication required',
-      uiMessage: 'Proxy authentication is required to access this resource.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    REQUEST_TIMEOUT: {
-      httpStatus: 408,
-      code: 'REQUEST_TIMEOUT',
-      name: 'Request Timeout Error',
-      message: 'request timeout',
-      uiMessage: 'The request took too long to complete. Please try again.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    CONFLICT: {
-      httpStatus: 409,
-      code: 'CONFLICT',
-      name: 'Conflict Error',
-      message: 'conflict',
-      uiMessage: 'The request conflicts with the current state. Please refresh and try again.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    GONE: {
-      httpStatus: 410,
-      code: 'GONE',
-      name: 'Gone Error',
-      message: 'gone',
-      uiMessage: 'This resource is no longer available.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    LENGTH_REQUIRED: {
-      httpStatus: 411,
-      code: 'LENGTH_REQUIRED',
-      name: 'Length Required Error',
-      message: 'length required',
-      uiMessage: 'The request is missing required length information.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    PRECONDITION_FAILED: {
-      httpStatus: 412,
-      code: 'PRECONDITION_FAILED',
-      name: 'Precondition Failed Error',
-      message: 'precondition failed',
-      uiMessage: 'A required condition was not met. Please try again.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    PAYLOAD_TOO_LARGE: {
-      httpStatus: 413,
-      code: 'PAYLOAD_TOO_LARGE',
-      name: 'Payload Too Large Error',
-      message: 'payload too large',
-      uiMessage: 'The request is too large. Please reduce the size and try again.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    URI_TOO_LONG: {
-      httpStatus: 414,
-      code: 'URI_TOO_LONG',
-      name: 'URI Too Long Error',
-      message: 'URI too long',
-      uiMessage: 'The request URL is too long.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    UNSUPPORTED_MEDIA_TYPE: {
-      httpStatus: 415,
-      code: 'UNSUPPORTED_MEDIA_TYPE',
-      name: 'Unsupported Media Type Error',
-      message: 'unsupported media type',
-      uiMessage: 'The file type is not supported.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    RANGE_NOT_SATISFIABLE: {
-      httpStatus: 416,
-      code: 'RANGE_NOT_SATISFIABLE',
-      name: 'Range Not Satisfiable Error',
-      message: 'range not satisfiable',
-      uiMessage: 'The requested range cannot be satisfied.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    EXPECTATION_FAILED: {
-      httpStatus: 417,
-      code: 'EXPECTATION_FAILED',
-      name: 'Expectation Failed Error',
-      message: 'expectation failed',
-      uiMessage: 'The server cannot meet the requirements of the request.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    IM_A_TEAPOT: {
-      httpStatus: 418,
-      code: 'IM_A_TEAPOT',
-      name: 'Im A Teapot Error',
-      message: "i'm a teapot",
-      uiMessage: "I'm a teapot and cannot brew coffee.",
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    UNPROCESSABLE_ENTITY: {
-      httpStatus: 422,
-      code: 'UNPROCESSABLE_ENTITY',
-      name: 'Unprocessable Entity Error',
-      message: 'unprocessable entity',
-      uiMessage: 'The request contains invalid data. Please check your input.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    LOCKED: {
-      httpStatus: 423,
-      code: 'LOCKED',
-      name: 'Locked Error',
-      message: 'locked',
-      uiMessage: 'This resource is locked and cannot be modified.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    FAILED_DEPENDENCY: {
-      httpStatus: 424,
-      code: 'FAILED_DEPENDENCY',
-      name: 'Failed Dependency Error',
-      message: 'failed dependency',
-      uiMessage: 'The request failed due to a dependency error.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    TOO_EARLY: {
-      httpStatus: 425,
-      code: 'TOO_EARLY',
-      name: 'Too Early Error',
-      message: 'too early',
-      uiMessage: 'The request was sent too early. Please try again later.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    UPGRADE_REQUIRED: {
-      httpStatus: 426,
-      code: 'UPGRADE_REQUIRED',
-      name: 'Upgrade Required Error',
-      message: 'upgrade required',
-      uiMessage: 'Please upgrade to continue using this service.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    PRECONDITION_REQUIRED: {
-      httpStatus: 428,
-      code: 'PRECONDITION_REQUIRED',
-      name: 'Precondition Required Error',
-      message: 'precondition required',
-      uiMessage: 'Required conditions are missing from the request.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    TOO_MANY_REQUESTS: {
-      httpStatus: 429,
-      code: 'TOO_MANY_REQUESTS',
-      name: 'Too Many Requests Error',
-      message: 'too many requests',
-      uiMessage: 'You have made too many requests. Please wait and try again.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    REQUEST_HEADER_FIELDS_TOO_LARGE: {
-      httpStatus: 431,
-      code: 'REQUEST_HEADER_FIELDS_TOO_LARGE',
-      name: 'Request Header Fields Too Large Error',
-      message: 'request header fields too large',
-      uiMessage: 'The request headers are too large.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    UNAVAILABLE_FOR_LEGAL_REASONS: {
-      httpStatus: 451,
-      code: 'UNAVAILABLE_FOR_LEGAL_REASONS',
-      name: 'Unavailable For Legal Reasons Error',
-      message: 'unavailable for legal reasons',
-      uiMessage: 'This content is unavailable for legal reasons.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    // 5xx Server Errors
-    INTERNAL_SERVER_ERROR: {
-      httpStatus: 500,
-      code: 'INTERNAL_SERVER_ERROR',
-      name: 'Internal Server Error',
-      message: 'internal server error',
-      uiMessage: 'An unexpected error occurred. Please try again later.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    NOT_IMPLEMENTED: {
-      httpStatus: 501,
-      code: 'NOT_IMPLEMENTED',
-      name: 'Not Implemented Error',
-      message: 'not implemented',
-      uiMessage: 'This feature is not yet available.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    BAD_GATEWAY: {
-      httpStatus: 502,
-      code: 'BAD_GATEWAY',
-      name: 'Bad Gateway Error',
-      message: 'bad gateway',
-      uiMessage: 'Unable to connect to the server. Please try again later.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    SERVICE_UNAVAILABLE: {
-      httpStatus: 503,
-      code: 'SERVICE_UNAVAILABLE',
-      name: 'Service Unavailable Error',
-      message: 'service unavailable',
-      uiMessage: 'The service is temporarily unavailable. Please try again later.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    GATEWAY_TIMEOUT: {
-      httpStatus: 504,
-      code: 'GATEWAY_TIMEOUT',
-      name: 'Gateway Timeout Error',
-      message: 'gateway timeout',
-      uiMessage: 'The server took too long to respond. Please try again.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    HTTP_VERSION_NOT_SUPPORTED: {
-      httpStatus: 505,
-      code: 'HTTP_VERSION_NOT_SUPPORTED',
-      name: 'HTTP Version Not Supported Error',
-      message: 'HTTP version not supported',
-      uiMessage: 'Your browser version is not supported.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    VARIANT_ALSO_NEGOTIATES: {
-      httpStatus: 506,
-      code: 'VARIANT_ALSO_NEGOTIATES',
-      name: 'Variant Also Negotiates Error',
-      message: 'variant also negotiates',
-      uiMessage: 'The server has an internal configuration error.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    INSUFFICIENT_STORAGE: {
-      httpStatus: 507,
-      code: 'INSUFFICIENT_STORAGE',
-      name: 'Insufficient Storage Error',
-      message: 'insufficient storage',
-      uiMessage: 'The server has insufficient storage to complete the request.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    LOOP_DETECTED: {
-      httpStatus: 508,
-      code: 'LOOP_DETECTED',
-      name: 'Loop Detected Error',
-      message: 'loop detected',
-      uiMessage: 'The server detected an infinite loop.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    NOT_EXTENDED: {
-      httpStatus: 510,
-      code: 'NOT_EXTENDED',
-      name: 'Not Extended Error',
-      message: 'not extended',
-      uiMessage: 'Additional extensions are required.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-
-    NETWORK_AUTHENTICATION_REQUIRED: {
-      httpStatus: 511,
-      code: 'NETWORK_AUTHENTICATION_REQUIRED',
-      name: 'Network Authentication Required Error',
-      message: 'network authentication required',
-      uiMessage: 'Network authentication is required to access this resource.',
-      type: 'http',
-    } satisfies ErrorXOptions,
-  } as const;
 }
