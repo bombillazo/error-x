@@ -461,3 +461,9 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 } as const;
+
+// Freeze all preset objects to prevent runtime mutation
+Object.freeze(http);
+for (const preset of Object.values(http)) {
+  Object.freeze(preset);
+}

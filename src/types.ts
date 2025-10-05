@@ -61,6 +61,10 @@ export type ErrorXOptionField = (typeof ERROR_X_OPTION_FIELDS)[number];
  * // ✅ Works - object literal
  * const opts = { message: 'Error' }
  * new ErrorX(opts)
+ *
+ * // ✅ Works - with type-safe metadata
+ * type MyMeta = { userId: number; action: string };
+ * new ErrorX<MyMeta>({ metadata: { userId: 123, action: 'login' } })
  * ```
  *
  * If ErrorXOptions were a class, you would need to instantiate it:
@@ -75,28 +79,28 @@ export type ErrorXOptionField = (typeof ERROR_X_OPTION_FIELDS)[number];
  *
  * @public
  */
-export type ErrorXOptions = {
+export type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
   /** Technical error message (default: 'An error occurred') */
   message?: string;
   /** Error type/name (default: 'Error') */
   name?: string;
   /** Error identifier code (auto-generated from name if not provided) */
-  code?: string | number;
-  /** User-friendly message for UI display (default: undefined) */
+  code?: string;
+  /** User-friendly message for UI display */
   uiMessage?: string | undefined;
   /** Original error that caused this error (preserves error chain) */
   cause?: Error | unknown;
-  /** Additional context and debugging information (default: undefined) */
-  metadata?: ErrorXMetadata;
-  /** HTTP status code (100-599) for HTTP-related errors (default: undefined) */
+  /** Additional context and debugging information */
+  metadata?: TMetadata | undefined;
+  /** HTTP status code (100-599) for HTTP-related errors */
   httpStatus?: number | undefined;
-  /** Error type for categorization (default: undefined) */
+  /** Error type for categorization */
   type?: string | undefined;
-  /** Source URL related to the error (API endpoint, page URL, resource URL) (default: undefined) */
+  /** Source URL related to the error (API endpoint, page URL, resource URL) */
   sourceUrl?: string | undefined;
-  /** Documentation URL for this specific error (default: undefined) */
+  /** Documentation URL for this specific error */
   docsUrl?: string | undefined;
-  /** Where the error originated (service name, module, component) (default: undefined) */
+  /** Where the error originated (service name, module, component) */
   source?: string | undefined;
 };
 
@@ -134,8 +138,8 @@ export type ErrorXCause = {
  *     message: 'Request timeout.',
  *     stack: '...'
  *   },
- *   url: 'https://api.example.com/auth',
- *   href: 'https://docs.example.com/errors#auth-failed',
+ *   sourceUrl: 'https://api.example.com/auth',
+ *   docsUrl: 'https://docs.example.com/errors#auth-failed',
  *   source: 'auth-service'
  * }
  * ```

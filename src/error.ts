@@ -58,11 +58,19 @@ export interface ErrorXConfig {
  *   uiMessage: 'Please check your credentials',
  *   metadata: { userId: 123, loginAttempt: 3 }
  * })
+ *
+ * // With type-safe metadata
+ * type MyMetadata = { userId: number; action: string };
+ * const error = new ErrorX<MyMetadata>({
+ *   message: 'Action failed',
+ *   metadata: { userId: 123, action: 'delete' }
+ * })
+ * // error.metadata?.userId is typed as number
  * ```
  *
  * @public
  */
-export class ErrorX extends Error {
+export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends Error {
   /** Global configuration for all ErrorX instances */
   private static _config: ErrorXConfig | null = null;
 
@@ -71,7 +79,7 @@ export class ErrorX extends Error {
   /** User-friendly message suitable for display in UI */
   public uiMessage: string | undefined;
   /** Additional context and metadata associated with the error */
-  public metadata: ErrorXMetadata | undefined;
+  public metadata: TMetadata | undefined;
   /** Timestamp when the error was created */
   public timestamp: Date;
   /** HTTP status code (100-599) for HTTP-related errors */
@@ -107,13 +115,20 @@ export class ErrorX extends Error {
    *   metadata: { query: 'SELECT * FROM users', timeout: 5000 }
    * })
    *
+   * // With type-safe metadata
+   * type MyMeta = { userId: number };
+   * const error4 = new ErrorX<MyMeta>({
+   *   message: 'User action failed',
+   *   metadata: { userId: 123 }
+   * })
+   *
    * // For converting unknown errors, use ErrorX.from()
    * const apiError = { message: 'User not found', code: 404 }
-   * const error4 = ErrorX.from(apiError)
+   * const error5 = ErrorX.from(apiError)
    * ```
    */
-  constructor(messageOrOptions?: string | ErrorXOptions) {
-    let options: ErrorXOptions = {};
+  constructor(messageOrOptions?: string | ErrorXOptions<TMetadata>) {
+    let options: ErrorXOptions<TMetadata> = {};
 
     // Handle different input types
     if (typeof messageOrOptions === 'string') {
@@ -436,26 +451,27 @@ export class ErrorX extends Error {
    * // Result: metadata = { endpoint: '/users', retryCount: 3, userId: 123 }
    * ```
    */
-  public withMetadata(additionalMetadata: ErrorXMetadata): ErrorX {
-    const options: ErrorXOptions = {
+  public withMetadata(additionalMetadata: Partial<TMetadata>): ErrorX<TMetadata> {
+    const options: ErrorXOptions<TMetadata> = {
       message: this.message,
       name: this.name,
       code: this.code,
       uiMessage: this.uiMessage,
       cause: this.cause,
-      metadata: { ...(this.metadata ?? {}), ...additionalMetadata },
+      metadata: { ...(this.metadata ?? {}), ...additionalMetadata } as TMetadata,
       httpStatus: this.httpStatus,
       type: this.type,
       sourceUrl: this.sourceUrl,
       docsUrl: this.docsUrl,
       source: this.source,
     };
-    const newError = new ErrorX(options);
+    const newError = new ErrorX<TMetadata>(options);
 
-    // Preserve the original stack trace
+    // Preserve the original stack trace and timestamp
     if (this.stack) {
       newError.stack = this.stack;
     }
+    newError.timestamp = this.timestamp;
     return newError;
   }
 
@@ -477,7 +493,9 @@ export class ErrorX extends Error {
    * }
    * ```
    */
-  public static isErrorX(value: unknown): value is ErrorX {
+  public static isErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata>(
+    value: unknown
+  ): value is ErrorX<TMetadata> {
     return value instanceof ErrorX;
   }
 
@@ -624,6 +642,12 @@ export class ErrorX extends Error {
    * const error3 = ErrorX.from(apiError)
    * ```
    */
+  public static from<TMetadata extends ErrorXMetadata = ErrorXMetadata>(
+    error: ErrorX<TMetadata>
+  ): ErrorX<TMetadata>;
+  public static from(error: Error): ErrorX;
+  public static from(error: string): ErrorX;
+  public static from(error: unknown): ErrorX;
   public static from(error: unknown): ErrorX {
     if (error instanceof ErrorX) return error;
 
@@ -645,7 +669,7 @@ export class ErrorX extends Error {
    * // Returns new ErrorX with stack trace starting after 'database-layer'
    * ```
    */
-  public cleanStackTrace(delimiter?: string): ErrorX {
+  public cleanStackTrace(delimiter?: string): ErrorX<TMetadata> {
     if (delimiter && this.stack) {
       const options: ErrorXOptions = {
         message: this.message,
@@ -662,7 +686,7 @@ export class ErrorX extends Error {
       if (this.metadata !== undefined) {
         options.metadata = this.metadata;
       }
-      const newError = new ErrorX(options);
+      const newError = new ErrorX<TMetadata>(options as ErrorXOptions<TMetadata>);
       newError.stack = ErrorX.processErrorStack(this, delimiter);
       return newError;
     }
@@ -851,7 +875,9 @@ export class ErrorX extends Error {
    * // Fully restored ErrorX instance with all properties
    * ```
    */
-  public static fromJSON(serialized: ErrorXSerialized): ErrorX {
+  public static fromJSON<TMetadata extends ErrorXMetadata = ErrorXMetadata>(
+    serialized: ErrorXSerialized
+  ): ErrorX<TMetadata> {
     const options: ErrorXOptions = {
       message: serialized.message,
       name: serialized.name,
@@ -867,7 +893,7 @@ export class ErrorX extends Error {
       options.metadata = serialized.metadata;
     }
 
-    const error = new ErrorX(options);
+    const error = new ErrorX<TMetadata>(options as ErrorXOptions<TMetadata>);
 
     // Restore stack and timestamp
     if (serialized.stack) {
