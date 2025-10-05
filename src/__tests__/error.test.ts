@@ -1,10 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  ErrorX,
-  type ErrorXMetadata,
-  type ErrorXOptions,
-  type ErrorXSerialized,
-} from '../index.js';
+import { ErrorX, type ErrorXMetadata, type ErrorXSerialized } from '../index.js';
 
 describe('ErrorX', () => {
   let mockDate: Date;
@@ -23,6 +18,7 @@ describe('ErrorX', () => {
     vi.useRealTimers();
     // Restore original captureStackTrace
     if (originalCaptureStackTrace) {
+      // biome-ignore lint/suspicious/noExplicitAny: Need to restore Error.captureStackTrace which is not typed
       (Error as any).captureStackTrace = originalCaptureStackTrace;
     }
   });
@@ -31,7 +27,7 @@ describe('ErrorX', () => {
     it('should create error with string message only', () => {
       const error = new ErrorX('test error');
 
-      expect(error.message).toBe('Test error.');
+      expect(error.message).toBe('test error');
       expect(error.name).toBe('Error');
       expect(error.code).toBe('ERROR');
       expect(error.uiMessage).toBeUndefined();
@@ -53,7 +49,7 @@ describe('ErrorX', () => {
         metadata,
       });
 
-      expect(error.message).toBe('Authentication failed.');
+      expect(error.message).toBe('authentication failed');
       expect(error.name).toBe('AuthError');
       expect(error.code).toBe('AUTH_FAILED');
       expect(error.uiMessage).toBe('Please check your credentials');
@@ -64,7 +60,7 @@ describe('ErrorX', () => {
     it('should create error with minimal options', () => {
       const error = new ErrorX({ message: 'test error' });
 
-      expect(error.message).toBe('Test error.');
+      expect(error.message).toBe('test error');
       expect(error.name).toBe('Error');
       expect(error.code).toBe('ERROR');
       expect(error.uiMessage).toBeUndefined();
@@ -87,7 +83,7 @@ describe('ErrorX', () => {
         metadata,
       });
 
-      expect(error.message).toBe('Authentication failed.');
+      expect(error.message).toBe('authentication failed');
       expect(error.name).toBe('AuthError');
       expect(error.code).toBe('AUTH_FAILED');
       expect(error.uiMessage).toBe('Please check your credentials');
@@ -104,7 +100,7 @@ describe('ErrorX', () => {
         uiMessage: 'Page not found',
       });
 
-      expect(error.message).toBe('HTTP error.');
+      expect(error.message).toBe('HTTP error');
       expect(error.name).toBe('HTTPError');
       expect(error.code).toBe('404');
       expect(error.uiMessage).toBe('Page not found');
@@ -117,7 +113,7 @@ describe('ErrorX', () => {
         code: 'SIMPLE_TEST',
       });
 
-      expect(error.message).toBe('Simple test.');
+      expect(error.message).toBe('Simple test');
       expect(error.name).toBe('SimpleError');
       expect(error.code).toBe('SIMPLE_TEST');
     });
@@ -156,64 +152,16 @@ describe('ErrorX', () => {
       expect(error.metadata).toBeUndefined();
     });
 
-    it('should format messages correctly', () => {
+    it('should pass messages through as-is without formatting', () => {
       const testCases = [
-        { input: 'simple message', expected: 'Simple message.' },
-        { input: 'already capitalized', expected: 'Already capitalized.' },
-        {
-          input: 'multiple sentences. second sentence',
-          expected: 'Multiple sentences. Second sentence.',
-        },
-        { input: 'ends with period.', expected: 'Ends with period.' },
-        { input: 'ends with exclamation!', expected: 'Ends with exclamation!' },
-        { input: 'ends with question?', expected: 'Ends with question?' },
-        { input: 'ends with paren)', expected: 'Ends with paren)' },
+        { input: 'simple message', expected: 'simple message' },
+        { input: 'already capitalized', expected: 'already capitalized' },
+        { input: 'ends with period.', expected: 'ends with period.' },
+        { input: 'ends with exclamation!', expected: 'ends with exclamation!' },
+        { input: 'ends with question?', expected: 'ends with question?' },
+        { input: 'ends with paren)', expected: 'ends with paren)' },
         { input: '', expected: 'An error occurred' },
         { input: '   ', expected: 'An error occurred' },
-      ];
-
-      for (const { input, expected } of testCases) {
-        const error = new ErrorX({ message: input });
-        expect(error.message).toBe(expected);
-      }
-    });
-
-    it('should allow opting out of message formatting', () => {
-      const error = new ErrorX({
-        message: 'this is a lowercase message without period',
-        formatMessage: false,
-      });
-
-      expect(error.message).toBe('this is a lowercase message without period');
-    });
-
-    it('should format message by default when formatMessage is not specified', () => {
-      const error = new ErrorX({
-        message: 'this is a test',
-      });
-
-      expect(error.message).toBe('This is a test.');
-    });
-
-    it('should format message when formatMessage is explicitly true', () => {
-      const error = new ErrorX({
-        message: 'another test',
-        formatMessage: true,
-      });
-
-      expect(error.message).toBe('Another test.');
-    });
-
-    it('should handle abbreviations correctly in message formatting', () => {
-      const testCases = [
-        { input: 'Dr. Smith is unavailable', expected: 'Dr. Smith is unavailable.' },
-        { input: 'contact Mr. Jones', expected: 'Contact Mr. Jones.' },
-        { input: 'in the U.S. only', expected: 'In the U.S. only.' },
-        {
-          input: 'error in database. contact Dr. Admin',
-          expected: 'Error in database. Contact Dr. Admin.',
-        },
-        { input: 'Ph.D. required for this role', expected: 'Ph.D. required for this role.' },
       ];
 
       for (const { input, expected } of testCases) {
@@ -252,7 +200,7 @@ describe('ErrorX', () => {
         cause: originalError,
       });
 
-      expect(wrappedError.stack).toContain('Error: Wrapped error.');
+      expect(wrappedError.stack).toContain('Error: Wrapped error');
       expect(wrappedError.stack).toContain('at someFunction (file.js:10:5)');
       expect(wrappedError.stack).toContain('at anotherFunction (file.js:20:10)');
     });
@@ -272,7 +220,7 @@ describe('ErrorX', () => {
 
       const error = ErrorX.from(originalError);
 
-      expect(error.message).toBe('Original error message.');
+      expect(error.message).toBe('Original error message');
       expect(error.name).toBe('CustomError');
       expect(error.cause).toBe(originalError.cause);
     });
@@ -287,7 +235,7 @@ describe('ErrorX', () => {
 
       const error = new ErrorX(apiError);
 
-      expect(error.message).toBe('User not found.');
+      expect(error.message).toBe('user not found');
       expect(error.name).toBe('NotFoundError');
       expect(error.code).toBe('USER_404');
       expect(error.uiMessage).toBe('User does not exist');
@@ -303,7 +251,7 @@ describe('ErrorX', () => {
 
       const error = ErrorX.from(apiError);
 
-      expect(error.message).toBe('User not found.');
+      expect(error.message).toBe('user not found');
       expect(error.code).toBe('ERROR');
       expect(error.metadata?.originalError).toBe(apiError);
     });
@@ -317,7 +265,7 @@ describe('ErrorX', () => {
 
       const error = new ErrorX(options);
 
-      expect(error.message).toBe('Valid ErrorXOptions.');
+      expect(error.message).toBe('Valid ErrorXOptions');
       expect(error.code).toBe('VALID');
       expect(error.metadata).toEqual({ key: 'value' });
     });
@@ -332,7 +280,7 @@ describe('ErrorX', () => {
 
       const error = ErrorX.from(apiError);
 
-      expect(error.message).toBe('Has extra fields.');
+      expect(error.message).toBe('Has extra fields');
       expect(error.code).toBe('ERR');
       expect(error.metadata?.originalError).toBe(apiError);
     });
@@ -346,7 +294,7 @@ describe('ErrorX', () => {
 
       const error = ErrorX.from(mixedObject);
 
-      expect(error.message).toBe('Mixed object.');
+      expect(error.message).toBe('Mixed object');
       // Should be treated as unknown and converted
       expect(error.metadata?.originalError).toBe(mixedObject);
     });
@@ -360,7 +308,7 @@ describe('ErrorX', () => {
 
       const error = ErrorX.from(apiResponse);
 
-      expect(error.message).toBe('Internal Server Error.');
+      expect(error.message).toBe('Internal Server Error');
       expect(error.metadata?.originalError).toBe(apiResponse);
     });
   });
@@ -421,7 +369,7 @@ describe('ErrorX', () => {
 
         const converted = ErrorX.from(error);
 
-        expect(converted.message).toBe('Test error.');
+        expect(converted.message).toBe('test error');
         expect(converted.name).toBe('CustomError');
         expect(converted.cause).toBe(error.cause);
       });
@@ -429,7 +377,7 @@ describe('ErrorX', () => {
       it('should convert string to ErrorX', () => {
         const converted = ErrorX.from('simple string error');
 
-        expect(converted.message).toBe('Simple string error.');
+        expect(converted.message).toBe('simple string error');
         expect(converted.metadata?.originalError).toBe('simple string error');
       });
 
@@ -445,7 +393,7 @@ describe('ErrorX', () => {
 
         const converted = ErrorX.from(apiError);
 
-        expect(converted.message).toBe('User not found.');
+        expect(converted.message).toBe('user not found');
         expect(converted.name).toBe('NotFoundError');
         expect(converted.code).toBe('USER_404');
         expect(converted.uiMessage).toBe('User does not exist');
@@ -462,7 +410,7 @@ describe('ErrorX', () => {
 
         const converted = ErrorX.from(apiError);
 
-        expect(converted.message).toBe('HTTP request failed.');
+        expect(converted.message).toBe('HTTP request failed');
         expect(converted.name).toBe('HTTPError');
         expect(converted.code).toBe('500');
         expect(converted.metadata?.originalError).toBe(apiError);
@@ -477,7 +425,7 @@ describe('ErrorX', () => {
 
         const converted = ErrorX.from(apiError);
 
-        expect(converted.message).toBe('Session expired.');
+        expect(converted.message).toBe('Session expired');
         expect(converted.name).toBe('SessionError');
         expect(converted.code).toBe('SESSION_EXPIRED');
         expect(converted.metadata?.originalError).toBe(apiError);
@@ -500,15 +448,15 @@ describe('ErrorX', () => {
 
       it('should handle empty objects', () => {
         const converted = ErrorX.from({});
-        expect(converted.message).toBe('Unknown error occurred.');
+        expect(converted.message).toBe('Unknown error occurred');
       });
 
       it('should handle null and undefined', () => {
         const convertedNull = ErrorX.from(null);
         const convertedUndefined = ErrorX.from(undefined);
 
-        expect(convertedNull.message).toBe('Unknown error occurred.');
-        expect(convertedUndefined.message).toBe('Unknown error occurred.');
+        expect(convertedNull.message).toBe('Unknown error occurred');
+        expect(convertedUndefined.message).toBe('Unknown error occurred');
       });
     });
   });
@@ -602,7 +550,7 @@ describe('ErrorX', () => {
 
         const str = error.toString();
 
-        expect(str).toContain('TestError: Test error.');
+        expect(str).toContain('TestError: test error');
         expect(str).toContain('[TEST_CODE]');
         expect(str).toContain('(2024-01-15T10:30:45.123Z)');
       });
@@ -616,7 +564,7 @@ describe('ErrorX', () => {
         const str = error.toString();
 
         expect(str).not.toContain('[ERROR]');
-        expect(str).toContain('Error: Test error.');
+        expect(str).toContain('Error: test error');
       });
 
       it('should include metadata', () => {
@@ -654,7 +602,7 @@ describe('ErrorX', () => {
 
         expect(json).toEqual({
           name: 'TestError',
-          message: 'Test error.',
+          message: 'test error',
           code: 'TEST_CODE',
           uiMessage: 'User message',
           metadata: { key: 'value' },
@@ -678,7 +626,7 @@ describe('ErrorX', () => {
         const json = error.toJSON();
 
         expect(json.cause).toBeDefined();
-        expect(json.cause?.message).toBe('Root cause.');
+        expect(json.cause?.message).toBe('root cause');
         expect(json.cause?.name).toBe('RootError');
         expect(json.cause?.stack).toBeDefined();
       });
@@ -830,16 +778,15 @@ describe('ErrorX', () => {
       const longMessage = 'a'.repeat(10000);
       const error = new ErrorX({ message: longMessage });
 
-      expect(error.message.charAt(0)).toBe('A'); // First char capitalized
-      expect(error.message.slice(1, 10000)).toBe('a'.repeat(9999)); // Rest lowercase
-      expect(error.message.endsWith('.')).toBe(true);
+      expect(error.message).toBe(longMessage);
+      expect(error.message.length).toBe(10000);
     });
 
     it('should handle unicode characters', () => {
       const unicodeMessage = 'Error with émojis 🚀 and spëciàl characters';
       const error = new ErrorX({ message: unicodeMessage });
 
-      expect(error.message).toBe('Error with émojis 🚀 and spëciàl characters.');
+      expect(error.message).toBe('Error with émojis 🚀 and spëciàl characters');
     });
 
     it('should handle very large metadata objects', () => {
@@ -858,7 +805,7 @@ describe('ErrorX', () => {
     });
 
     it('should handle circular references in metadata', () => {
-      const circularObj: any = { a: 1 };
+      const circularObj: Record<string, unknown> = { a: 1 };
       circularObj.self = circularObj;
 
       const error = new ErrorX({
@@ -893,7 +840,7 @@ describe('ErrorX', () => {
 
       // Should be able to deserialize
       const deserialized = ErrorX.fromJSON(serialized);
-      expect(deserialized.message).toBe('Level 9 error.');
+      expect(deserialized.message).toBe('Level 9 error');
     });
 
     it('should handle null prototype objects', () => {
@@ -903,7 +850,7 @@ describe('ErrorX', () => {
 
       const converted = ErrorX.from(nullProtoError);
 
-      expect(converted.message).toBe('Null proto error.');
+      expect(converted.message).toBe('null proto error');
       expect(converted.code).toBe('NULL_PROTO');
     });
   });
@@ -952,7 +899,7 @@ describe('ErrorX', () => {
       });
 
       expect(error.type).toBe('validation');
-      expect(error.message).toBe('Validation failed.');
+      expect(error.message).toBe('Validation failed');
     });
 
     it('should create error without type field', () => {
@@ -1015,7 +962,7 @@ describe('ErrorX', () => {
       const json = error.toJSON();
 
       expect(json.type).toBe('validation');
-      expect(json.message).toBe('Validation error.');
+      expect(json.message).toBe('Validation error');
       expect(json.code).toBe('VAL_ERROR');
     });
 
@@ -1090,7 +1037,7 @@ describe('ErrorX', () => {
       const error = new ErrorX(apiError);
 
       expect(error.type).toBe('network');
-      expect(error.message).toBe('Request failed.');
+      expect(error.message).toBe('Request failed');
       expect(error.code).toBe('REQ_FAILED');
     });
 

@@ -115,6 +115,7 @@ describe('Stack Trace Preservation', () => {
               }
             } else if (typeof currentError.cause === 'object' && currentError.cause !== null) {
               // Check if it's the object error from error-sources.ts
+              // biome-ignore lint/suspicious/noExplicitAny: Test requires any type for unknown cause
               const causeObj = currentError.cause as any;
               if (
                 causeObj.source === 'error-sources.ts' ||

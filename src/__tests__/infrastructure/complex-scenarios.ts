@@ -174,6 +174,7 @@ export function recursiveErrorTest(depth = 0): never {
 }
 
 export function errorWithCircularReference(): never {
+  // biome-ignore lint/suspicious/noExplicitAny: Test requires any type for circular reference
   const obj: any = { name: 'circular' };
   obj.self = obj;
   obj.nested = { parent: obj };
