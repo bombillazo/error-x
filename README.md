@@ -87,7 +87,7 @@ try {
 ### Constructor
 
 ```typescript
-new ErrorX(message?: string | ErrorXOptions)
+new ErrorX(input?: string | ErrorXOptions)
 ```
 
 All parameters are optional. ErrorX uses sensible defaults:
