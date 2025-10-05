@@ -28,6 +28,15 @@ npm install @bombillazo/error-x
 yarn add @bombillazo/error-x
 ```
 
+### Requirements
+
+- **Node.js**: 18 or higher
+- **TypeScript**: 5.0 or higher (optional, but recommended)
+- **Target Environment**: ES2022+
+
+This library uses modern JavaScript features and ES2022 APIs. For browser compatibility, ensure your build tool (e.g., Vite, webpack, esbuild) is configured to target ES2022 or transpile accordingly.
+
+
 > [!WARNING]
 >
 > This library is currently in pre-v1.0 development. While we strive to minimize breaking changes, the API may evolve based on feedback and real-world usage. We recommend pinning to specific versions and reviewing release notes when updating.
