@@ -173,7 +173,7 @@ describe('HTTP Presets', () => {
         message: 'Unauthorized.',
         uiMessage: 'Authentication required. Please log in to continue.',
         metadata: undefined,
-        timestamp: '2024-01-15T10:30:45.123Z',
+        timestamp: 1705314645123,
       };
 
       const error = ErrorX.fromJSON(serialized);

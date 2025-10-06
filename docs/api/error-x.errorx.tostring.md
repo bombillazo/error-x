@@ -29,6 +29,6 @@ const error = new ErrorX({
 })
 
 console.log(error.toString())
-// Output: "DatabaseError: Database connection failed. [DB_CONN_FAILED] (2024-01-15T10:30:45.123Z) metadata: {...}"
+// Output: "DatabaseError: Database connection failed. [DB_CONN_FAILED] (2025-01-15T10:30:45.123Z) metadata: {...}"
 ```
 

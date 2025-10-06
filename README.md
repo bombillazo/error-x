@@ -104,7 +104,7 @@ All parameters are optional. ErrorX uses sensible defaults:
 | sourceUrl | `string \| undefined`        | `undefined`                           | URL related to the error (API endpoint, page URL, resource URL)   |
 | docsUrl   | `string \| undefined`        | `undefined` or auto-generated         | Documentation URL for this specific error                         |
 | source    | `string \| undefined`        | `undefined` or from config            | Where the error originated (service name, module, component)      |
-| timestamp | `Date`                       | `new Date()`                          | When the error was created (read-only)                            |
+| timestamp | `number`                     | `Date.now()`                          | Unix epoch timestamp in milliseconds when error was created       |
 | stack     | `string`                     | Auto-generated                        | Stack trace with preservation and cleaning (inherited from Error) |
 
 ### HTTP Error Presets

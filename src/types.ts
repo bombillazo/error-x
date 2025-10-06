@@ -132,7 +132,7 @@ export type ErrorXCause = {
  *   uiMessage: 'Please check your credentials',
  *   stack: 'Error: Authentication failed.\n    at login (auth.ts:42:15)',
  *   metadata: { userId: 123, loginAttempt: 3 },
- *   timestamp: '2024-01-15T10:30:45.123Z',
+ *   timestamp: 1705315845123,
  *   cause: {
  *     name: 'NetworkError',
  *     message: 'Request timeout.',
@@ -159,8 +159,8 @@ export type ErrorXSerialized = {
   stack?: string;
   /** Additional context and debugging information */
   metadata: ErrorXMetadata | undefined;
-  /** ISO timestamp when error was created */
-  timestamp: string;
+  /** Unix epoch timestamp (milliseconds) when error was created */
+  timestamp: number;
   /** Simplified cause error (for error chaining) */
   cause?: ErrorXCause;
   /** HTTP status code for HTTP-related errors */

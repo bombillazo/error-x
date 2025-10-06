@@ -64,7 +64,7 @@ const serializedError = {
   code: 'DB_CONN_FAILED',
   uiMessage: 'Database is temporarily unavailable',
   metadata: { host: 'localhost' },
-  timestamp: '2024-01-15T10:30:45.123Z'
+  timestamp: 1705315845123
 }
 
 const error = ErrorX.fromJSON(serializedError)

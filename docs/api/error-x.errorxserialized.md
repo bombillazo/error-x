@@ -16,7 +16,7 @@ type ErrorXSerialized = {
     uiMessage: string | undefined;
     stack?: string;
     metadata: ErrorXMetadata | undefined;
-    timestamp: string;
+    timestamp: number;
     cause?: ErrorXCause;
     httpStatus?: number;
     type?: string;
@@ -38,7 +38,7 @@ const serialized: SerializableError = {
   uiMessage: 'Please check your credentials',
   stack: 'Error: Authentication failed.\n    at login (auth.ts:42:15)',
   metadata: { userId: 123, loginAttempt: 3 },
-  timestamp: '2024-01-15T10:30:45.123Z',
+  timestamp: 1705315845123,
   cause: {
     name: 'NetworkError',
     message: 'Request timeout.',

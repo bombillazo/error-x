@@ -86,8 +86,8 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
   public uiMessage: string | undefined;
   /** Additional context and metadata associated with the error */
   public metadata: TMetadata | undefined;
-  /** Timestamp when the error was created */
-  public timestamp: Date;
+  /** Unix epoch timestamp (milliseconds) when the error was created */
+  public timestamp: number;
   /** HTTP status code (100-599) for HTTP-related errors */
   public httpStatus: number | undefined;
   /** Error type for categorization */
@@ -170,7 +170,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     this.metadata = options.metadata;
     this.httpStatus = ErrorX.validateHttpStatus(options.httpStatus);
     this.type = ErrorX.validateType(options.type);
-    this.timestamp = new Date();
+    this.timestamp = Date.now();
 
     // Set new fields
     this.sourceUrl = options.sourceUrl;
@@ -506,21 +506,24 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    * // Result: metadata = { endpoint: '/users', retryCount: 3, userId: 123 }
    * ```
    */
-  public withMetadata(additionalMetadata: Partial<TMetadata>): ErrorX<TMetadata> {
-    const options: ErrorXOptions<TMetadata> = {
+  public withMetadata<TAdditionalMetadata = ErrorXMetadata>(
+    additionalMetadata: Partial<TAdditionalMetadata>
+  ): ErrorX<TMetadata & TAdditionalMetadata> {
+    const options: ErrorXOptions<TMetadata & TAdditionalMetadata> = {
       message: this.message,
       name: this.name,
       code: this.code,
       uiMessage: this.uiMessage,
       cause: this.cause,
-      metadata: { ...(this.metadata ?? {}), ...additionalMetadata } as TMetadata,
+      metadata: { ...(this.metadata ?? {}), ...additionalMetadata } as TMetadata &
+        TAdditionalMetadata,
       httpStatus: this.httpStatus,
       type: this.type,
       sourceUrl: this.sourceUrl,
       docsUrl: this.docsUrl,
       source: this.source,
     };
-    const newError = new ErrorX<TMetadata>(options);
+    const newError = new ErrorX<TMetadata & TAdditionalMetadata>(options);
 
     // Preserve the original stack trace and timestamp
     if (this.stack) {
@@ -726,7 +729,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    * })
    *
    * console.log(error.toString())
-   * // Output: "DatabaseError: Database connection failed. [DB_CONN_FAILED] (2024-01-15T10:30:45.123Z) metadata: {...}"
+   * // Output: "DatabaseError: Database connection failed. [DB_CONN_FAILED] (2025-01-15T10:30:45.123Z) metadata: {...}"
    * ```
    */
   public toString(): string {
@@ -741,7 +744,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     }
 
     // Add timestamp
-    parts.push(`(${this.timestamp.toISOString()})`);
+    parts.push(`timestamp: ${new Date(this.timestamp).toISOString()} (${this.timestamp})`);
 
     // Add metadata if present
     if (this.metadata && Object.keys(this.metadata).length > 0) {
@@ -794,7 +797,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       code: this.code,
       uiMessage: this.uiMessage,
       metadata: safeMetadata,
-      timestamp: this.timestamp.toISOString(),
+      timestamp: this.timestamp,
     };
 
     // Include httpStatus if present
@@ -850,7 +853,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    *   code: 'DB_CONN_FAILED',
    *   uiMessage: 'Database is temporarily unavailable',
    *   metadata: { host: 'localhost' },
-   *   timestamp: '2024-01-15T10:30:45.123Z'
+   *   timestamp: 1705315845123
    * }
    *
    * const error = ErrorX.fromJSON(serializedError)
@@ -882,8 +885,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     if (serialized.stack) {
       error.stack = serialized.stack;
     }
-    // Properties are now mutable, so we can set directly
-    error.timestamp = new Date(serialized.timestamp);
+    error.timestamp = serialized.timestamp;
 
     return error;
   }
