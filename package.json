@@ -43,7 +43,11 @@
     "async",
     "promise"
   ],
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bombillazo/error-x.git"
+  },
+  "author": "Hector Ayala <hran@bombillazo.com>",
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
