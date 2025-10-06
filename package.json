@@ -1,6 +1,6 @@
 {
   "name": "@bombillazo/error-x",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "A simple and consistent error handling library for TypeScript applications. Provides type-safe error handling with great DX, solving common pain points like unknown error types, lost stack traces, async error handling, and error serialization. Isomorphic and framework-agnostic.",
   "type": "module",
   "main": "dist/index.js",
