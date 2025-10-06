@@ -32,9 +32,7 @@ export const ERROR_X_OPTION_FIELDS = [
   'uiMessage',
   'cause',
   'metadata',
-  'httpStatus',
   'type',
-  'sourceUrl',
   'docsUrl',
   'source',
 ] as const;
@@ -92,12 +90,8 @@ export type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
   cause?: ErrorXCause | Error | unknown;
   /** Additional context and debugging information */
   metadata?: TMetadata | undefined;
-  /** HTTP status code (100-599) for HTTP-related errors */
-  httpStatus?: number | undefined;
   /** Error type for categorization */
   type?: string | undefined;
-  /** Source URL related to the error (API endpoint, page URL, resource URL) */
-  sourceUrl?: string | undefined;
   /** Documentation URL for this specific error */
   docsUrl?: string | undefined;
   /** Where the error originated (service name, module, component) */
@@ -138,7 +132,6 @@ export type ErrorXCause = {
  *     message: 'Request timeout.',
  *     stack: '...'
  *   },
- *   sourceUrl: 'https://api.example.com/auth',
  *   docsUrl: 'https://docs.example.com/errors#auth-failed',
  *   source: 'auth-service'
  * }
@@ -163,12 +156,8 @@ export type ErrorXSerialized = {
   timestamp: number;
   /** Simplified cause error (for error chaining) */
   cause?: ErrorXCause;
-  /** HTTP status code for HTTP-related errors */
-  httpStatus?: number;
   /** Error type for categorization */
   type?: string;
-  /** Source URL related to the error */
-  sourceUrl?: string;
   /** Documentation URL for this error */
   docsUrl?: string;
   /** Where the error originated */

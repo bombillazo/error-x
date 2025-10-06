@@ -58,316 +58,355 @@ try {
 ```typescript
 http: {
     readonly 400: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 401: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 402: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 403: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 404: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 405: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 406: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 407: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 408: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 409: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 410: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 411: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 412: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 413: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 414: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 415: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 416: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 417: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 418: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 422: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 423: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 424: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 425: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 426: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 428: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 429: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 431: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 451: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 500: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 501: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 502: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 503: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 504: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 505: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 506: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 507: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 508: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 510: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
     readonly 511: {
-        httpStatus: number;
         code: string;
         name: string;
         message: string;
         uiMessage: string;
-        type: string;
+        metadata: {
+            status: number;
+        };
     };
 }
 ```
