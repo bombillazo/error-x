@@ -1,54 +1,19 @@
 {
   "name": "@bombillazo/error-x",
-  "version": "0.4.4",
   "description": "A simple and consistent error handling library for TypeScript applications. Provides type-safe error handling with great DX, solving common pain points like unknown error types, lost stack traces, async error handling, and error serialization. Isomorphic and framework-agnostic.",
-  "type": "module",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+  "version": "0.4.4",
+  "author": "Hector Ayala <hran@bombillazo.com>",
+  "config": {
+    "commitizen": {
+      "path": "cz-customizable"
+    },
+    "cz-customizable": {
+      "config": ".cz-config.cjs"
     }
   },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "test": "vitest run",
-    "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage",
-    "lint": "biome lint .",
-    "format": "biome format --write .",
-    "check": "biome check .",
-    "typecheck": "tsc --noEmit",
-    "api-docs": "api-extractor run --local",
-    "api-docs:markdown": "npx @microsoft/api-documenter markdown -i temp -o docs/api",
-    "api-docs:build": "pnpm build && mkdir -p ./etc && pnpm api-docs && pnpm api-docs:markdown && rm -rf ./etc ./temp",
-    "prepublishOnly": "pnpm run build && pnpm run test && pnpm run check",
-    "prepare": "husky",
-    "commit": "cz",
-    "commit:lint": "commitlint --edit"
+  "dependencies": {
+    "safe-stringify": "^1.2.0"
   },
-  "keywords": [
-    "error",
-    "typescript",
-    "error-handling",
-    "type-safe",
-    "isomorphic",
-    "async",
-    "promise"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/bombillazo/error-x.git"
-  },
-  "author": "Hector Ayala <hran@bombillazo.com>",
-  "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
     "@commitlint/cli": "^19.8.1",
@@ -66,16 +31,52 @@
   "engines": {
     "node": ">=18"
   },
-  "packageManager": "pnpm@10.14.0",
-  "config": {
-    "commitizen": {
-      "path": "cz-customizable"
-    },
-    "cz-customizable": {
-      "config": ".cz-config.cjs"
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
-  "dependencies": {
-    "safe-stringify": "^1.2.0"
-  }
+  "files": [
+    "dist"
+  ],
+  "homepage": "https://github.com/bombillazo/rhf-plus#readme",
+  "keywords": [
+    "async",
+    "error",
+    "error-handling",
+    "isomorphic",
+    "promise",
+    "type-safe",
+    "typescript"
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "packageManager": "pnpm@10.14.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": "bombillazo/error-x.git",
+  "scripts": {
+    "api-docs": "api-extractor run --local",
+    "api-docs:build": "pnpm build && mkdir -p ./etc && pnpm api-docs && pnpm api-docs:markdown && rm -rf ./etc ./temp",
+    "api-docs:markdown": "npx @microsoft/api-documenter markdown -i temp -o docs/api",
+    "build": "tsup",
+    "check": "biome check .",
+    "commit": "cz",
+    "commit:lint": "commitlint --edit",
+    "dev": "tsup --watch",
+    "format": "biome format --write .",
+    "lint": "biome lint .",
+    "prepare": "husky",
+    "prepublishOnly": "pnpm run build && pnpm run test && pnpm run check",
+    "test": "vitest run",
+    "test:coverage": "vitest --coverage",
+    "test:watch": "vitest --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "types": "dist/index.d.ts"
 }
