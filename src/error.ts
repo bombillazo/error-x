@@ -191,7 +191,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
 
     // Handle stack trace
     if (convertedCause?.stack) {
-      // Combine new error message with original stack from cause
+      // Preserve the original stack from cause
       this.stack = ErrorX.preserveOriginalStackFromCause(convertedCause, this);
     } else {
       // Capture new stack trace
