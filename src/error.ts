@@ -199,7 +199,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
         Error.captureStackTrace(this, this.constructor);
       }
     }
-    // Always clean the stack (cause.stack retains the original)
+    // Always clean the stack
     this.stack = ErrorX.cleanStack(this.stack);
   }
 
