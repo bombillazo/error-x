@@ -249,12 +249,12 @@ Source URL related to the error (API endpoint, page URL, resource URL)
 
 </td><td>
 
-Date
+number
 
 
 </td><td>
 
-Timestamp when the error was created
+Unix epoch timestamp (milliseconds) when the error was created
 
 
 </td></tr>

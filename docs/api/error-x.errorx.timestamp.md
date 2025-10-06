@@ -4,10 +4,10 @@
 
 ## ErrorX.timestamp property
 
-Timestamp when the error was created
+Unix epoch timestamp (milliseconds) when the error was created
 
 **Signature:**
 
 ```typescript
-timestamp: Date;
+timestamp: number;
 ```

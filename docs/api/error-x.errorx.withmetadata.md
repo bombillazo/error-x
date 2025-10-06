@@ -9,7 +9,7 @@ Creates a new ErrorX instance with additional metadata merged with existing meta
 **Signature:**
 
 ```typescript
-withMetadata(additionalMetadata: Partial<TMetadata>): ErrorX<TMetadata>;
+withMetadata<TAdditionalMetadata extends Record<string, unknown> = ErrorXMetadata>(additionalMetadata: TAdditionalMetadata): ErrorX<TMetadata & TAdditionalMetadata>;
 ```
 
 ## Parameters
@@ -37,7 +37,7 @@ additionalMetadata
 
 </td><td>
 
-Partial&lt;TMetadata&gt;
+TAdditionalMetadata
 
 
 </td><td>
@@ -50,7 +50,7 @@ Additional metadata to merge with existing metadata
 
 **Returns:**
 
-[ErrorX](./error-x.errorx.md)<!-- -->&lt;TMetadata&gt;
+[ErrorX](./error-x.errorx.md)<!-- -->&lt;TMetadata &amp; TAdditionalMetadata&gt;
 
 New ErrorX instance with merged metadata
 

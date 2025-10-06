@@ -33,7 +33,7 @@ describe('ErrorX', () => {
       expect(error.uiMessage).toBeUndefined();
       expect(error.metadata).toBeUndefined();
       expect(error.type).toBeUndefined();
-      expect(error.timestamp).toEqual(mockDate);
+      expect(error.timestamp).toEqual(mockDate.getTime());
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ErrorX);
     });
@@ -54,7 +54,7 @@ describe('ErrorX', () => {
       expect(error.code).toBe('AUTH_FAILED');
       expect(error.uiMessage).toBe('Please check your credentials');
       expect(error.metadata).toEqual(metadata);
-      expect(error.timestamp).toEqual(mockDate);
+      expect(error.timestamp).toEqual(mockDate.getTime());
     });
 
     it('should create error with minimal options', () => {
@@ -65,7 +65,7 @@ describe('ErrorX', () => {
       expect(error.code).toBe('ERROR');
       expect(error.uiMessage).toBeUndefined();
       expect(error.metadata).toBeUndefined();
-      expect(error.timestamp).toEqual(mockDate);
+      expect(error.timestamp).toEqual(mockDate.getTime());
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ErrorX);
     });
@@ -93,7 +93,7 @@ describe('ErrorX', () => {
         name: cause.name,
         stack: cause.stack,
       });
-      expect(error.timestamp).toEqual(mockDate);
+      expect(error.timestamp).toEqual(mockDate.getTime());
     });
 
     it('should create error with number code', () => {
@@ -130,7 +130,7 @@ describe('ErrorX', () => {
       expect(error.code).toBe('ERROR');
       expect(error.uiMessage).toBeUndefined();
       expect(error.metadata).toBeUndefined();
-      expect(error.timestamp).toEqual(mockDate);
+      expect(error.timestamp).toEqual(mockDate.getTime());
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ErrorX);
     });
@@ -143,7 +143,7 @@ describe('ErrorX', () => {
       expect(error.code).toBe('ERROR');
       expect(error.uiMessage).toBeUndefined();
       expect(error.metadata).toBeUndefined();
-      expect(error.timestamp).toEqual(mockDate);
+      expect(error.timestamp).toEqual(mockDate.getTime());
     });
 
     it('should create error with partial options', () => {
@@ -575,7 +575,7 @@ describe('ErrorX', () => {
 
         expect(str).toContain('TestError: test error');
         expect(str).toContain('[TEST_CODE]');
-        expect(str).toContain('(2024-01-15T10:30:45.123Z)');
+        expect(str).toContain('2024-01-15T10:30:45.123Z (1705314645123)');
       });
 
       it('should omit default error code', () => {
@@ -629,7 +629,7 @@ describe('ErrorX', () => {
           code: 'TEST_CODE',
           uiMessage: 'User message',
           metadata: { key: 'value' },
-          timestamp: '2024-01-15T10:30:45.123Z',
+          timestamp: mockDate.getTime(),
           stack: error.stack,
         });
       });
@@ -702,7 +702,7 @@ describe('ErrorX', () => {
           code: 'TEST_CODE',
           uiMessage: 'User message',
           metadata: { key: 'value' },
-          timestamp: '2024-01-15T10:30:45.123Z',
+          timestamp: 1705314645123,
           stack: 'Error: Test error.\n    at someFunction (file.js:10:5)',
         };
 
@@ -713,7 +713,7 @@ describe('ErrorX', () => {
         expect(error.code).toBe('TEST_CODE');
         expect(error.uiMessage).toBe('User message');
         expect(error.metadata).toEqual({ key: 'value' });
-        expect(error.timestamp).toEqual(new Date('2024-01-15T10:30:45.123Z'));
+        expect(error.timestamp).toEqual(1705314645123);
         expect(error.stack).toBe('Error: Test error.\n    at someFunction (file.js:10:5)');
       });
 
@@ -724,7 +724,7 @@ describe('ErrorX', () => {
           code: 'WRAPPER',
           uiMessage: 'Something went wrong. Please try again.',
           metadata: {},
-          timestamp: '2024-01-15T10:30:45.123Z',
+          timestamp: 1705314645123,
           cause: {
             name: 'RootError',
             message: 'Root cause.',
@@ -749,7 +749,7 @@ describe('ErrorX', () => {
           code: 'TEST_CODE',
           uiMessage: 'User message',
           metadata: {},
-          timestamp: '2024-01-15T10:30:45.123Z',
+          timestamp: 1705314645123,
         };
 
         const error = ErrorX.fromJSON(serialized);
@@ -996,7 +996,7 @@ describe('ErrorX', () => {
         code: 'VAL_ERROR',
         uiMessage: 'Please check your input',
         metadata: undefined,
-        timestamp: '2024-01-15T10:30:45.123Z',
+        timestamp: 1705314645123,
         type: 'validation',
       };
 
@@ -1014,7 +1014,7 @@ describe('ErrorX', () => {
         code: 'GENERIC',
         uiMessage: undefined,
         metadata: undefined,
-        timestamp: '2024-01-15T10:30:45.123Z',
+        timestamp: 1705314645123,
       };
 
       const error = ErrorX.fromJSON(serialized);
