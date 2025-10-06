@@ -88,8 +88,8 @@ export type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
   code?: string | number;
   /** User-friendly message for UI display */
   uiMessage?: string | undefined;
-  /** Original error that caused this error (preserves error chain) */
-  cause?: Error | unknown;
+  /** Original error that caused this error (preserves error chain, will be converted to ErrorXCause format) */
+  cause?: ErrorXCause | Error | unknown;
   /** Additional context and debugging information */
   metadata?: TMetadata | undefined;
   /** HTTP status code (100-599) for HTTP-related errors */

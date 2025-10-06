@@ -117,7 +117,11 @@ describe('HTTP Presets', () => {
       });
 
       expect(error.httpStatus).toBe(500);
-      expect(error.cause).toBe(originalError);
+      expect(error.cause).toEqual({
+        message: originalError.message,
+        name: originalError.name,
+        stack: originalError.stack,
+      });
     });
   });
 

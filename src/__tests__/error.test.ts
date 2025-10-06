@@ -88,7 +88,11 @@ describe('ErrorX', () => {
       expect(error.code).toBe('AUTH_FAILED');
       expect(error.uiMessage).toBe('Please check your credentials');
       expect(error.metadata).toEqual(metadata);
-      expect(error.cause).toBe(cause);
+      expect(error.cause).toEqual({
+        message: cause.message,
+        name: cause.name,
+        stack: cause.stack,
+      });
       expect(error.timestamp).toEqual(mockDate);
     });
 
@@ -712,9 +716,11 @@ describe('ErrorX', () => {
         const error = ErrorX.fromJSON(serialized);
 
         expect(error.name).toBe('WrapperError');
-        expect(error.cause).toBeInstanceOf(Error);
-        expect((error.cause as Error).name).toBe('RootError');
-        expect((error.cause as Error).message).toBe('Root cause.');
+        expect(error.cause).toEqual({
+          name: 'RootError',
+          message: 'Root cause.',
+          stack: 'Error: Root cause.\n    at test (file.js:1:1)',
+        });
       });
 
       it('should handle missing optional properties', () => {
@@ -763,12 +769,11 @@ describe('ErrorX', () => {
         expect(deserialized.metadata).toEqual(original.metadata);
         expect(deserialized.timestamp).toEqual(original.timestamp);
 
-        expect(deserialized.cause).toBeInstanceOf(Error);
-        const deserializedCause = deserialized.cause as Error;
-        expect(deserializedCause.name).toBe(rootCause.name);
-        expect(deserializedCause.message).toBe(rootCause.message);
-        // Cause is simplified, so code and metadata are not preserved
-        expect(deserializedCause.stack).toBeDefined();
+        expect(deserialized.cause).toBeDefined();
+        expect(deserialized.cause?.name).toBe(rootCause.name);
+        expect(deserialized.cause?.message).toBe(rootCause.message);
+        // Cause is in ErrorXCause format, so it has message, name, and stack
+        expect(deserialized.cause?.stack).toBeDefined();
       });
     });
   });
