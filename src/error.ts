@@ -189,17 +189,18 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     }
     this.docsUrl = options.docsUrl ?? generatedDocsUrl;
 
-    // Handle stack trace preservation
+    // Handle stack trace
     if (convertedCause?.stack) {
+      // Preserve the original stack from cause
       this.stack = ErrorX.preserveOriginalStackFromCause(convertedCause, this);
     } else {
-      // Node.js specific stack trace capture for clean stack
+      // Capture new stack trace
       if (typeof Error.captureStackTrace === 'function') {
         Error.captureStackTrace(this, this.constructor);
       }
-      // Clean the stack to remove ErrorX constructor noise
-      this.stack = ErrorX.cleanStack(this.stack);
     }
+    // Always clean the stack
+    this.stack = ErrorX.cleanStack(this.stack);
   }
 
   /**
