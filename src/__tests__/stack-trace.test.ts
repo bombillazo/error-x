@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ErrorX } from '../index.js';
+import { ErrorX, type ErrorXCause } from '../index.js';
 import * as asyncOperations from './infrastructure/async-operations.js';
 import * as complexScenarios from './infrastructure/complex-scenarios.js';
 import * as errorHandlers from './infrastructure/error-handlers.js';
@@ -111,7 +111,7 @@ describe('Stack Trace Preservation', () => {
 
         // Check that the cause chain preserves error information
         expect(errorX.cause).toBeDefined();
-        const cause = errorX.cause as ErrorX;
+        const cause = errorX.cause as ErrorXCause;
         expect(cause.message).toContain('Async catch with delay from error-handlers.ts');
       }
     });
@@ -165,7 +165,7 @@ describe('Stack Trace Preservation', () => {
 
         // Even after serialization/deserialization, should preserve stack info
         expect(errorX.cause).toBeDefined();
-        const deserializedCause = errorX.cause as ErrorX;
+        const deserializedCause = errorX.cause as ErrorXCause;
         expect(deserializedCause.stack).toBeDefined();
       }
     });
