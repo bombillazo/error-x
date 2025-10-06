@@ -165,25 +165,6 @@ Documentation URL for this specific error
 </td></tr>
 <tr><td>
 
-[httpStatus](./error-x.errorx.httpstatus.md)
-
-
-</td><td>
-
-
-</td><td>
-
-number \| undefined
-
-
-</td><td>
-
-HTTP status code (100-599) for HTTP-related errors
-
-
-</td></tr>
-<tr><td>
-
 [metadata](./error-x.errorx.metadata.md)
 
 
@@ -217,25 +198,6 @@ string \| undefined
 </td><td>
 
 Where the error originated (service name, module, component)
-
-
-</td></tr>
-<tr><td>
-
-[sourceUrl](./error-x.errorx.sourceurl.md)
-
-
-</td><td>
-
-
-</td><td>
-
-string \| undefined
-
-
-</td><td>
-
-Source URL related to the error (API endpoint, page URL, resource URL)
 
 
 </td></tr>

@@ -88,12 +88,8 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
   public metadata: TMetadata | undefined;
   /** Unix epoch timestamp (milliseconds) when the error was created */
   public timestamp: number;
-  /** HTTP status code (100-599) for HTTP-related errors */
-  public httpStatus: number | undefined;
   /** Error type for categorization */
   public type: string | undefined;
-  /** Source URL related to the error (API endpoint, page URL, resource URL) */
-  public sourceUrl: string | undefined;
   /** Documentation URL for this specific error */
   public docsUrl: string | undefined;
   /** Where the error originated (service name, module, component) */
@@ -168,12 +164,10 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       options.code != null ? String(options.code) : ErrorX.generateDefaultCode(options.name);
     this.uiMessage = options.uiMessage;
     this.metadata = options.metadata;
-    this.httpStatus = ErrorX.validateHttpStatus(options.httpStatus);
     this.type = ErrorX.validateType(options.type);
     this.timestamp = Date.now();
 
     // Set new fields
-    this.sourceUrl = options.sourceUrl;
     this.source = options.source ?? envConfig?.source;
 
     // Auto-generate docsUrl from environment config if available
@@ -297,27 +291,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    */
   public static resetConfig(): void {
     ErrorX._config = null;
-  }
-
-  /**
-   * Validates HTTP status code to ensure it's within valid range (100-599)
-   *
-   * @param status - Status code to validate
-   * @returns Valid status code or undefined if invalid/not provided
-   */
-  private static validateHttpStatus(status?: number): number | undefined {
-    if (status === undefined || status === null) {
-      return undefined;
-    }
-
-    const statusNum = Number(status);
-
-    // Validate status code is a number and within valid HTTP range
-    if (Number.isNaN(statusNum) || statusNum < 100 || statusNum > 599) {
-      return undefined;
-    }
-
-    return Math.floor(statusNum);
   }
 
   /**
@@ -517,9 +490,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       cause: this.cause,
       metadata: { ...(this.metadata ?? {}), ...additionalMetadata } as TMetadata &
         TAdditionalMetadata,
-      httpStatus: this.httpStatus,
       type: this.type,
-      sourceUrl: this.sourceUrl,
       docsUrl: this.docsUrl,
       source: this.source,
     };
@@ -573,9 +544,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     let uiMessage = '';
     let cause: unknown;
     let metadata: ErrorXMetadata = {};
-    let httpStatus: number | undefined;
     let type: string | undefined;
-    let url: string | undefined;
     let href: string | undefined;
     let source: string | undefined;
 
@@ -609,30 +578,9 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
         if ('uiMessage' in error && error.uiMessage) uiMessage = String(error.uiMessage);
         else if ('userMessage' in error && error.userMessage) uiMessage = String(error.userMessage);
 
-        let _httpStatus: unknown;
-        // Extract HTTP status
-        if ('httpStatus' in error) {
-          _httpStatus = error.httpStatus;
-        } else if ('status' in error) {
-          _httpStatus = error.status;
-        } else if ('statusCode' in error) {
-          _httpStatus = error.statusCode;
-        }
-        if (_httpStatus !== undefined && _httpStatus !== null) {
-          const num = typeof _httpStatus === 'number' ? _httpStatus : Number(_httpStatus);
-          httpStatus = ErrorX.validateHttpStatus(num);
-        }
-
         // Extract type
         if ('type' in error && error.type) {
           type = ErrorX.validateType(String(error.type));
-        }
-
-        // Extract sourceUrl
-        if ('sourceUrl' in error && error.sourceUrl) {
-          url = String(error.sourceUrl);
-        } else if ('url' in error && error.url) {
-          url = String(error.url);
         }
 
         // Extract docsUrl
@@ -667,9 +615,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     if (uiMessage) options.uiMessage = uiMessage;
     if (cause) options.cause = cause;
     if (Object.keys(metadata).length > 0) options.metadata = metadata;
-    if (httpStatus) options.httpStatus = httpStatus;
     if (type) options.type = type;
-    if (url) options.sourceUrl = url;
     if (href) options.docsUrl = href;
     if (source) options.source = source;
 
@@ -800,19 +746,9 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       timestamp: this.timestamp,
     };
 
-    // Include httpStatus if present
-    if (this.httpStatus !== undefined) {
-      serialized.httpStatus = this.httpStatus;
-    }
-
     // Include type if present
     if (this.type !== undefined) {
       serialized.type = this.type;
-    }
-
-    // Include url if present
-    if (this.sourceUrl !== undefined) {
-      serialized.sourceUrl = this.sourceUrl;
     }
 
     // Include href if present
@@ -868,9 +804,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       name: serialized.name,
       code: serialized.code,
       uiMessage: serialized.uiMessage,
-      httpStatus: serialized.httpStatus,
       type: serialized.type,
-      sourceUrl: serialized.sourceUrl,
       docsUrl: serialized.docsUrl,
       source: serialized.source,
       cause: serialized.cause,

@@ -18,9 +18,7 @@ type ErrorXSerialized = {
     metadata: ErrorXMetadata | undefined;
     timestamp: number;
     cause?: ErrorXCause;
-    httpStatus?: number;
     type?: string;
-    sourceUrl?: string;
     docsUrl?: string;
     source?: string;
 };
@@ -44,7 +42,6 @@ const serialized: SerializableError = {
     message: 'Request timeout.',
     stack: '...'
   },
-  sourceUrl: 'https://api.example.com/auth',
   docsUrl: 'https://docs.example.com/errors#auth-failed',
   source: 'auth-service'
 }

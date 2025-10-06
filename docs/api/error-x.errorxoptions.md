@@ -16,9 +16,7 @@ type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
     uiMessage?: string | undefined;
     cause?: ErrorXCause | Error | unknown;
     metadata?: TMetadata | undefined;
-    httpStatus?: number | undefined;
     type?: string | undefined;
-    sourceUrl?: string | undefined;
     docsUrl?: string | undefined;
     source?: string | undefined;
 };
