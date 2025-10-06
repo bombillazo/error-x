@@ -575,7 +575,7 @@ describe('ErrorX', () => {
 
         expect(str).toContain('TestError: test error');
         expect(str).toContain('[TEST_CODE]');
-        expect(str).toContain('timestamp: 2024-01-15T10:30:45.123Z (1705314645123)');
+        expect(str).toContain('2024-01-15T10:30:45.123Z (1705314645123)');
       });
 
       it('should omit default error code', () => {

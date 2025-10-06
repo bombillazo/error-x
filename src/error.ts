@@ -506,8 +506,8 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    * // Result: metadata = { endpoint: '/users', retryCount: 3, userId: 123 }
    * ```
    */
-  public withMetadata<TAdditionalMetadata = ErrorXMetadata>(
-    additionalMetadata: Partial<TAdditionalMetadata>
+  public withMetadata<TAdditionalMetadata extends Record<string, unknown> = ErrorXMetadata>(
+    additionalMetadata: TAdditionalMetadata
   ): ErrorX<TMetadata & TAdditionalMetadata> {
     const options: ErrorXOptions<TMetadata & TAdditionalMetadata> = {
       message: this.message,
@@ -729,7 +729,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    * })
    *
    * console.log(error.toString())
-   * // Output: "DatabaseError: Database connection failed. [DB_CONN_FAILED] (2025-01-15T10:30:45.123Z) metadata: {...}"
+   * // Output: "DatabaseError: Database connection failed. [DB_CONN_FAILED] 2025-01-15T10:30:45.123Z (1736937045123) metadata: {...}"
    * ```
    */
   public toString(): string {
@@ -744,7 +744,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     }
 
     // Add timestamp
-    parts.push(`timestamp: ${new Date(this.timestamp).toISOString()} (${this.timestamp})`);
+    parts.push(`${new Date(this.timestamp).toISOString()} (${this.timestamp})`);
 
     // Add metadata if present
     if (this.metadata && Object.keys(this.metadata).length > 0) {
