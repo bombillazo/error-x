@@ -30,6 +30,11 @@ export interface ErrorXConfig {
    * - string[]: Custom patterns to match and remove from stack traces
    */
   cleanStack?: boolean | string[];
+  /**
+   * Delimiter to trim stack traces after a specified line
+   * When set, stack traces will be trimmed to start after the first line containing this string
+   */
+  cleanStackDelimiter?: string;
 }
 
 /**
@@ -44,7 +49,8 @@ export interface ErrorXConfig {
  *   docsMap: {
  *     'AUTH_FAILED': 'errors/authentication',
  *     'DB_ERROR': 'errors/database'
- *   }
+ *   },
+ *   cleanStackDelimiter: 'my-app-entry' // Clean stack traces after this line
  * })
  *
  * // Basic usage
@@ -261,7 +267,8 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    *   docsMap: {
    *     'AUTH_FAILED': 'authentication-errors',
    *     'DB_ERROR': 'database-errors'
-   *   }
+   *   },
+   *   cleanStackDelimiter: 'app-entry-point' // Trim stack traces after this line
    * })
    * ```
    */
@@ -275,6 +282,20 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    */
   public static getConfig(): ErrorXConfig | null {
     return ErrorX._config;
+  }
+
+  /**
+   * Reset global configuration to null.
+   * Useful for testing or when you want to clear all configuration.
+   *
+   * @example
+   * ```typescript
+   * ErrorX.resetConfig()
+   * const config = ErrorX.getConfig() // null
+   * ```
+   */
+  public static resetConfig(): void {
+    ErrorX._config = null;
   }
 
   /**
@@ -397,13 +418,24 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
   }
 
   /**
-   * Cleans the stack trace by removing ErrorX internal method calls.
+   * Cleans a stack trace by removing ErrorX internal method calls and optionally trimming after a delimiter.
    * This provides cleaner stack traces that focus on user code.
    *
-   * @param stack - Raw stack trace to clean
-   * @returns Cleaned stack trace without ErrorX internal calls
+   * @param stack - Raw stack trace string to clean
+   * @param delimiter - Optional delimiter to trim stack trace after (overrides config delimiter)
+   * @returns Cleaned stack trace without internal calls and optionally trimmed after delimiter
+   *
+   * @example
+   * ```typescript
+   * // Clean with pattern-based removal only
+   * const cleaned = ErrorX.cleanStack(error.stack)
+   *
+   * // Clean and trim after delimiter
+   * const trimmed = ErrorX.cleanStack(error.stack, 'my-app-entry')
+   * // Returns stack trace starting after the line containing 'my-app-entry'
+   * ```
    */
-  private static cleanStack(stack?: string): string {
+  public static cleanStack(stack?: string, delimiter?: string): string {
     if (!stack) return '';
 
     const config = ErrorX.getConfig();
@@ -438,35 +470,18 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       cleanedLines.push(line);
     }
 
-    return cleanedLines.join('\n');
-  }
+    let cleanedStack = cleanedLines.join('\n');
 
-  /**
-   * Processes an error's stack trace to trim it after a specified delimiter.
-   * Useful for removing irrelevant stack frames before a specific function.
-   *
-   * @param error - Error whose stack to process
-   * @param delimiter - String to search for in stack lines
-   * @returns Processed stack trace starting after the delimiter
-   *
-   * @example
-   * ```typescript
-   * const processed = ErrorX.processErrorStack(error, 'my-app-entry')
-   * // Returns stack trace starting after the line containing 'my-app-entry'
-   * ```
-   */
-  private static processErrorStack(error: Error, delimiter: string): string {
-    let stack = error.stack ?? '';
-    const stackLines = stack.split('\n');
-
-    // Find the index of the first line containing the delimiter
-    const delimiterIndex = stackLines.findIndex((line) => line.includes(delimiter));
-
-    // If the delimiter is found, return all lines after it
-    if (delimiterIndex !== -1) {
-      stack = stackLines.slice(delimiterIndex + 1).join('\n');
+    // Apply delimiter-based cleaning if provided (parameter takes precedence over config)
+    const activeDelimiter = delimiter ?? config?.cleanStackDelimiter;
+    if (activeDelimiter) {
+      const delimiterIndex = cleanedLines.findIndex((line) => line.includes(activeDelimiter));
+      if (delimiterIndex !== -1) {
+        cleanedStack = cleanedLines.slice(delimiterIndex + 1).join('\n');
+      }
     }
-    return stack;
+
+    return cleanedStack;
   }
 
   /**
@@ -692,44 +707,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
 
     const options = ErrorX.convertUnknownToOptions(error);
     return new ErrorX(options);
-  }
-
-  /**
-   * Creates a new ErrorX instance with cleaned stack trace using the specified delimiter.
-   * Returns the same instance if no delimiter is provided or no stack is available.
-   *
-   * @param delimiter - Optional string to search for in stack lines
-   * @returns New ErrorX instance with cleaned stack trace, or the same instance if no cleaning needed
-   *
-   * @example
-   * ```typescript
-   * const error = new ErrorX({ message: 'Database error' })
-   * const cleanedError = error.cleanStackTrace('database-layer')
-   * // Returns new ErrorX with stack trace starting after 'database-layer'
-   * ```
-   */
-  public cleanStackTrace(delimiter?: string): ErrorX<TMetadata> {
-    if (delimiter && this.stack) {
-      const options: ErrorXOptions = {
-        message: this.message,
-        name: this.name,
-        code: this.code,
-        uiMessage: this.uiMessage,
-        cause: this.cause,
-        httpStatus: this.httpStatus,
-        type: this.type,
-        sourceUrl: this.sourceUrl,
-        docsUrl: this.docsUrl,
-        source: this.source,
-      };
-      if (this.metadata !== undefined) {
-        options.metadata = this.metadata;
-      }
-      const newError = new ErrorX<TMetadata>(options as ErrorXOptions<TMetadata>);
-      newError.stack = ErrorX.processErrorStack(this, delimiter);
-      return newError;
-    }
-    return this;
   }
 
   /**

@@ -24,7 +24,8 @@ ErrorX.configure({
   docsMap: {
     'AUTH_FAILED': 'errors/authentication',
     'DB_ERROR': 'errors/database'
-  }
+  },
+  cleanStackDelimiter: 'my-app-entry' // Clean stack traces after this line
 })
 
 // Basic usage
@@ -317,15 +318,17 @@ Description
 </th></tr></thead>
 <tbody><tr><td>
 
-[cleanStackTrace(delimiter)](./error-x.errorx.cleanstacktrace.md)
+[cleanStack(stack, delimiter)](./error-x.errorx.cleanstack.md)
 
 
 </td><td>
 
+`static`
+
 
 </td><td>
 
-Creates a new ErrorX instance with cleaned stack trace using the specified delimiter. Returns the same instance if no delimiter is provided or no stack is available.
+Cleans a stack trace by removing ErrorX internal method calls and optionally trimming after a delimiter. This provides cleaner stack traces that focus on user code.
 
 
 </td></tr>
@@ -464,6 +467,22 @@ Type guard that checks if a value is an ErrorX instance.
 </td><td>
 
 Validates if an object is a valid ErrorXOptions object. Checks that the object only contains accepted ErrorXOptions fields.
+
+
+</td></tr>
+<tr><td>
+
+[resetConfig()](./error-x.errorx.resetconfig.md)
+
+
+</td><td>
+
+`static`
+
+
+</td><td>
+
+Reset global configuration to null. Useful for testing or when you want to clear all configuration.
 
 
 </td></tr>

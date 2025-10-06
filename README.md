@@ -36,7 +36,6 @@ yarn add @bombillazo/error-x
 
 This library uses modern JavaScript features and ES2022 APIs. For browser compatibility, ensure your build tool (e.g., Vite, webpack, esbuild) is configured to target ES2022 or transpile accordingly.
 
-
 > [!WARNING]
 >
 > This library is currently in pre-v1.0 development. While we strive to minimize breaking changes, the API may evolve based on feedback and real-world usage. We recommend pinning to specific versions and reviewing release notes when updating.
@@ -149,6 +148,7 @@ All presets use **camelCase naming** and include:
 - `type`: Set to `'http'` for all HTTP presets
 
 **4xx Client Errors:**
+
 `badRequest`, `unauthorized`, `paymentRequired`, `forbidden`, `notFound`, `methodNotAllowed`, `notAcceptable`, `proxyAuthenticationRequired`, `requestTimeout`, `conflict`, `gone`, `lengthRequired`, `preconditionFailed`, `payloadTooLarge`, `uriTooLong`, `unsupportedMediaType`, `rangeNotSatisfiable`, `expectationFailed`, `imATeapot`, `unprocessableEntity`, `locked`, `failedDependency`, `tooEarly`, `upgradeRequired`, `preconditionRequired`, `tooManyRequests`, `requestHeaderFieldsTooLarge`, `unavailableForLegalReasons`
 
 **5xx Server Errors:**
@@ -281,14 +281,19 @@ const enriched = error.withMetadata({ b: 2 })
 // enriched.metadata = { a: 1, b: 2 }
 ```
 
-#### `cleanStackTrace(delimiter?: string): ErrorX`
+#### `ErrorX.cleanStack(stack?: string, delimiter?: string): string`
 
-Removes stack trace lines before a delimiter:
+Cleans a stack trace by removing ErrorX internal calls and optionally trimming after a delimiter:
 
 ```typescript
 const error = new ErrorX('test')
-const cleaned = error.cleanStackTrace('my-app-boundary')
-// Stack trace only includes lines after 'my-app-boundary'
+
+// Clean with pattern-based removal only
+const cleaned = ErrorX.cleanStack(error.stack)
+
+// Clean and trim after delimiter
+const trimmed = ErrorX.cleanStack(error.stack, 'my-app-boundary')
+// Returns stack trace starting after the line containing 'my-app-boundary'
 ```
 
 #### `toJSON(): ErrorXSerialized`
