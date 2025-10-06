@@ -11,7 +11,7 @@ import type { ErrorXOptions } from './types.js';
  * ### 1. Use Preset Directly
  * Create an error with all preset values:
  * ```typescript
- * throw new ErrorX(http.notFound)
+ * throw new ErrorX(http[404])
  * // Result: 404 error with message "Not found.", code, name, uiMessage, and type
  * ```
  *
@@ -19,7 +19,7 @@ import type { ErrorXOptions } from './types.js';
  * Customize the error while keeping other preset values:
  * ```typescript
  * throw new ErrorX({
- *   ...http.notFound,
+ *   ...http[404],
  *   message: 'User not found',
  *   metadata: { userId: 123 }
  * })
@@ -30,7 +30,7 @@ import type { ErrorXOptions } from './types.js';
  * Enhance presets with additional context:
  * ```typescript
  * throw new ErrorX({
- *   ...http.unauthorized,
+ *   ...http[401],
  *   metadata: { attemptedAction: 'viewProfile', userId: 456 }
  * })
  * ```
@@ -42,7 +42,7 @@ import type { ErrorXOptions } from './types.js';
  *   // some operation
  * } catch (originalError) {
  *   throw new ErrorX({
- *     ...http.internalServerError,
+ *     ...http[500],
  *     cause: originalError,
  *     metadata: { operation: 'database-query' }
  *   })
@@ -52,21 +52,21 @@ import type { ErrorXOptions } from './types.js';
  * ## Common HTTP Presets
  *
  * ### 4xx Client Errors
- * - `badRequest` (400) - Invalid request data
- * - `unauthorized` (401) - Authentication required
- * - `forbidden` (403) - Insufficient permissions
- * - `notFound` (404) - Resource not found
- * - `methodNotAllowed` (405) - HTTP method not allowed
- * - `conflict` (409) - Resource conflict
- * - `unprocessableEntity` (422) - Validation failed
- * - `tooManyRequests` (429) - Rate limit exceeded
+ * - `400` - Bad Request - Invalid request data
+ * - `401` - Unauthorized - Authentication required
+ * - `403` - Forbidden - Insufficient permissions
+ * - `404` - Not Found - Resource not found
+ * - `405` - Method Not Allowed - HTTP method not allowed
+ * - `409` - Conflict - Resource conflict
+ * - `422` - Unprocessable Entity - Validation failed
+ * - `429` - Too Many Requests - Rate limit exceeded
  *
  * ### 5xx Server Errors
- * - `internalServerError` (500) - Unexpected server error
- * - `notImplemented` (501) - Feature not implemented
- * - `badGateway` (502) - Upstream server error
- * - `serviceUnavailable` (503) - Service temporarily down
- * - `gatewayTimeout` (504) - Upstream timeout
+ * - `500` - Internal Server Error - Unexpected server error
+ * - `501` - Not Implemented - Feature not implemented
+ * - `502` - Bad Gateway - Upstream server error
+ * - `503` - Service Unavailable - Service temporarily down
+ * - `504` - Gateway Timeout - Upstream timeout
  *
  * @example
  * ```typescript
@@ -76,7 +76,7 @@ import type { ErrorXOptions } from './types.js';
  *
  *   if (!user) {
  *     throw new ErrorX({
- *       ...http.notFound,
+ *       ...http[404],
  *       message: 'User not found',
  *       metadata: { userId: req.params.id }
  *     })
@@ -88,7 +88,7 @@ import type { ErrorXOptions } from './types.js';
  * // Authentication middleware example
  * const requireAuth = (req, res, next) => {
  *   if (!req.user) {
- *     throw new ErrorX(http.unauthorized)
+ *     throw new ErrorX(http[401])
  *   }
  *   next()
  * }
@@ -96,7 +96,7 @@ import type { ErrorXOptions } from './types.js';
  * // Rate limiting example
  * if (isRateLimited(req.ip)) {
  *   throw new ErrorX({
- *     ...http.tooManyRequests,
+ *     ...http[429],
  *     metadata: {
  *       ip: req.ip,
  *       retryAfter: 60
@@ -109,7 +109,7 @@ import type { ErrorXOptions } from './types.js';
  */
 export const http = {
   // 4xx Client Errors
-  badRequest: {
+  400: {
     httpStatus: 400,
     code: 'BAD_REQUEST',
     name: 'Bad Request Error',
@@ -118,7 +118,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  unauthorized: {
+  401: {
     httpStatus: 401,
     code: 'UNAUTHORIZED',
     name: 'Unauthorized Error',
@@ -127,7 +127,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  paymentRequired: {
+  402: {
     httpStatus: 402,
     code: 'PAYMENT_REQUIRED',
     name: 'Payment Required Error',
@@ -136,7 +136,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  forbidden: {
+  403: {
     httpStatus: 403,
     code: 'FORBIDDEN',
     name: 'Forbidden Error',
@@ -145,7 +145,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  notFound: {
+  404: {
     httpStatus: 404,
     code: 'NOT_FOUND',
     name: 'Not Found Error',
@@ -154,7 +154,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  methodNotAllowed: {
+  405: {
     httpStatus: 405,
     code: 'METHOD_NOT_ALLOWED',
     name: 'Method Not Allowed Error',
@@ -163,7 +163,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  notAcceptable: {
+  406: {
     httpStatus: 406,
     code: 'NOT_ACCEPTABLE',
     name: 'Not Acceptable Error',
@@ -172,7 +172,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  proxyAuthenticationRequired: {
+  407: {
     httpStatus: 407,
     code: 'PROXY_AUTHENTICATION_REQUIRED',
     name: 'Proxy Authentication Required Error',
@@ -181,7 +181,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  requestTimeout: {
+  408: {
     httpStatus: 408,
     code: 'REQUEST_TIMEOUT',
     name: 'Request Timeout Error',
@@ -190,7 +190,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  conflict: {
+  409: {
     httpStatus: 409,
     code: 'CONFLICT',
     name: 'Conflict Error',
@@ -199,7 +199,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  gone: {
+  410: {
     httpStatus: 410,
     code: 'GONE',
     name: 'Gone Error',
@@ -208,7 +208,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  lengthRequired: {
+  411: {
     httpStatus: 411,
     code: 'LENGTH_REQUIRED',
     name: 'Length Required Error',
@@ -217,7 +217,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  preconditionFailed: {
+  412: {
     httpStatus: 412,
     code: 'PRECONDITION_FAILED',
     name: 'Precondition Failed Error',
@@ -226,7 +226,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  payloadTooLarge: {
+  413: {
     httpStatus: 413,
     code: 'PAYLOAD_TOO_LARGE',
     name: 'Payload Too Large Error',
@@ -235,7 +235,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  uriTooLong: {
+  414: {
     httpStatus: 414,
     code: 'URI_TOO_LONG',
     name: 'URI Too Long Error',
@@ -244,7 +244,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  unsupportedMediaType: {
+  415: {
     httpStatus: 415,
     code: 'UNSUPPORTED_MEDIA_TYPE',
     name: 'Unsupported Media Type Error',
@@ -253,7 +253,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  rangeNotSatisfiable: {
+  416: {
     httpStatus: 416,
     code: 'RANGE_NOT_SATISFIABLE',
     name: 'Range Not Satisfiable Error',
@@ -262,7 +262,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  expectationFailed: {
+  417: {
     httpStatus: 417,
     code: 'EXPECTATION_FAILED',
     name: 'Expectation Failed Error',
@@ -271,7 +271,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  imATeapot: {
+  418: {
     httpStatus: 418,
     code: 'IM_A_TEAPOT',
     name: 'Im A Teapot Error',
@@ -280,7 +280,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  unprocessableEntity: {
+  422: {
     httpStatus: 422,
     code: 'UNPROCESSABLE_ENTITY',
     name: 'Unprocessable Entity Error',
@@ -289,7 +289,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  locked: {
+  423: {
     httpStatus: 423,
     code: 'LOCKED',
     name: 'Locked Error',
@@ -298,7 +298,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  failedDependency: {
+  424: {
     httpStatus: 424,
     code: 'FAILED_DEPENDENCY',
     name: 'Failed Dependency Error',
@@ -307,7 +307,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  tooEarly: {
+  425: {
     httpStatus: 425,
     code: 'TOO_EARLY',
     name: 'Too Early Error',
@@ -316,7 +316,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  upgradeRequired: {
+  426: {
     httpStatus: 426,
     code: 'UPGRADE_REQUIRED',
     name: 'Upgrade Required Error',
@@ -325,7 +325,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  preconditionRequired: {
+  428: {
     httpStatus: 428,
     code: 'PRECONDITION_REQUIRED',
     name: 'Precondition Required Error',
@@ -334,7 +334,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  tooManyRequests: {
+  429: {
     httpStatus: 429,
     code: 'TOO_MANY_REQUESTS',
     name: 'Too Many Requests Error',
@@ -343,7 +343,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  requestHeaderFieldsTooLarge: {
+  431: {
     httpStatus: 431,
     code: 'REQUEST_HEADER_FIELDS_TOO_LARGE',
     name: 'Request Header Fields Too Large Error',
@@ -352,7 +352,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  unavailableForLegalReasons: {
+  451: {
     httpStatus: 451,
     code: 'UNAVAILABLE_FOR_LEGAL_REASONS',
     name: 'Unavailable For Legal Reasons Error',
@@ -362,7 +362,7 @@ export const http = {
   } satisfies ErrorXOptions,
 
   // 5xx Server Errors
-  internalServerError: {
+  500: {
     httpStatus: 500,
     code: 'INTERNAL_SERVER_ERROR',
     name: 'Internal Server Error',
@@ -371,7 +371,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  notImplemented: {
+  501: {
     httpStatus: 501,
     code: 'NOT_IMPLEMENTED',
     name: 'Not Implemented Error',
@@ -380,7 +380,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  badGateway: {
+  502: {
     httpStatus: 502,
     code: 'BAD_GATEWAY',
     name: 'Bad Gateway Error',
@@ -389,7 +389,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  serviceUnavailable: {
+  503: {
     httpStatus: 503,
     code: 'SERVICE_UNAVAILABLE',
     name: 'Service Unavailable Error',
@@ -398,7 +398,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  gatewayTimeout: {
+  504: {
     httpStatus: 504,
     code: 'GATEWAY_TIMEOUT',
     name: 'Gateway Timeout Error',
@@ -407,7 +407,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  httpVersionNotSupported: {
+  505: {
     httpStatus: 505,
     code: 'HTTP_VERSION_NOT_SUPPORTED',
     name: 'HTTP Version Not Supported Error',
@@ -416,7 +416,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  variantAlsoNegotiates: {
+  506: {
     httpStatus: 506,
     code: 'VARIANT_ALSO_NEGOTIATES',
     name: 'Variant Also Negotiates Error',
@@ -425,7 +425,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  insufficientStorage: {
+  507: {
     httpStatus: 507,
     code: 'INSUFFICIENT_STORAGE',
     name: 'Insufficient Storage Error',
@@ -434,7 +434,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  loopDetected: {
+  508: {
     httpStatus: 508,
     code: 'LOOP_DETECTED',
     name: 'Loop Detected Error',
@@ -443,7 +443,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  notExtended: {
+  510: {
     httpStatus: 510,
     code: 'NOT_EXTENDED',
     name: 'Not Extended Error',
@@ -452,7 +452,7 @@ export const http = {
     type: 'http',
   } satisfies ErrorXOptions,
 
-  networkAuthenticationRequired: {
+  511: {
     httpStatus: 511,
     code: 'NETWORK_AUTHENTICATION_REQUIRED',
     name: 'Network Authentication Required Error',

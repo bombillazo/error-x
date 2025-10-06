@@ -13,14 +13,14 @@ These presets provide pre-configured error options for standard HTTP error respo
 \#\#\# 1. Use Preset Directly Create an error with all preset values:
 
 ```typescript
-throw new ErrorX(http.notFound)
+throw new ErrorX(http[404])
 // Result: 404 error with message "Not found.", code, name, uiMessage, and type
 ```
 \#\#\# 2. Override Specific Fields Customize the error while keeping other preset values:
 
 ```typescript
 throw new ErrorX({
-  ...http.notFound,
+  ...http[404],
   message: 'User not found',
   metadata: { userId: 123 }
 })
@@ -30,7 +30,7 @@ throw new ErrorX({
 
 ```typescript
 throw new ErrorX({
-  ...http.unauthorized,
+  ...http[401],
   metadata: { attemptedAction: 'viewProfile', userId: 456 }
 })
 ```
@@ -41,7 +41,7 @@ try {
   // some operation
 } catch (originalError) {
   throw new ErrorX({
-    ...http.internalServerError,
+    ...http[500],
     cause: originalError,
     metadata: { operation: 'database-query' }
   })
@@ -49,15 +49,15 @@ try {
 ```
 \#\# Common HTTP Presets
 
-\#\#\# 4xx Client Errors - `badRequest` (400) - Invalid request data - `unauthorized` (401) - Authentication required - `forbidden` (403) - Insufficient permissions - `notFound` (404) - Resource not found - `methodNotAllowed` (405) - HTTP method not allowed - `conflict` (409) - Resource conflict - `unprocessableEntity` (422) - Validation failed - `tooManyRequests` (429) - Rate limit exceeded
+\#\#\# 4xx Client Errors - `400` - Bad Request - Invalid request data - `401` - Unauthorized - Authentication required - `403` - Forbidden - Insufficient permissions - `404` - Not Found - Resource not found - `405` - Method Not Allowed - HTTP method not allowed - `409` - Conflict - Resource conflict - `422` - Unprocessable Entity - Validation failed - `429` - Too Many Requests - Rate limit exceeded
 
-\#\#\# 5xx Server Errors - `internalServerError` (500) - Unexpected server error - `notImplemented` (501) - Feature not implemented - `badGateway` (502) - Upstream server error - `serviceUnavailable` (503) - Service temporarily down - `gatewayTimeout` (504) - Upstream timeout
+\#\#\# 5xx Server Errors - `500` - Internal Server Error - Unexpected server error - `501` - Not Implemented - Feature not implemented - `502` - Bad Gateway - Upstream server error - `503` - Service Unavailable - Service temporarily down - `504` - Gateway Timeout - Upstream timeout
 
 **Signature:**
 
 ```typescript
 http: {
-    readonly badRequest: {
+    readonly 400: {
         httpStatus: number;
         code: string;
         name: string;
@@ -65,7 +65,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly unauthorized: {
+    readonly 401: {
         httpStatus: number;
         code: string;
         name: string;
@@ -73,7 +73,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly paymentRequired: {
+    readonly 402: {
         httpStatus: number;
         code: string;
         name: string;
@@ -81,7 +81,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly forbidden: {
+    readonly 403: {
         httpStatus: number;
         code: string;
         name: string;
@@ -89,7 +89,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly notFound: {
+    readonly 404: {
         httpStatus: number;
         code: string;
         name: string;
@@ -97,7 +97,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly methodNotAllowed: {
+    readonly 405: {
         httpStatus: number;
         code: string;
         name: string;
@@ -105,7 +105,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly notAcceptable: {
+    readonly 406: {
         httpStatus: number;
         code: string;
         name: string;
@@ -113,7 +113,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly proxyAuthenticationRequired: {
+    readonly 407: {
         httpStatus: number;
         code: string;
         name: string;
@@ -121,7 +121,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly requestTimeout: {
+    readonly 408: {
         httpStatus: number;
         code: string;
         name: string;
@@ -129,7 +129,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly conflict: {
+    readonly 409: {
         httpStatus: number;
         code: string;
         name: string;
@@ -137,7 +137,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly gone: {
+    readonly 410: {
         httpStatus: number;
         code: string;
         name: string;
@@ -145,7 +145,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly lengthRequired: {
+    readonly 411: {
         httpStatus: number;
         code: string;
         name: string;
@@ -153,7 +153,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly preconditionFailed: {
+    readonly 412: {
         httpStatus: number;
         code: string;
         name: string;
@@ -161,7 +161,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly payloadTooLarge: {
+    readonly 413: {
         httpStatus: number;
         code: string;
         name: string;
@@ -169,7 +169,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly uriTooLong: {
+    readonly 414: {
         httpStatus: number;
         code: string;
         name: string;
@@ -177,7 +177,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly unsupportedMediaType: {
+    readonly 415: {
         httpStatus: number;
         code: string;
         name: string;
@@ -185,7 +185,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly rangeNotSatisfiable: {
+    readonly 416: {
         httpStatus: number;
         code: string;
         name: string;
@@ -193,7 +193,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly expectationFailed: {
+    readonly 417: {
         httpStatus: number;
         code: string;
         name: string;
@@ -201,7 +201,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly imATeapot: {
+    readonly 418: {
         httpStatus: number;
         code: string;
         name: string;
@@ -209,7 +209,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly unprocessableEntity: {
+    readonly 422: {
         httpStatus: number;
         code: string;
         name: string;
@@ -217,7 +217,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly locked: {
+    readonly 423: {
         httpStatus: number;
         code: string;
         name: string;
@@ -225,7 +225,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly failedDependency: {
+    readonly 424: {
         httpStatus: number;
         code: string;
         name: string;
@@ -233,7 +233,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly tooEarly: {
+    readonly 425: {
         httpStatus: number;
         code: string;
         name: string;
@@ -241,7 +241,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly upgradeRequired: {
+    readonly 426: {
         httpStatus: number;
         code: string;
         name: string;
@@ -249,7 +249,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly preconditionRequired: {
+    readonly 428: {
         httpStatus: number;
         code: string;
         name: string;
@@ -257,7 +257,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly tooManyRequests: {
+    readonly 429: {
         httpStatus: number;
         code: string;
         name: string;
@@ -265,7 +265,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly requestHeaderFieldsTooLarge: {
+    readonly 431: {
         httpStatus: number;
         code: string;
         name: string;
@@ -273,7 +273,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly unavailableForLegalReasons: {
+    readonly 451: {
         httpStatus: number;
         code: string;
         name: string;
@@ -281,7 +281,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly internalServerError: {
+    readonly 500: {
         httpStatus: number;
         code: string;
         name: string;
@@ -289,7 +289,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly notImplemented: {
+    readonly 501: {
         httpStatus: number;
         code: string;
         name: string;
@@ -297,7 +297,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly badGateway: {
+    readonly 502: {
         httpStatus: number;
         code: string;
         name: string;
@@ -305,7 +305,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly serviceUnavailable: {
+    readonly 503: {
         httpStatus: number;
         code: string;
         name: string;
@@ -313,7 +313,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly gatewayTimeout: {
+    readonly 504: {
         httpStatus: number;
         code: string;
         name: string;
@@ -321,7 +321,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly httpVersionNotSupported: {
+    readonly 505: {
         httpStatus: number;
         code: string;
         name: string;
@@ -329,7 +329,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly variantAlsoNegotiates: {
+    readonly 506: {
         httpStatus: number;
         code: string;
         name: string;
@@ -337,7 +337,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly insufficientStorage: {
+    readonly 507: {
         httpStatus: number;
         code: string;
         name: string;
@@ -345,7 +345,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly loopDetected: {
+    readonly 508: {
         httpStatus: number;
         code: string;
         name: string;
@@ -353,7 +353,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly notExtended: {
+    readonly 510: {
         httpStatus: number;
         code: string;
         name: string;
@@ -361,7 +361,7 @@ http: {
         uiMessage: string;
         type: string;
     };
-    readonly networkAuthenticationRequired: {
+    readonly 511: {
         httpStatus: number;
         code: string;
         name: string;
@@ -382,7 +382,7 @@ app.get('/users/:id', async (req, res) => {
 
   if (!user) {
     throw new ErrorX({
-      ...http.notFound,
+      ...http[404],
       message: 'User not found',
       metadata: { userId: req.params.id }
     })
@@ -394,7 +394,7 @@ app.get('/users/:id', async (req, res) => {
 // Authentication middleware example
 const requireAuth = (req, res, next) => {
   if (!req.user) {
-    throw new ErrorX(http.unauthorized)
+    throw new ErrorX(http[401])
   }
   next()
 }
@@ -402,7 +402,7 @@ const requireAuth = (req, res, next) => {
 // Rate limiting example
 if (isRateLimited(req.ip)) {
   throw new ErrorX({
-    ...http.tooManyRequests,
+    ...http[429],
     metadata: {
       ip: req.ip,
       retryAfter: 60

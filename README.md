@@ -63,11 +63,11 @@ throw new ErrorX({
 })
 
 // Using HTTP presets
-throw new ErrorX(http.notFound)
+throw new ErrorX(http[404])
 
 // Customizing presets
 throw new ErrorX({
-  ...http.unauthorized,
+  ...http[401],
   message: 'Session expired',
   metadata: { userId: 123 }
 })
@@ -115,12 +115,12 @@ ErrorX provides pre-configured error templates via the `http` export:
 import { ErrorX, http } from '@bombillazo/error-x'
 
 // Use preset directly
-throw new ErrorX(http.notFound)
+throw new ErrorX(http[404])
 // Result: 404 error with message "Not found.", code "NOT_FOUND", etc.
 
 // Override specific fields
 throw new ErrorX({
-  ...http.notFound,
+  ...http[404],
   message: 'User not found',
   metadata: { userId: 123 }
 })
@@ -130,7 +130,7 @@ try {
   // some operation
 } catch (originalError) {
   throw new ErrorX({
-    ...http.internalServerError,
+    ...http[500],
     cause: originalError,
     metadata: { operation: 'database-query' }
   })
@@ -139,7 +139,7 @@ try {
 
 #### Available Presets
 
-All presets use **camelCase naming** and include:
+All presets are indexed by **HTTP status code** (numeric keys) and include:
 - `httpStatus`: HTTP status code
 - `code`: Error code in UPPER_SNAKE_CASE
 - `name`: Descriptive error name
@@ -149,10 +149,10 @@ All presets use **camelCase naming** and include:
 
 **4xx Client Errors:**
 
-`badRequest`, `unauthorized`, `paymentRequired`, `forbidden`, `notFound`, `methodNotAllowed`, `notAcceptable`, `proxyAuthenticationRequired`, `requestTimeout`, `conflict`, `gone`, `lengthRequired`, `preconditionFailed`, `payloadTooLarge`, `uriTooLong`, `unsupportedMediaType`, `rangeNotSatisfiable`, `expectationFailed`, `imATeapot`, `unprocessableEntity`, `locked`, `failedDependency`, `tooEarly`, `upgradeRequired`, `preconditionRequired`, `tooManyRequests`, `requestHeaderFieldsTooLarge`, `unavailableForLegalReasons`
+`400`, `401`, `402`, `403`, `404`, `405`, `406`, `407`, `408`, `409`, `410`, `411`, `412`, `413`, `414`, `415`, `416`, `417`, `418`, `422`, `423`, `424`, `425`, `426`, `428`, `429`, `431`, `451`
 
 **5xx Server Errors:**
-`internalServerError`, `notImplemented`, `badGateway`, `serviceUnavailable`, `gatewayTimeout`, `httpVersionNotSupported`, `variantAlsoNegotiates`, `insufficientStorage`, `loopDetected`, `notExtended`, `networkAuthenticationRequired`
+`500`, `501`, `502`, `503`, `504`, `505`, `506`, `507`, `508`, `510`, `511`
 
 #### Creating Your Own Presets
 
@@ -344,7 +344,7 @@ async function fetchUser(id: string) {
     const response = await fetch(`/api/users/${id}`)
     if (!response.ok) {
       throw new ErrorX({
-        ...http[response.status === 404 ? 'notFound' : 'internalServerError'],
+        ...http[response.status === 404 ? 404 : 500],
         metadata: { status: response.status, statusText: response.statusText }
       })
     }
