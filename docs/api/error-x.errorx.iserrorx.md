@@ -9,7 +9,7 @@ Type guard that checks if a value is an ErrorX instance.
 **Signature:**
 
 ```typescript
-static isErrorX(value: unknown): value is ErrorX;
+static isErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata>(value: unknown): value is ErrorX<TMetadata>;
 ```
 
 ## Parameters
@@ -50,7 +50,7 @@ Value to check
 
 **Returns:**
 
-value is [ErrorX](./error-x.errorx.md)
+value is [ErrorX](./error-x.errorx.md)<!-- -->&lt;TMetadata&gt;
 
 True if value is an ErrorX instance, false otherwise
 

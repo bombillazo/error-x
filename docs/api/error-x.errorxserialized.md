@@ -44,8 +44,8 @@ const serialized: SerializableError = {
     message: 'Request timeout.',
     stack: '...'
   },
-  url: 'https://api.example.com/auth',
-  href: 'https://docs.example.com/errors#auth-failed',
+  sourceUrl: 'https://api.example.com/auth',
+  docsUrl: 'https://docs.example.com/errors#auth-failed',
   source: 'auth-service'
 }
 ```

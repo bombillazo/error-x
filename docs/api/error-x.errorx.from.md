@@ -9,7 +9,7 @@ Converts unknown input into an ErrorX instance with intelligent property extract
 **Signature:**
 
 ```typescript
-static from(error: unknown): ErrorX;
+static from<TMetadata extends ErrorXMetadata = ErrorXMetadata>(error: ErrorX<TMetadata>): ErrorX<TMetadata>;
 ```
 
 ## Parameters
@@ -37,7 +37,7 @@ error
 
 </td><td>
 
-unknown
+[ErrorX](./error-x.errorx.md)<!-- -->&lt;TMetadata&gt;
 
 
 </td><td>
@@ -50,7 +50,7 @@ Value to convert to ErrorX
 
 **Returns:**
 
-[ErrorX](./error-x.errorx.md)
+[ErrorX](./error-x.errorx.md)<!-- -->&lt;TMetadata&gt;
 
 ErrorX instance with extracted properties
 

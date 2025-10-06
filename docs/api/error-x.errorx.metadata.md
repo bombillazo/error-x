@@ -9,5 +9,5 @@ Additional context and metadata associated with the error
 **Signature:**
 
 ```typescript
-metadata: ErrorXMetadata | undefined;
+metadata: TMetadata | undefined;
 ```

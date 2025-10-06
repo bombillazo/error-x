@@ -9,7 +9,7 @@ Enhanced Error class with rich metadata, type-safe error handling, and intellige
 **Signature:**
 
 ```typescript
-declare class ErrorX extends Error 
+declare class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends Error 
 ```
 **Extends:** Error
 
@@ -38,6 +38,14 @@ const error = new ErrorX({
   uiMessage: 'Please check your credentials',
   metadata: { userId: 123, loginAttempt: 3 }
 })
+
+// With type-safe metadata
+type MyMetadata = { userId: number; action: string };
+const error = new ErrorX<MyMetadata>({
+  message: 'Action failed',
+  metadata: { userId: 123, action: 'delete' }
+})
+// error.metadata?.userId is typed as number
 ```
 
 ## Constructors
@@ -98,6 +106,25 @@ Description
 
 </th></tr></thead>
 <tbody><tr><td>
+
+[cause](./error-x.errorx.cause.md)
+
+
+</td><td>
+
+
+</td><td>
+
+[ErrorXCause](./error-x.errorxcause.md) \| undefined
+
+
+</td><td>
+
+Original error that caused this error (preserves error chain)
+
+
+</td></tr>
+<tr><td>
 
 [code](./error-x.errorx.code.md)
 
@@ -164,7 +191,7 @@ HTTP status code (100-599) for HTTP-related errors
 
 </td><td>
 
-[ErrorXMetadata](./error-x.errorxmetadata.md) \| undefined
+TMetadata \| undefined
 
 
 </td><td>
@@ -331,6 +358,48 @@ Configure global ErrorX settings. This method allows you to set defaults for all
 </td><td>
 
 Converts unknown input into an ErrorX instance with intelligent property extraction. Handles strings, regular Error objects, API response objects, and unknown values.
+
+
+</td></tr>
+<tr><td>
+
+[from(error)](./error-x.errorx.from_1.md)
+
+
+</td><td>
+
+`static`
+
+
+</td><td>
+
+
+</td></tr>
+<tr><td>
+
+[from(error)](./error-x.errorx.from_2.md)
+
+
+</td><td>
+
+`static`
+
+
+</td><td>
+
+
+</td></tr>
+<tr><td>
+
+[from(error)](./error-x.errorx.from_3.md)
+
+
+</td><td>
+
+`static`
+
+
+</td><td>
 
 
 </td></tr>
