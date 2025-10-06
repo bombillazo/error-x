@@ -230,7 +230,9 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     if (typeof value === 'object') {
       const obj = value as Record<string, unknown>;
       const cause: ErrorXCause = {
-        message: String(obj.message || obj),
+        message: typeof obj.message === 'string'
+          ? obj.message
+          : safeStringify(obj),
       };
       if (obj.name) {
         cause.name = String(obj.name);
