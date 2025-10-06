@@ -9,13 +9,13 @@ Configuration options for creating an ErrorX instance. All properties are option
 **Signature:**
 
 ```typescript
-type ErrorXOptions = {
+type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
     message?: string;
     name?: string;
     code?: string | number;
     uiMessage?: string | undefined;
-    cause?: Error | unknown;
-    metadata?: ErrorXMetadata;
+    cause?: ErrorXCause | Error | unknown;
+    metadata?: TMetadata | undefined;
     httpStatus?: number | undefined;
     type?: string | undefined;
     sourceUrl?: string | undefined;
@@ -23,7 +23,7 @@ type ErrorXOptions = {
     source?: string | undefined;
 };
 ```
-**References:** [ErrorXMetadata](./error-x.errorxmetadata.md)
+**References:** [ErrorXMetadata](./error-x.errorxmetadata.md)<!-- -->, [ErrorXCause](./error-x.errorxcause.md)
 
 ## Remarks
 
@@ -36,6 +36,10 @@ new ErrorX({ message: 'Error', code: 'ERR' })
 // ✅ Works - object literal
 const opts = { message: 'Error' }
 new ErrorX(opts)
+
+// ✅ Works - with type-safe metadata
+type MyMeta = { userId: number; action: string };
+new ErrorX<MyMeta>({ metadata: { userId: 123, action: 'login' } })
 ```
 If ErrorXOptions were a class, you would need to instantiate it:
 

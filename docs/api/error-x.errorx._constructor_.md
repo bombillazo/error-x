@@ -9,7 +9,7 @@ Creates a new ErrorX instance with enhanced error handling capabilities.
 **Signature:**
 
 ```typescript
-constructor(messageOrOptions?: string | ErrorXOptions);
+constructor(messageOrOptions?: string | ErrorXOptions<TMetadata>);
 ```
 
 ## Parameters
@@ -37,7 +37,7 @@ messageOrOptions
 
 </td><td>
 
-string \| [ErrorXOptions](./error-x.errorxoptions.md)
+string \| [ErrorXOptions](./error-x.errorxoptions.md)<!-- -->&lt;TMetadata&gt;
 
 
 </td><td>
@@ -67,8 +67,15 @@ const error3 = new ErrorX({
   metadata: { query: 'SELECT * FROM users', timeout: 5000 }
 })
 
+// With type-safe metadata
+type MyMeta = { userId: number };
+const error4 = new ErrorX<MyMeta>({
+  message: 'User action failed',
+  metadata: { userId: 123 }
+})
+
 // For converting unknown errors, use ErrorX.from()
 const apiError = { message: 'User not found', code: 404 }
-const error4 = ErrorX.from(apiError)
+const error5 = ErrorX.from(apiError)
 ```
 

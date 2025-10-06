@@ -9,7 +9,7 @@ Creates a new ErrorX instance with cleaned stack trace using the specified delim
 **Signature:**
 
 ```typescript
-cleanStackTrace(delimiter?: string): ErrorX;
+cleanStackTrace(delimiter?: string): ErrorX<TMetadata>;
 ```
 
 ## Parameters
@@ -50,7 +50,7 @@ _(Optional)_ Optional string to search for in stack lines
 
 **Returns:**
 
-[ErrorX](./error-x.errorx.md)
+[ErrorX](./error-x.errorx.md)<!-- -->&lt;TMetadata&gt;
 
 New ErrorX instance with cleaned stack trace, or the same instance if no cleaning needed
 

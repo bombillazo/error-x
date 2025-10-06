@@ -92,6 +92,8 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
   public docsUrl: string | undefined;
   /** Where the error originated (service name, module, component) */
   public source: string | undefined;
+  /** Original error that caused this error (preserves error chain) */
+  public cause: ErrorXCause | undefined;
 
   /**
    * Creates a new ErrorX instance with enhanced error handling capabilities.
@@ -146,20 +148,14 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     // Use default message if not provided or if it's empty/whitespace-only
     const message = options.message?.trim() ? options.message : 'An error occurred';
 
-    // For pre-ES2022 environments that don't support Error.cause option
-    // We pass the cause option but manually set it afterwards as a fallback
-    super(message, { cause: options.cause });
+    // Convert cause to ErrorXCause format
+    const convertedCause = ErrorX.toErrorXCause(options.cause);
 
-    // Polyfill for environments that don't support error.cause (pre-ES2022)
-    // This ensures the cause property is always set correctly
-    if (options.cause !== undefined && !Object.hasOwn(this, 'cause')) {
-      Object.defineProperty(this, 'cause', {
-        value: options.cause,
-        writable: true,
-        enumerable: false,
-        configurable: true,
-      });
-    }
+    // Call super without cause since we'll set it manually in ErrorXCause format
+    super(message);
+
+    // Set cause in ErrorXCause format
+    this.cause = convertedCause;
 
     this.name = options.name ?? ErrorX.getDefaultName();
     this.code =
@@ -188,8 +184,8 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     this.docsUrl = options.docsUrl ?? generatedDocsUrl;
 
     // Handle stack trace preservation
-    if (options.cause instanceof Error) {
-      this.stack = ErrorX.preserveOriginalStack(options.cause, this);
+    if (convertedCause?.stack) {
+      this.stack = ErrorX.preserveOriginalStackFromCause(convertedCause, this);
     } else {
       // Node.js specific stack trace capture for clean stack
       if (typeof Error.captureStackTrace === 'function') {
@@ -206,6 +202,49 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    */
   private static getDefaultName(): string {
     return 'Error';
+  }
+
+  /**
+   * Converts any value to ErrorXCause format.
+   * @param value - Value to convert to ErrorXCause
+   * @returns ErrorXCause object or undefined if value is null/undefined
+   */
+  private static toErrorXCause(value: unknown): ErrorXCause | undefined {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+
+    if (value instanceof Error) {
+      const cause: ErrorXCause = {
+        message: value.message,
+      };
+      if (value.name) {
+        cause.name = value.name;
+      }
+      if (value.stack) {
+        cause.stack = value.stack;
+      }
+      return cause;
+    }
+
+    if (typeof value === 'object') {
+      const obj = value as Record<string, unknown>;
+      const cause: ErrorXCause = {
+        message: String(obj.message || obj),
+      };
+      if (obj.name) {
+        cause.name = String(obj.name);
+      }
+      if (obj.stack) {
+        cause.stack = String(obj.stack);
+      }
+      return cause;
+    }
+
+    // Handle primitives
+    return {
+      message: String(value),
+    };
   }
 
   /**
@@ -337,20 +376,20 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
 
   /**
    * Preserves the original error's stack trace while updating the error message.
-   * Combines the new error's message with the original error's stack trace.
+   * Combines the new error's message with the original error's stack trace from ErrorXCause.
    *
-   * @param originalError - The original error whose stack to preserve
+   * @param cause - The ErrorXCause containing the original stack to preserve
    * @param newError - The new error whose message to use
    * @returns Combined stack trace with new error message and original stack
    */
-  private static preserveOriginalStack(originalError: Error, newError: Error): string {
-    if (!originalError.stack) return newError.stack || '';
+  private static preserveOriginalStackFromCause(cause: ErrorXCause, newError: Error): string {
+    if (!cause.stack) return newError.stack || '';
 
     // Get the new error's first line (error name + message)
     const newErrorFirstLine = `${newError.name}: ${newError.message}`;
 
     // Get original stack lines (skip the first line which is the original error message)
-    const originalStackLines = originalError.stack.split('\n');
+    const originalStackLines = cause.stack.split('\n');
     const originalStackTrace = originalStackLines.slice(1);
 
     // Combine new error message with original stack trace
@@ -810,38 +849,9 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       serialized.stack = this.stack;
     }
 
-    // Serialize cause as simplified format
+    // Include cause if present (already in ErrorXCause format)
     if (this.cause) {
-      if (this.cause instanceof Error) {
-        const cause: ErrorXCause = {
-          message: this.cause.message,
-        };
-        if (this.cause.name) {
-          cause.name = this.cause.name;
-        }
-        if (this.cause.stack) {
-          cause.stack = this.cause.stack;
-        }
-        serialized.cause = cause;
-      } else if (typeof this.cause === 'object' && this.cause !== null) {
-        // Handle non-Error objects
-        const causeObj = this.cause as Record<string, unknown>;
-        const cause: ErrorXCause = {
-          message: String(causeObj.message || causeObj),
-        };
-        if (causeObj.name) {
-          cause.name = String(causeObj.name);
-        }
-        if (causeObj.stack) {
-          cause.stack = String(causeObj.stack);
-        }
-        serialized.cause = cause;
-      } else {
-        // Handle primitives
-        serialized.cause = {
-          message: String(this.cause),
-        };
-      }
+      serialized.cause = this.cause;
     }
 
     return serialized;
@@ -882,6 +892,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       sourceUrl: serialized.sourceUrl,
       docsUrl: serialized.docsUrl,
       source: serialized.source,
+      cause: serialized.cause,
     };
     if (serialized.metadata !== undefined) {
       options.metadata = serialized.metadata;
@@ -895,22 +906,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     }
     // Properties are now mutable, so we can set directly
     error.timestamp = new Date(serialized.timestamp);
-
-    // Restore cause from simplified format
-    if (serialized.cause) {
-      const causeError = new Error(serialized.cause.message);
-      if (serialized.cause.name) {
-        causeError.name = serialized.cause.name;
-      }
-      if (serialized.cause.stack) {
-        causeError.stack = serialized.cause.stack;
-      }
-
-      Object.defineProperty(error, 'cause', {
-        value: causeError,
-        writable: true,
-      });
-    }
 
     return error;
   }

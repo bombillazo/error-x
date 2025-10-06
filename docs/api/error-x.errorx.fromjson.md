@@ -9,7 +9,7 @@ Deserializes a JSON object back into an ErrorX instance. Recursively reconstruct
 **Signature:**
 
 ```typescript
-static fromJSON(serialized: ErrorXSerialized): ErrorX;
+static fromJSON<TMetadata extends ErrorXMetadata = ErrorXMetadata>(serialized: ErrorXSerialized): ErrorX<TMetadata>;
 ```
 
 ## Parameters
@@ -50,7 +50,7 @@ Serialized error object to deserialize
 
 **Returns:**
 
-[ErrorX](./error-x.errorx.md)
+[ErrorX](./error-x.errorx.md)<!-- -->&lt;TMetadata&gt;
 
 Reconstructed ErrorX instance with restored properties
 
