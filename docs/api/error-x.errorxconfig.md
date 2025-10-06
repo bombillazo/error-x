@@ -56,6 +56,25 @@ _(Optional)_ Control stack trace cleaning behavior - true: Enable automatic stac
 </td></tr>
 <tr><td>
 
+[cleanStackDelimiter?](./error-x.errorxconfig.cleanstackdelimiter.md)
+
+
+</td><td>
+
+
+</td><td>
+
+string
+
+
+</td><td>
+
+_(Optional)_ Delimiter to trim stack traces after a specified line When set, stack traces will be trimmed to start after the first line containing this string
+
+
+</td></tr>
+<tr><td>
+
 [docsBaseURL?](./error-x.errorxconfig.docsbaseurl.md)
 
 

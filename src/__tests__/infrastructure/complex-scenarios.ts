@@ -101,11 +101,13 @@ export async function stackCleaningTest(): Promise<void> {
   } catch (error) {
     if (error instanceof ErrorX) {
       // Test stack cleaning functionality
-      const cleaned = error.cleanStackTrace('asyncOperations.ts');
-      throw new ErrorX({
+      const cleanedStack = ErrorX.cleanStack(error.stack, 'asyncOperations.ts');
+      const errorWithCleanedStack = new ErrorX({
         message: 'Error after stack cleaning from complex-scenarios.ts',
-        cause: cleaned,
+        cause: error,
       });
+      errorWithCleanedStack.stack = cleanedStack;
+      throw errorWithCleanedStack;
     }
     throw error;
   }

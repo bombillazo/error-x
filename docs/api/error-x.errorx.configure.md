@@ -62,7 +62,8 @@ ErrorX.configure({
   docsMap: {
     'AUTH_FAILED': 'authentication-errors',
     'DB_ERROR': 'database-errors'
-  }
+  },
+  cleanStackDelimiter: 'app-entry-point' // Trim stack traces after this line
 })
 ```
 

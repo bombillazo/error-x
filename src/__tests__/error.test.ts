@@ -513,32 +513,51 @@ describe('ErrorX', () => {
       });
     });
 
-    describe('cleanStackTrace', () => {
+    describe('cleanStack', () => {
       it('should clean stack trace with delimiter', () => {
         const error = new ErrorX({ message: 'test' });
         error.stack =
           'Error: test\n    at function1 (file1.js:10:5)\n    at my-app-delimiter (delim.js:5:1)\n    at function2 (file2.js:15:3)';
 
-        const cleaned = error.cleanStackTrace('my-app-delimiter');
+        const cleaned = ErrorX.cleanStack(error.stack, 'my-app-delimiter');
 
-        expect(cleaned.stack).toBe('    at function2 (file2.js:15:3)');
-        expect(cleaned).not.toBe(error);
+        expect(cleaned).toBe('    at function2 (file2.js:15:3)');
       });
 
-      it('should return same error if no delimiter provided', () => {
-        const error = new ErrorX({ message: 'test' });
-        const result = error.cleanStackTrace();
+      it('should return empty string if no stack available', () => {
+        const result = ErrorX.cleanStack(undefined);
 
-        expect(result).toBe(error);
+        expect(result).toBe('');
       });
 
-      it('should return same error if no stack available', () => {
+      it('should use config delimiter if no delimiter provided', () => {
+        ErrorX.configure({ cleanStackDelimiter: 'config-delimiter' });
+
         const error = new ErrorX({ message: 'test' });
-        error.stack = undefined;
+        error.stack =
+          'Error: test\n    at function1 (file1.js:10:5)\n    at config-delimiter (delim.js:5:1)\n    at function2 (file2.js:15:3)';
 
-        const result = error.cleanStackTrace('delimiter');
+        const cleaned = ErrorX.cleanStack(error.stack);
 
-        expect(result).toBe(error);
+        expect(cleaned).toBe('    at function2 (file2.js:15:3)');
+
+        // Reset config
+        ErrorX.resetConfig();
+      });
+
+      it('should prioritize parameter delimiter over config delimiter', () => {
+        ErrorX.configure({ cleanStackDelimiter: 'config-delimiter' });
+
+        const error = new ErrorX({ message: 'test' });
+        error.stack =
+          'Error: test\n    at config-delimiter (delim1.js:5:1)\n    at param-delimiter (delim2.js:5:1)\n    at function2 (file2.js:15:3)';
+
+        const cleaned = ErrorX.cleanStack(error.stack, 'param-delimiter');
+
+        expect(cleaned).toBe('    at function2 (file2.js:15:3)');
+
+        // Reset config
+        ErrorX.resetConfig();
       });
     });
   });
@@ -944,17 +963,6 @@ describe('ErrorX', () => {
         endpoint: '/api/users',
         retryCount: 3,
       });
-    });
-
-    it('should preserve type in cleanStackTrace', () => {
-      const error = new ErrorX({
-        message: 'Database error',
-        type: 'database',
-      });
-
-      const cleaned = error.cleanStackTrace('test');
-
-      expect(cleaned.type).toBe('database');
     });
 
     it('should serialize error with type', () => {
