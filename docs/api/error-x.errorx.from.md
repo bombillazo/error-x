@@ -4,7 +4,7 @@
 
 ## ErrorX.from() method
 
-Converts unknown input into an ErrorX instance with intelligent property extraction. Handles strings, regular Error objects, API response objects, and unknown values.
+Converts unknown input into an ErrorX instance with intelligent property extraction. Handles strings, regular Error objects, API response objects, and unknown values. Extracts metadata directly from objects if present.
 
 **Signature:**
 
@@ -68,8 +68,9 @@ const error2 = ErrorX.from(new Error('Database failed'))
 const apiError = {
   message: 'User not found',
   code: 'USER_404',
-  statusText: 'Not Found'
+  metadata: { userId: 123, endpoint: '/api/users' }
 }
 const error3 = ErrorX.from(apiError)
+// error3.metadata = { userId: 123, endpoint: '/api/users' }
 ```
 

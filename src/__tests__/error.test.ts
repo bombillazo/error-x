@@ -257,7 +257,7 @@ describe('ErrorX', () => {
 
       expect(error.message).toBe('user not found');
       expect(error.code).toBe('ERROR');
-      expect(error.metadata?.originalError).toBe(apiError);
+      expect(error.metadata).toBeUndefined();
     });
 
     it('should treat object with only ErrorXOptions fields as ErrorXOptions', () => {
@@ -286,7 +286,7 @@ describe('ErrorX', () => {
 
       expect(error.message).toBe('Has extra fields');
       expect(error.code).toBe('ERR');
-      expect(error.metadata?.originalError).toBe(apiError);
+      expect(error.metadata).toBeUndefined();
     });
 
     it('should convert object with mixed ErrorXOptions and non-ErrorXOptions fields', () => {
@@ -299,8 +299,7 @@ describe('ErrorX', () => {
       const error = ErrorX.from(mixedObject);
 
       expect(error.message).toBe('Mixed object');
-      // Should be treated as unknown and converted
-      expect(error.metadata?.originalError).toBe(mixedObject);
+      expect(error.metadata).toBeUndefined();
     });
 
     it('should handle object with only non-ErrorXOptions fields', () => {
@@ -313,7 +312,7 @@ describe('ErrorX', () => {
       const error = ErrorX.from(apiResponse);
 
       expect(error.message).toBe('Internal Server Error');
-      expect(error.metadata?.originalError).toBe(apiResponse);
+      expect(error.metadata).toBeUndefined();
     });
   });
 
@@ -382,7 +381,7 @@ describe('ErrorX', () => {
         const converted = ErrorX.from('simple string error');
 
         expect(converted.message).toBe('simple string error');
-        expect(converted.metadata?.originalError).toBe('simple string error');
+        expect(converted.metadata).toBeUndefined();
       });
 
       it('should extract properties from API-like objects', () => {
@@ -401,7 +400,7 @@ describe('ErrorX', () => {
         expect(converted.name).toBe('NotFoundError');
         expect(converted.code).toBe('USER_404');
         expect(converted.uiMessage).toBe('User does not exist');
-        expect(converted.metadata?.originalError).toBe(apiError);
+        expect(converted.metadata).toBeUndefined();
       });
 
       it('should extract number codes from objects', () => {
@@ -417,7 +416,7 @@ describe('ErrorX', () => {
         expect(converted.message).toBe('HTTP request failed');
         expect(converted.name).toBe('HTTPError');
         expect(converted.code).toBe('500');
-        expect(converted.metadata?.originalError).toBe(apiError);
+        expect(converted.metadata).toBeUndefined();
       });
 
       it('should handle objects', () => {
@@ -432,7 +431,7 @@ describe('ErrorX', () => {
         expect(converted.message).toBe('Session expired');
         expect(converted.name).toBe('SessionError');
         expect(converted.code).toBe('SESSION_EXPIRED');
-        expect(converted.metadata?.originalError).toBe(apiError);
+        expect(converted.metadata).toBeUndefined();
       });
 
       it('should extract from alternative property names', () => {
@@ -446,7 +445,6 @@ describe('ErrorX', () => {
         for (const errorObj of testCases) {
           const converted = ErrorX.from(errorObj);
           expect(converted.message).toBeTruthy();
-          expect(converted.metadata?.originalError).toBe(errorObj);
         }
       });
 

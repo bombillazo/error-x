@@ -57,9 +57,7 @@ throw new ErrorX({
   code: 'AUTH_FAILED',
   uiMessage: 'Please check your credentials and try again',
   metadata: { userId: 123, loginAttempt: 3 },
-  sourceUrl: 'https://api.example.com/auth',
-  source: 'auth-service',
-  httpStatus: 401
+  source: 'auth-service'
 })
 
 // Using HTTP presets
@@ -97,11 +95,9 @@ All parameters are optional. ErrorX uses sensible defaults:
 | name      | `string`                     | `'Error'`                             | Error type/title                                                  |
 | code      | `string \| number`           | Auto-generated from name or `'ERROR'` | Error identifier (auto-generated from name in UPPER_SNAKE_CASE)   |
 | uiMessage | `string \| undefined`        | `undefined`                           | User-friendly message for display                                 |
-| cause     | `Error \| unknown`           | `undefined`                           | Original error that caused this (preserves full error chain)      |
-| metadata  | `Record<string, unknown> \| undefined` | `undefined`                        | Additional context and data                                       |
-| httpStatus | `number \| undefined`       | `undefined`                           | HTTP status code (100-599) for HTTP-related errors               |
+| cause     | `ErrorXCause \| Error \| unknown` | `undefined`                           | Original error that caused this (preserves full error chain)      |
+| metadata  | `Record<string, unknown> \| undefined` | `undefined`                        | Additional context and data (flexible storage for any extra info) |
 | type      | `string \| undefined`        | `undefined`                           | Error type for categorization (e.g., 'http', 'validation')       |
-| sourceUrl | `string \| undefined`        | `undefined`                           | URL related to the error (API endpoint, page URL, resource URL)   |
 | docsUrl   | `string \| undefined`        | `undefined` or auto-generated         | Documentation URL for this specific error                         |
 | source    | `string \| undefined`        | `undefined` or from config            | Where the error originated (service name, module, component)      |
 | timestamp | `number`                     | `Date.now()`                          | Unix epoch timestamp in milliseconds when error was created       |
@@ -140,19 +136,12 @@ try {
 #### Available Presets
 
 All presets are indexed by **HTTP status code** (numeric keys) and include:
-- `httpStatus`: HTTP status code
+
 - `code`: Error code in UPPER_SNAKE_CASE
 - `name`: Descriptive error name
 - `message`: Technical message with proper sentence casing and period
 - `uiMessage`: User-friendly message
-- `type`: Set to `'http'` for all HTTP presets
-
-**4xx Client Errors:**
-
-`400`, `401`, `402`, `403`, `404`, `405`, `406`, `407`, `408`, `409`, `410`, `411`, `412`, `413`, `414`, `415`, `416`, `417`, `418`, `422`, `423`, `424`, `425`, `426`, `428`, `429`, `431`, `451`
-
-**5xx Server Errors:**
-`500`, `501`, `502`, `503`, `504`, `505`, `506`, `507`, `508`, `510`, `511`
+- `metadata`: Contains `{ status: <number> }` with the HTTP status code
 
 #### Creating Your Own Presets
 
@@ -185,7 +174,7 @@ export const authErrors = {
     code: 'AUTH_INVALID_TOKEN',
     message: 'Invalid authentication token.',
     uiMessage: 'Your session has expired. Please log in again.',
-    httpStatus: 401,
+    metadata: { status: 401 },
     type: 'authentication',
   },
   insufficientPermissions: {
@@ -193,7 +182,7 @@ export const authErrors = {
     code: 'AUTH_INSUFFICIENT_PERMISSIONS',
     message: 'Insufficient permissions.',
     uiMessage: 'You do not have permission to perform this action.',
-    httpStatus: 403,
+    metadata: { status: 403 },
     type: 'authorization',
   },
 } satisfies Record<string, ErrorXOptions>;
@@ -205,116 +194,6 @@ throw new ErrorX({ ...authErrors.invalidToken, metadata: { userId: 123 } });
 
 This approach keeps your error handling consistent while remaining flexible for your specific domain.
 
-### Static Methods
-
-#### `ErrorX.from(error: unknown): ErrorX`
-
-Converts any error type to ErrorX with intelligent property extraction:
-
-```typescript
-// Convert Error instances
-const error = new Error('Something failed')
-const errorX = ErrorX.from(error)
-// Preserves: name, message, cause, stack
-
-// Convert API responses
-const apiError = { status: 404, statusText: 'Not Found', error: 'User not found' }
-const errorX = ErrorX.from(apiError)
-// Extracts: message, httpStatus, stores original in metadata
-
-// Convert strings
-const errorX = ErrorX.from('Something went wrong')
-// Creates ErrorX with string as message
-
-// Already ErrorX? Returns as-is
-const errorX = ErrorX.from(new ErrorX('test'))
-// Returns the same instance
-```
-
-#### `ErrorX.isErrorX(value: unknown): value is ErrorX`
-
-Type guard to check if a value is an ErrorX instance:
-
-```typescript
-if (ErrorX.isErrorX(error)) {
-  console.log(error.code, error.uiMessage)
-}
-```
-
-#### `ErrorX.configure(config: ErrorXConfig): void`
-
-Set global defaults for all ErrorX instances:
-
-```typescript
-ErrorX.configure({
-  source: 'my-api-service',
-  docsBaseURL: 'https://docs.example.com',
-  docsMap: {
-    'AUTH_FAILED': 'errors/authentication',
-    'NOT_FOUND': 'errors/not-found'
-  }
-})
-
-// Now all errors automatically get:
-// - source: 'my-api-service' (unless overridden)
-// - docsUrl: auto-generated from docsBaseURL + docsMap[code]
-```
-
-#### `ErrorX.getConfig(): ErrorXConfig | null`
-
-Get the current global configuration:
-
-```typescript
-const config = ErrorX.getConfig()
-console.log(config?.source) // 'my-api-service'
-```
-
-### Instance Methods
-
-#### `withMetadata(additionalMetadata: Record<string, unknown>): ErrorX`
-
-Creates a new ErrorX instance with merged metadata:
-
-```typescript
-const error = new ErrorX({ message: 'test', metadata: { a: 1 } })
-const enriched = error.withMetadata({ b: 2 })
-// enriched.metadata = { a: 1, b: 2 }
-```
-
-#### `ErrorX.cleanStack(stack?: string, delimiter?: string): string`
-
-Cleans a stack trace by removing ErrorX internal calls and optionally trimming after a delimiter:
-
-```typescript
-const error = new ErrorX('test')
-
-// Clean with pattern-based removal only
-const cleaned = ErrorX.cleanStack(error.stack)
-
-// Clean and trim after delimiter
-const trimmed = ErrorX.cleanStack(error.stack, 'my-app-boundary')
-// Returns stack trace starting after the line containing 'my-app-boundary'
-```
-
-#### `toJSON(): ErrorXSerialized`
-
-Serializes the error for network transfer:
-
-```typescript
-const error = new ErrorX({ message: 'test', code: 'TEST' })
-const json = error.toJSON()
-// Returns plain object with all error properties
-```
-
-#### `fromJSON(serialized: ErrorXSerialized): ErrorX`
-
-Deserializes a JSON object back to ErrorX:
-
-```typescript
-const json = { name: 'TestError', message: 'test', code: 'TEST', ... }
-const error = ErrorX.fromJSON(json)
-// Returns fully reconstructed ErrorX instance
-```
 
 ## Usage Examples
 
