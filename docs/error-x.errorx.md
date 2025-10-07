@@ -322,7 +322,7 @@ Configure global ErrorX settings. This method allows you to set defaults for all
 
 </td><td>
 
-Converts unknown input into an ErrorX instance with intelligent property extraction. Handles strings, regular Error objects, API response objects, and unknown values.
+Converts unknown input into an ErrorX instance with intelligent property extraction. Handles strings, regular Error objects, API response objects, and unknown values. Extracts metadata directly from objects if present.
 
 
 </td></tr>

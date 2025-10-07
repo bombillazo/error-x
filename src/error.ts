@@ -531,7 +531,8 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
   /**
    * Converts unknown input into ErrorXOptions with intelligent property extraction.
    * Handles strings, regular Error objects, API response objects, and unknown values.
-   * This is a private helper method used by both the constructor and toErrorX.
+   * Extracts metadata directly from objects if present, without wrapping.
+   * This is a private helper method used by ErrorX.from().
    *
    * @param error - Value to convert to ErrorXOptions
    * @returns ErrorXOptions object with extracted properties
@@ -551,7 +552,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     if (error) {
       if (typeof error === 'string') {
         message = error;
-        metadata = { originalError: error };
       } else if (error instanceof Error) {
         name = error.name;
         message = error.message;
@@ -601,8 +601,10 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
           source = String(error.component);
         }
 
-        // Store original object as metadata if it has additional properties
-        metadata = { originalError: error };
+        // Extract metadata directly if present
+        if ('metadata' in error && typeof error.metadata === 'object' && error.metadata !== null) {
+          metadata = error.metadata as ErrorXMetadata;
+        }
       }
     }
 
@@ -625,6 +627,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
   /**
    * Converts unknown input into an ErrorX instance with intelligent property extraction.
    * Handles strings, regular Error objects, API response objects, and unknown values.
+   * Extracts metadata directly from objects if present.
    *
    * @param error - Value to convert to ErrorX
    * @returns ErrorX instance with extracted properties
@@ -641,9 +644,10 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    * const apiError = {
    *   message: 'User not found',
    *   code: 'USER_404',
-   *   statusText: 'Not Found'
+   *   metadata: { userId: 123, endpoint: '/api/users' }
    * }
    * const error3 = ErrorX.from(apiError)
+   * // error3.metadata = { userId: 123, endpoint: '/api/users' }
    * ```
    */
   public static from<TMetadata extends ErrorXMetadata = ErrorXMetadata>(
