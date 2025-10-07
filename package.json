@@ -61,8 +61,8 @@
   "repository": "bombillazo/error-x.git",
   "scripts": {
     "api-docs": "api-extractor run --local",
-    "api-docs:build": "pnpm build && mkdir -p ./etc && pnpm api-docs && pnpm api-docs:markdown && rm -rf ./etc ./temp",
-    "api-docs:markdown": "npx @microsoft/api-documenter markdown -i temp -o docs/api",
+    "api-docs:build": "pnpm build && mkdir -p ./etc && pnpm api-docs && cp docs/_config.yml ./_config.yml.backup 2>/dev/null || true && pnpm api-docs:markdown && mv ./_config.yml.backup docs/_config.yml 2>/dev/null || true && rm -rf ./etc ./temp",
+    "api-docs:markdown": "npx @microsoft/api-documenter markdown -i temp -o docs",
     "build": "tsup",
     "check": "biome check .",
     "commit": "cz",
