@@ -42,6 +42,10 @@ This library uses modern JavaScript features and ES2022 APIs. For browser compat
 >
 > Once we reach version 1.0, we plan to minimize API changes and follow semantic versioning.
 
+## Documentation
+
+[Documentation](docs/index.md)
+
 ## Quick Start
 
 ```typescript
