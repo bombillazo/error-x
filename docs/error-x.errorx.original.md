@@ -9,5 +9,5 @@ Serialized non-ErrorX entity this was wrapped from (if created via ErrorX.from()
 **Signature:**
 
 ```typescript
-original: ErrorXCause | undefined;
+original: ErrorXSnapshot | undefined;
 ```

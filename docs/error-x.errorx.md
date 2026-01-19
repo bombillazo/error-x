@@ -188,7 +188,7 @@ Additional context and metadata associated with the error
 
 </td><td>
 
-[ErrorXCause](./error-x.errorxcause.md) \| undefined
+[ErrorXSnapshot](./error-x.errorxsnapshot.md) \| undefined
 
 
 </td><td>

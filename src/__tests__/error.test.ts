@@ -1006,7 +1006,7 @@ describe('ErrorX', () => {
 
         const json = error.toJSON();
 
-        // chain contains serialized ErrorXCause objects for each error in the chain
+        // chain contains serialized ErrorXSnapshot objects for each error in the chain
         expect(json.chain).toBeDefined();
         expect(json.chain).toHaveLength(2);
         expect(json.chain?.[0].message).toBe('wrapped error');
@@ -1025,7 +1025,7 @@ describe('ErrorX', () => {
 
         const json = error.toJSON();
 
-        // chain contains serialized ErrorXCause objects
+        // chain contains serialized ErrorXSnapshot objects
         expect(json.chain).toBeDefined();
         expect(json.chain).toHaveLength(2);
         expect(json.chain?.[0].message).toBe('wrapped error');

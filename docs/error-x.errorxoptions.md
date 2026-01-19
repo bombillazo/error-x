@@ -14,12 +14,12 @@ type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
     name?: string;
     code?: string | number;
     uiMessage?: string | undefined;
-    cause?: ErrorXCause | Error | unknown;
+    cause?: unknown;
     metadata?: TMetadata | undefined;
     httpStatus?: number | undefined;
 };
 ```
-**References:** [ErrorXMetadata](./error-x.errorxmetadata.md)<!-- -->, [ErrorXCause](./error-x.errorxcause.md)
+**References:** [ErrorXMetadata](./error-x.errorxmetadata.md)
 
 ## Remarks
 

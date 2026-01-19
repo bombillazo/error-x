@@ -18,11 +18,11 @@ type ErrorXSerialized = {
     metadata: ErrorXMetadata | undefined;
     timestamp: number;
     httpStatus?: number;
-    original?: ErrorXCause;
-    chain?: ErrorXCause[];
+    original?: ErrorXSnapshot;
+    chain?: ErrorXSnapshot[];
 };
 ```
-**References:** [ErrorXMetadata](./error-x.errorxmetadata.md)<!-- -->, [ErrorXCause](./error-x.errorxcause.md)
+**References:** [ErrorXMetadata](./error-x.errorxmetadata.md)<!-- -->, [ErrorXSnapshot](./error-x.errorxsnapshot.md)
 
 ## Example
 

@@ -11,10 +11,10 @@ export {
   type ZodIssue,
 } from './presets/index';
 export type {
-  ErrorXCause,
   ErrorXMetadata,
   ErrorXOptions,
   ErrorXSerialized,
+  ErrorXSnapshot,
   ErrorXTransform,
   ErrorXTransformContext,
 } from './types';
