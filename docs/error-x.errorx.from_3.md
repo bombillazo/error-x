@@ -7,7 +7,7 @@
 **Signature:**
 
 ```typescript
-static from(error: unknown): ErrorX;
+static from<TMetadata extends ErrorXMetadata = ErrorXMetadata>(payload: unknown, overrides?: Partial<ErrorXOptions<TMetadata>>): ErrorX<TMetadata>;
 ```
 
 ## Parameters
@@ -30,7 +30,7 @@ Description
 </th></tr></thead>
 <tbody><tr><td>
 
-error
+payload
 
 
 </td><td>
@@ -42,9 +42,25 @@ unknown
 
 
 </td></tr>
+<tr><td>
+
+overrides
+
+
+</td><td>
+
+Partial&lt;[ErrorXOptions](./error-x.errorxoptions.md)<!-- -->&lt;TMetadata&gt;&gt;
+
+
+</td><td>
+
+_(Optional)_
+
+
+</td></tr>
 </tbody></table>
 
 **Returns:**
 
-[ErrorX](./error-x.errorx.md)
+[ErrorX](./error-x.errorx.md)<!-- -->&lt;TMetadata&gt;
 

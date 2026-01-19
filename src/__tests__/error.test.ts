@@ -32,7 +32,6 @@ describe('ErrorX', () => {
       expect(error.code).toBe('ERROR');
       expect(error.uiMessage).toBeUndefined();
       expect(error.metadata).toBeUndefined();
-      expect(error.type).toBeUndefined();
       expect(error.timestamp).toEqual(mockDate.getTime());
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ErrorX);
@@ -88,7 +87,10 @@ describe('ErrorX', () => {
       expect(error.code).toBe('AUTH_FAILED');
       expect(error.uiMessage).toBe('Please check your credentials');
       expect(error.metadata).toEqual(metadata);
-      expect(error.cause).toEqual({
+      // cause is now an ErrorX instance (wrapped native error)
+      expect(error.parent).toBeInstanceOf(ErrorX);
+      expect(error.parent?.message).toBe(cause.message);
+      expect(error.parent?.original).toEqual({
         message: cause.message,
         name: cause.name,
         stack: cause.stack,
@@ -194,7 +196,7 @@ describe('ErrorX', () => {
       }
     });
 
-    it('should preserve original stack when cause is Error', () => {
+    it('should store own stack and preserve original in chain', () => {
       const originalError = new Error('Original error');
       originalError.stack =
         'Error: Original error\n    at someFunction (file.js:10:5)\n    at anotherFunction (file.js:20:10)';
@@ -204,9 +206,15 @@ describe('ErrorX', () => {
         cause: originalError,
       });
 
+      // Wrapped error has its own stack (where it was created)
       expect(wrappedError.stack).toContain('Error: Wrapped error');
-      expect(wrappedError.stack).toContain('at someFunction (file.js:10:5)');
-      expect(wrappedError.stack).toContain('at anotherFunction (file.js:20:10)');
+      // Stack contains frames (internal ErrorX frames are cleaned)
+      expect(wrappedError.stack).toBeDefined();
+
+      // Original error's stack is preserved in the chain via the parent's original property
+      const parent = wrappedError.parent;
+      expect(parent?.original?.stack).toContain('at someFunction (file.js:10:5)');
+      expect(parent?.original?.stack).toContain('at anotherFunction (file.js:20:10)');
     });
 
     it('should clean stack when no cause provided', () => {
@@ -226,7 +234,7 @@ describe('ErrorX', () => {
 
       expect(error.message).toBe('Original error message');
       expect(error.name).toBe('CustomError');
-      expect(error.cause).toBe(originalError.cause);
+      expect(error.parent).toBe(originalError.cause);
     });
 
     it('should create error from API-like object with ErrorX properties', () => {
@@ -374,7 +382,7 @@ describe('ErrorX', () => {
 
         expect(converted.message).toBe('test error');
         expect(converted.name).toBe('CustomError');
-        expect(converted.cause).toBe(error.cause);
+        expect(converted.parent).toBe(error.cause);
       });
 
       it('should convert string to ErrorX', () => {
@@ -557,6 +565,358 @@ describe('ErrorX', () => {
         // Reset config
         ErrorX.resetConfig();
       });
+
+      it('should only remove internal ErrorX frames, not user code in error-x directory', () => {
+        // This tests that the default patterns are specific enough to only remove
+        // internal ErrorX implementation frames, not all files in error-x/src/
+        const stack = `Error: test
+    at throwError (/projects/error-x/src/__tests__/my-test.ts:10:5)
+    at new ErrorX (/projects/error-x/src/error.ts:150:10)
+    at Function.create (/projects/error-x/src/presets/http-error.ts:50:20)
+    at userFunction (/projects/my-app/src/handler.ts:25:15)`;
+
+        const cleaned = ErrorX.cleanStack(stack);
+
+        // Should preserve user test file (even though it's in error-x/src/__tests__)
+        expect(cleaned).toContain('my-test.ts');
+        // Should preserve preset files (like http-error.ts)
+        expect(cleaned).toContain('http-error.ts');
+        // Should preserve user app code
+        expect(cleaned).toContain('my-app/src/handler.ts');
+        // Should remove internal ErrorX constructor frame
+        expect(cleaned).not.toContain('new ErrorX');
+        // Should remove error.ts internal frames
+        expect(cleaned).not.toContain('error-x/src/error.ts');
+      });
+
+      it('should preserve each errors own stack location in a chain', () => {
+        // Simulates: native Error at line 10 -> wrapped at line 20 -> wrapped again at line 30
+        // Each error should have its own creation location, not inherit from parent
+
+        // Create a native error (simulating line 10)
+        const nativeError = new Error('Original error');
+        nativeError.stack = `Error: Original error
+    at originalThrow (app.ts:10:5)
+    at caller (app.ts:50:10)`;
+
+        // Wrap it in ErrorX (simulating line 20)
+        const firstWrap = new ErrorX({
+          message: 'First wrap',
+          cause: nativeError,
+        });
+
+        // Wrap again (simulating line 30)
+        const secondWrap = new ErrorX({
+          message: 'Second wrap',
+          cause: firstWrap,
+        });
+
+        // Each error in the chain should have distinct stack information
+        expect(secondWrap.chain.length).toBe(3);
+
+        // The outermost error (secondWrap) should have its own stack
+        expect(secondWrap.stack).toContain('Second wrap');
+
+        // The middle error (firstWrap) should have its own stack
+        const middleError = secondWrap.chain[1];
+        expect(middleError.stack).toContain('First wrap');
+
+        // The root error should preserve original location
+        const rootError = secondWrap.chain[2];
+        expect(rootError.stack).toContain('app.ts:10:5');
+
+        // Verify they're not all the same
+        expect(secondWrap.stack).not.toBe(firstWrap.stack);
+      });
+    });
+  });
+
+  describe('Error Chain', () => {
+    describe('chain property', () => {
+      it('should have chain with only self when no cause', () => {
+        const error = new ErrorX({ message: 'standalone error' });
+
+        expect(error.chain).toHaveLength(1);
+        expect(error.chain[0]).toBe(error);
+      });
+
+      it('should flatten chain when cause is ErrorX', () => {
+        const root = new ErrorX({ message: 'root', code: 'ROOT' });
+        const middle = new ErrorX({ message: 'middle', code: 'MIDDLE', cause: root });
+        const top = new ErrorX({ message: 'top', code: 'TOP', cause: middle });
+
+        expect(top.chain).toHaveLength(3);
+        expect(top.chain[0]).toBe(top);
+        expect(top.chain[1]).toBe(middle);
+        expect(top.chain[2]).toBe(root);
+      });
+
+      it('should wrap native Error and add to chain', () => {
+        const nativeError = new Error('native error');
+        const errorX = new ErrorX({ message: 'wrapped', cause: nativeError });
+
+        expect(errorX.chain).toHaveLength(2);
+        expect(errorX.chain[0]).toBe(errorX);
+        expect(errorX.chain[1]).toBeInstanceOf(ErrorX);
+        expect(errorX.chain[1].message).toBe('native error');
+      });
+    });
+
+    describe('cause getter', () => {
+      it('should return undefined when no cause', () => {
+        const error = new ErrorX({ message: 'no cause' });
+
+        expect(error.parent).toBeUndefined();
+      });
+
+      it('should return immediate parent ErrorX', () => {
+        const parent = new ErrorX({ message: 'parent', code: 'PARENT' });
+        const child = new ErrorX({ message: 'child', cause: parent });
+
+        expect(child.parent).toBe(parent);
+        expect(child.parent?.code).toBe('PARENT');
+      });
+
+      it('should return wrapped ErrorX when cause is native Error', () => {
+        const nativeError = new Error('native');
+        const errorX = new ErrorX({ message: 'wrapper', cause: nativeError });
+
+        expect(errorX.parent).toBeInstanceOf(ErrorX);
+        expect(errorX.parent?.message).toBe('native');
+      });
+    });
+
+    describe('root getter', () => {
+      it('should return undefined when chain has only self', () => {
+        const error = new ErrorX({ message: 'standalone' });
+
+        expect(error.root).toBeUndefined();
+      });
+
+      it('should return deepest error in chain', () => {
+        const root = new ErrorX({ message: 'root', code: 'ROOT' });
+        const middle = new ErrorX({ message: 'middle', cause: root });
+        const top = new ErrorX({ message: 'top', cause: middle });
+
+        expect(top.root).toBe(root);
+        expect(top.root?.code).toBe('ROOT');
+      });
+
+      it('should return wrapped native error as root', () => {
+        const nativeError = new Error('native root');
+        const middle = new ErrorX({ message: 'middle', cause: nativeError });
+        const top = new ErrorX({ message: 'top', cause: middle });
+
+        expect(top.root).toBeInstanceOf(ErrorX);
+        expect(top.root?.message).toBe('native root');
+        expect(top.root?.original).toBeDefined();
+      });
+    });
+
+    describe('original property', () => {
+      it('should be undefined for ErrorX created directly', () => {
+        const error = new ErrorX({ message: 'direct' });
+
+        expect(error.original).toBeUndefined();
+      });
+
+      it('should be set when wrapping via ErrorX.from()', () => {
+        const nativeError = new Error('native');
+        nativeError.name = 'NativeError';
+        const wrapped = ErrorX.from(nativeError);
+
+        expect(wrapped.original).toBeDefined();
+        expect(wrapped.original?.message).toBe('native');
+        expect(wrapped.original?.name).toBe('NativeError');
+        expect(wrapped.original?.stack).toBeDefined();
+      });
+
+      it('should preserve original through chain', () => {
+        const nativeError = new Error('original native');
+        const wrapped = ErrorX.from(nativeError);
+        const chained = new ErrorX({ message: 'chained', cause: wrapped });
+
+        // The wrapped error in the chain should have original
+        expect(chained.parent?.original).toBeDefined();
+        expect(chained.parent?.original?.message).toBe('original native');
+      });
+
+      it('should be set when native Error is auto-wrapped as cause', () => {
+        const nativeError = new Error('auto-wrapped');
+        const errorX = new ErrorX({ message: 'parent', cause: nativeError });
+
+        // The cause should have original set
+        expect(errorX.parent?.original).toBeDefined();
+        expect(errorX.parent?.original?.message).toBe('auto-wrapped');
+      });
+    });
+
+    describe('ErrorX.from() with overrides', () => {
+      it('should apply overrides when wrapping native Error', () => {
+        const nativeError = new Error('native');
+        const wrapped = ErrorX.from(nativeError, {
+          httpStatus: 500,
+          code: 'WRAPPED_ERROR',
+        });
+
+        expect(wrapped.message).toBe('native');
+        expect(wrapped.httpStatus).toBe(500);
+        expect(wrapped.code).toBe('WRAPPED_ERROR');
+        expect(wrapped.original).toBeDefined();
+      });
+
+      it('should deep merge metadata in overrides', () => {
+        const apiError = {
+          message: 'API error',
+          metadata: { endpoint: '/api/users', method: 'GET' },
+        };
+        const wrapped = ErrorX.from(apiError, {
+          metadata: { userId: 123, extra: 'data' },
+        });
+
+        expect(wrapped.metadata).toEqual({
+          endpoint: '/api/users',
+          method: 'GET',
+          userId: 123,
+          extra: 'data',
+        });
+      });
+
+      it('should truly deep merge nested metadata objects', () => {
+        const apiError = {
+          message: 'API error',
+          metadata: {
+            user: { name: 'Alice', id: 1, preferences: { theme: 'dark' } },
+            request: { method: 'GET', headers: { auth: 'token123' } },
+          },
+        };
+        const wrapped = ErrorX.from(apiError, {
+          metadata: {
+            user: { name: 'Bob', role: 'admin' },
+            request: { headers: { contentType: 'application/json' } },
+            extra: 'data',
+          },
+        });
+
+        // Verify deep merge preserves nested properties
+        expect(wrapped.metadata).toEqual({
+          user: {
+            name: 'Bob', // overridden
+            id: 1, // preserved from original
+            preferences: { theme: 'dark' }, // preserved nested object
+            role: 'admin', // added from override
+          },
+          request: {
+            method: 'GET', // preserved from original
+            headers: {
+              auth: 'token123', // preserved from original
+              contentType: 'application/json', // added from override
+            },
+          },
+          extra: 'data', // added from override
+        });
+      });
+
+      it('should truly deep merge metadata when applying overrides to existing ErrorX', () => {
+        const existing = new ErrorX({
+          message: 'existing',
+          metadata: {
+            config: { timeout: 5000, retries: 3, options: { verbose: true } },
+          },
+        });
+        const updated = ErrorX.from(existing, {
+          metadata: {
+            config: { retries: 5, options: { debug: true } },
+            newField: 'value',
+          },
+        });
+
+        expect(updated.metadata).toEqual({
+          config: {
+            timeout: 5000, // preserved
+            retries: 5, // overridden
+            options: {
+              verbose: true, // preserved
+              debug: true, // added
+            },
+          },
+          newField: 'value', // added
+        });
+      });
+
+      it('should apply overrides to existing ErrorX', () => {
+        const existing = new ErrorX({
+          message: 'existing',
+          httpStatus: 400,
+          metadata: { key: 'value' },
+        });
+        const updated = ErrorX.from(existing, {
+          httpStatus: 500,
+          metadata: { newKey: 'newValue' },
+        });
+
+        expect(updated).not.toBe(existing); // New instance
+        expect(updated.httpStatus).toBe(500);
+        expect(updated.metadata).toEqual({ key: 'value', newKey: 'newValue' });
+      });
+
+      it('should return same ErrorX if no overrides provided', () => {
+        const existing = new ErrorX({ message: 'existing' });
+        const result = ErrorX.from(existing);
+
+        expect(result).toBe(existing);
+      });
+    });
+
+    describe('chain flattening', () => {
+      it('should not duplicate errors when chaining', () => {
+        const a = new ErrorX({ message: 'A' });
+        const b = new ErrorX({ message: 'B', cause: a });
+        const c = new ErrorX({ message: 'C', cause: b });
+        const d = new ErrorX({ message: 'D', cause: c });
+
+        expect(d.chain).toHaveLength(4);
+        expect(d.chain.map((e) => e.message)).toEqual(['D', 'C', 'B', 'A']);
+      });
+
+      it('should handle mixed ErrorX and native Error chain', () => {
+        const native = new Error('native');
+        const errorX1 = new ErrorX({ message: 'errorX1', cause: native });
+        const errorX2 = new ErrorX({ message: 'errorX2', cause: errorX1 });
+
+        expect(errorX2.chain).toHaveLength(3);
+        expect(errorX2.chain[0].message).toBe('errorX2');
+        expect(errorX2.chain[1].message).toBe('errorX1');
+        expect(errorX2.chain[2].message).toBe('native');
+        expect(errorX2.chain[2].original).toBeDefined();
+      });
+    });
+
+    describe('accessing chain information', () => {
+      it('should find specific error in chain by code', () => {
+        const dbError = new ErrorX({ message: 'DB error', code: 'DB_ERROR' });
+        const repoError = new ErrorX({ message: 'Repo error', code: 'REPO_ERROR', cause: dbError });
+        const serviceError = new ErrorX({
+          message: 'Service error',
+          code: 'SERVICE_ERROR',
+          cause: repoError,
+        });
+
+        const foundDbError = serviceError.chain.find((e) => e.code === 'DB_ERROR');
+
+        expect(foundDbError).toBe(dbError);
+        expect(foundDbError?.message).toBe('DB error');
+      });
+
+      it('should access root original for native error info', () => {
+        const nativeError = new Error('ECONNREFUSED');
+        nativeError.name = 'NetworkError';
+        const dbError = ErrorX.from(nativeError, { code: 'DB_CONNECTION' });
+        const serviceError = new ErrorX({ message: 'Service failed', cause: dbError });
+
+        expect(serviceError.root?.original?.message).toBe('ECONNREFUSED');
+        expect(serviceError.root?.original?.name).toBe('NetworkError');
+      });
     });
   });
 
@@ -633,7 +993,7 @@ describe('ErrorX', () => {
       });
 
       it('should serialize error chain with ErrorX cause', () => {
-        const rootCause = new ErrorX({
+        const root = new ErrorX({
           message: 'root cause',
           code: 'ROOT_CAUSE',
           name: 'RootError',
@@ -641,32 +1001,38 @@ describe('ErrorX', () => {
 
         const error = new ErrorX({
           message: 'wrapped error',
-          cause: rootCause,
+          cause: root,
         });
 
         const json = error.toJSON();
 
-        expect(json.cause).toBeDefined();
-        expect(json.cause?.message).toBe('root cause');
-        expect(json.cause?.name).toBe('RootError');
-        expect(json.cause?.stack).toBeDefined();
+        // chain contains serialized ErrorXCause objects for each error in the chain
+        expect(json.chain).toBeDefined();
+        expect(json.chain).toHaveLength(2);
+        expect(json.chain?.[0].message).toBe('wrapped error');
+        expect(json.chain?.[1].message).toBe('root cause');
+        expect(json.chain?.[1].name).toBe('RootError');
       });
 
       it('should serialize error chain with regular Error cause', () => {
-        const rootCause = new Error('original error');
-        rootCause.name = 'OriginalError';
+        const root = new Error('original error');
+        root.name = 'OriginalError';
 
         const error = new ErrorX({
           message: 'wrapped error',
-          cause: rootCause,
+          cause: root,
         });
 
         const json = error.toJSON();
 
-        expect(json.cause).toBeDefined();
-        expect(json.cause?.name).toBe('OriginalError');
-        expect(json.cause?.message).toBe('original error');
-        expect(json.cause?.stack).toBeDefined();
+        // chain contains serialized ErrorXCause objects
+        expect(json.chain).toBeDefined();
+        expect(json.chain).toHaveLength(2);
+        expect(json.chain?.[0].message).toBe('wrapped error');
+        expect(json.chain?.[1].name).toBe('OriginalError');
+        expect(json.chain?.[1].message).toBe('original error');
+        // The wrapped cause should have original set
+        expect(error.parent?.original).toBeDefined();
       });
 
       it('should handle missing stack', () => {
@@ -723,21 +1089,27 @@ describe('ErrorX', () => {
           uiMessage: 'Something went wrong. Please try again.',
           metadata: {},
           timestamp: 1705314645123,
-          cause: {
-            name: 'RootError',
-            message: 'Root cause.',
-            stack: 'Error: Root cause.\n    at test (file.js:1:1)',
-          },
+          chain: [
+            {
+              name: 'WrapperError',
+              message: 'Wrapped error.',
+              stack: 'Error: Wrapped error.\n    at wrapper (file.js:5:1)',
+            },
+            {
+              name: 'RootError',
+              message: 'Root cause.',
+              stack: 'Error: Root cause.\n    at test (file.js:1:1)',
+            },
+          ],
         };
 
         const error = ErrorX.fromJSON(serialized);
 
         expect(error.name).toBe('WrapperError');
-        expect(error.cause).toEqual({
-          name: 'RootError',
-          message: 'Root cause.',
-          stack: 'Error: Root cause.\n    at test (file.js:1:1)',
-        });
+        expect(error.chain).toHaveLength(2);
+        expect(error.parent).toBeInstanceOf(ErrorX);
+        expect(error.parent?.name).toBe('RootError');
+        expect(error.parent?.message).toBe('Root cause.');
       });
 
       it('should handle missing optional properties', () => {
@@ -754,13 +1126,13 @@ describe('ErrorX', () => {
 
         // Stack will be generated but since no stack was provided in serialized data, it should be the new error's stack
         expect(error.stack).toBeDefined();
-        expect(error.cause).toBeUndefined();
+        expect(error.parent).toBeUndefined();
       });
     });
 
     describe('JSON round trip', () => {
       it('should preserve all data through serialization cycle', () => {
-        const rootCause = new ErrorX({
+        const root = new ErrorX({
           message: 'root cause',
           name: 'RootError',
           code: 'ROOT_CAUSE',
@@ -772,7 +1144,7 @@ describe('ErrorX', () => {
           name: 'WrapperError',
           code: 'WRAPPER',
           uiMessage: 'Custom UI message',
-          cause: rootCause,
+          cause: root,
           metadata: { userId: 123, action: 'test' },
         });
 
@@ -786,11 +1158,11 @@ describe('ErrorX', () => {
         expect(deserialized.metadata).toEqual(original.metadata);
         expect(deserialized.timestamp).toEqual(original.timestamp);
 
-        expect(deserialized.cause).toBeDefined();
-        expect(deserialized.cause?.name).toBe(rootCause.name);
-        expect(deserialized.cause?.message).toBe(rootCause.message);
-        // Cause is in ErrorXCause format, so it has message, name, and stack
-        expect(deserialized.cause?.stack).toBeDefined();
+        // cause is now an ErrorX instance from the chain
+        expect(deserialized.parent).toBeInstanceOf(ErrorX);
+        expect(deserialized.parent?.name).toBe(root.name);
+        expect(deserialized.parent?.message).toBe(root.message);
+        expect(deserialized.parent?.stack).toBeDefined();
       });
     });
   });
@@ -858,11 +1230,13 @@ describe('ErrorX', () => {
 
       // Should be able to serialize deep chains
       const serialized = (currentError as ErrorX).toJSON();
-      expect(serialized.cause).toBeDefined();
+      expect(serialized.chain).toBeDefined();
+      expect(serialized.chain).toHaveLength(11); // 10 levels + 1 wrapped root error
 
       // Should be able to deserialize
       const deserialized = ErrorX.fromJSON(serialized);
       expect(deserialized.message).toBe('Level 9 error');
+      expect(deserialized.chain).toHaveLength(11);
     });
 
     it('should handle null prototype objects', () => {
@@ -913,192 +1287,6 @@ describe('ErrorX', () => {
     });
   });
 
-  describe('Type field', () => {
-    it('should create error with type field', () => {
-      const error = new ErrorX({
-        message: 'Validation failed',
-        type: 'validation',
-      });
-
-      expect(error.type).toBe('validation');
-      expect(error.message).toBe('Validation failed');
-    });
-
-    it('should create error without type field', () => {
-      const error = new ErrorX({
-        message: 'Generic error',
-      });
-
-      expect(error.type).toBeUndefined();
-    });
-
-    it('should create error with type and other fields', () => {
-      const error = new ErrorX({
-        message: 'Authentication failed',
-        name: 'AuthError',
-        code: 'AUTH_FAILED',
-        type: 'authentication',
-        metadata: { userId: 123 },
-      });
-
-      expect(error.type).toBe('authentication');
-      expect(error.name).toBe('AuthError');
-      expect(error.code).toBe('AUTH_FAILED');
-      expect(error.metadata).toEqual({ userId: 123 });
-    });
-
-    it('should preserve type in withMetadata', () => {
-      const error = new ErrorX({
-        message: 'Network error',
-        type: 'network',
-        metadata: { endpoint: '/api/users' },
-      });
-
-      const enriched = error.withMetadata({ retryCount: 3 });
-
-      expect(enriched.type).toBe('network');
-      expect(enriched.metadata).toEqual({
-        endpoint: '/api/users',
-        retryCount: 3,
-      });
-    });
-
-    it('should serialize error with type', () => {
-      const error = new ErrorX({
-        message: 'Validation error',
-        type: 'validation',
-        code: 'VAL_ERROR',
-      });
-
-      const json = error.toJSON();
-
-      expect(json.type).toBe('validation');
-      expect(json.message).toBe('Validation error');
-      expect(json.code).toBe('VAL_ERROR');
-    });
-
-    it('should not include type in serialization if undefined', () => {
-      const error = new ErrorX({
-        message: 'Generic error',
-      });
-
-      const json = error.toJSON();
-
-      expect(json.type).toBeUndefined();
-    });
-
-    it('should deserialize error with type', () => {
-      const serialized: ErrorXSerialized = {
-        name: 'ValidationError',
-        message: 'Validation failed.',
-        code: 'VAL_ERROR',
-        uiMessage: 'Please check your input',
-        metadata: undefined,
-        timestamp: 1705314645123,
-        type: 'validation',
-      };
-
-      const error = ErrorX.fromJSON(serialized);
-
-      expect(error.type).toBe('validation');
-      expect(error.name).toBe('ValidationError');
-      expect(error.message).toBe('Validation failed.');
-    });
-
-    it('should deserialize error without type', () => {
-      const serialized: ErrorXSerialized = {
-        name: 'GenericError',
-        message: 'Generic error.',
-        code: 'GENERIC',
-        uiMessage: undefined,
-        metadata: undefined,
-        timestamp: 1705314645123,
-      };
-
-      const error = ErrorX.fromJSON(serialized);
-
-      expect(error.type).toBeUndefined();
-    });
-
-    it('should preserve type through JSON round trip', () => {
-      const original = new ErrorX({
-        message: 'Network timeout',
-        type: 'network',
-        code: 'TIMEOUT',
-        metadata: { endpoint: '/api/data', timeout: 5000 },
-      });
-
-      const serialized = original.toJSON();
-      const deserialized = ErrorX.fromJSON(serialized);
-
-      expect(deserialized.type).toBe(original.type);
-      expect(deserialized.message).toBe(original.message);
-      expect(deserialized.code).toBe(original.code);
-      expect(deserialized.metadata).toEqual(original.metadata);
-    });
-
-    it('should convert unknown objects with type field', () => {
-      const apiError = {
-        message: 'Request failed',
-        code: 'REQ_FAILED',
-        type: 'network',
-        status: 500,
-      };
-
-      const error = new ErrorX(apiError);
-
-      expect(error.type).toBe('network');
-      expect(error.message).toBe('Request failed');
-      expect(error.code).toBe('REQ_FAILED');
-    });
-
-    it('should convert unknown objects without type field', () => {
-      const apiError = {
-        message: 'Request failed',
-        code: 'REQ_FAILED',
-      };
-
-      const error = new ErrorX(apiError);
-
-      expect(error.type).toBeUndefined();
-    });
-
-    it('should handle common type values', () => {
-      const types = ['validation', 'authentication', 'network', 'database', 'business', 'system'];
-
-      for (const type of types) {
-        const error = new ErrorX({
-          message: `${type} error`,
-          type,
-        });
-
-        expect(error.type).toBe(type);
-      }
-    });
-
-    it('should convert type to string from unknown input', () => {
-      const apiError = {
-        message: 'Test error',
-        type: 123, // number
-      };
-
-      const error = ErrorX.from(apiError);
-
-      expect(error.type).toBe('123');
-    });
-
-    it('should not set type if it is empty string', () => {
-      const apiError = {
-        message: 'Test error',
-        type: '',
-      };
-
-      const error = ErrorX.from(apiError);
-
-      expect(error.type).toBeUndefined();
-    });
-  });
-
   describe('Configuration API', () => {
     it('should return null when no configuration is set initially', () => {
       const config = ErrorX.getConfig();
@@ -1107,99 +1295,23 @@ describe('ErrorX', () => {
 
     it('should allow setting global configuration', () => {
       ErrorX.configure({
-        source: 'test-service',
-        docsBaseURL: 'https://docs.test.com',
-        docsMap: {
-          TEST_ERROR: 'errors/test',
-        },
+        cleanStack: true,
+        cleanStackDelimiter: 'my-delimiter',
       });
 
       const config = ErrorX.getConfig();
       expect(config).toEqual({
-        source: 'test-service',
-        docsBaseURL: 'https://docs.test.com',
-        docsMap: {
-          TEST_ERROR: 'errors/test',
-        },
+        cleanStack: true,
+        cleanStackDelimiter: 'my-delimiter',
       });
-    });
-
-    it('should use configured source as default', () => {
-      ErrorX.configure({
-        source: 'my-api',
-      });
-
-      const error = new ErrorX({ message: 'test error' });
-      expect(error.source).toBe('my-api');
-    });
-
-    it('should allow overriding configured source', () => {
-      ErrorX.configure({
-        source: 'my-api',
-      });
-
-      const error = new ErrorX({
-        message: 'test error',
-        source: 'custom-source',
-      });
-      expect(error.source).toBe('custom-source');
-    });
-
-    it('should generate docsUrl from configured docsBaseURL and docsMap', () => {
-      ErrorX.configure({
-        docsBaseURL: 'https://docs.example.com',
-        docsMap: {
-          AUTH_FAILED: 'errors/authentication',
-        },
-      });
-
-      const error = new ErrorX({
-        message: 'auth failed',
-        code: 'AUTH_FAILED',
-      });
-
-      expect(error.docsUrl).toBe('https://docs.example.com/errors/authentication');
-    });
-
-    it('should normalize slashes in docsUrl generation', () => {
-      ErrorX.configure({
-        docsBaseURL: 'https://docs.example.com/',
-        docsMap: {
-          TEST_ERROR: '/errors/test',
-        },
-      });
-
-      const error = new ErrorX({
-        message: 'test',
-        code: 'TEST_ERROR',
-      });
-
-      expect(error.docsUrl).toBe('https://docs.example.com/errors/test');
-    });
-
-    it('should allow overriding generated docsUrl', () => {
-      ErrorX.configure({
-        docsBaseURL: 'https://docs.example.com',
-        docsMap: {
-          TEST_ERROR: 'errors/test',
-        },
-      });
-
-      const error = new ErrorX({
-        message: 'test',
-        code: 'TEST_ERROR',
-        docsUrl: 'https://custom.com/error',
-      });
-
-      expect(error.docsUrl).toBe('https://custom.com/error');
     });
 
     it('should update configuration when configure is called multiple times', () => {
-      ErrorX.configure({ source: 'service-1' });
-      expect(ErrorX.getConfig()?.source).toBe('service-1');
+      ErrorX.configure({ cleanStackDelimiter: 'delimiter-1' });
+      expect(ErrorX.getConfig()?.cleanStackDelimiter).toBe('delimiter-1');
 
-      ErrorX.configure({ source: 'service-2' });
-      expect(ErrorX.getConfig()?.source).toBe('service-2');
+      ErrorX.configure({ cleanStackDelimiter: 'delimiter-2' });
+      expect(ErrorX.getConfig()?.cleanStackDelimiter).toBe('delimiter-2');
     });
   });
 });

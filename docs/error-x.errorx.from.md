@@ -6,10 +6,12 @@
 
 Converts unknown input into an ErrorX instance with intelligent property extraction. Handles strings, regular Error objects, API response objects, and unknown values. Extracts metadata directly from objects if present.
 
+This is a "wrapping" operation - the resulting ErrorX represents the same error in ErrorX form. The original source is stored in the `original` property.
+
 **Signature:**
 
 ```typescript
-static from<TMetadata extends ErrorXMetadata = ErrorXMetadata>(error: ErrorX<TMetadata>): ErrorX<TMetadata>;
+static from<TMetadata extends ErrorXMetadata = ErrorXMetadata>(error: ErrorX<TMetadata>, overrides?: Partial<ErrorXOptions<TMetadata>>): ErrorX<TMetadata>;
 ```
 
 ## Parameters
@@ -42,7 +44,21 @@ error
 
 </td><td>
 
-Value to convert to ErrorX
+
+</td></tr>
+<tr><td>
+
+overrides
+
+
+</td><td>
+
+Partial&lt;[ErrorXOptions](./error-x.errorxoptions.md)<!-- -->&lt;TMetadata&gt;&gt;
+
+
+</td><td>
+
+_(Optional)_ Optional overrides to deep-merge with extracted properties
 
 
 </td></tr>
@@ -52,7 +68,7 @@ Value to convert to ErrorX
 
 [ErrorX](./error-x.errorx.md)<!-- -->&lt;TMetadata&gt;
 
-ErrorX instance with extracted properties
+ErrorX instance with extracted properties and `original` set
 
 ## Example
 
@@ -72,5 +88,12 @@ const apiError = {
 }
 const error3 = ErrorX.from(apiError)
 // error3.metadata = { userId: 123, endpoint: '/api/users' }
+// error3.original = { message: 'User not found', name: undefined, stack: undefined }
+
+// With overrides
+const error4 = ErrorX.from(new Error('Connection failed'), {
+  httpStatus: 500,
+  metadata: { context: 'db-layer' }
+})
 ```
 

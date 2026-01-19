@@ -19,12 +19,53 @@ Description
 </th></tr></thead>
 <tbody><tr><td>
 
+[DBErrorX](./error-x.dberrorx.md)
+
+
+</td><td>
+
+Database Error class with presets for common database error scenarios.
+
+Provides a type-safe way to create database errors with: - Common error presets (connection, query, timeout, constraints) - Automatic code prefixing with `DB_` - Full `instanceof` support - Typed metadata for database context
+
+
+</td></tr>
+<tr><td>
+
 [ErrorX](./error-x.errorx.md)
 
 
 </td><td>
 
 Enhanced Error class with rich metadata, type-safe error handling, and intelligent error conversion.
+
+
+</td></tr>
+<tr><td>
+
+[HTTPErrorX](./error-x.httperrorx.md)
+
+
+</td><td>
+
+HTTP Error class with presets for all standard HTTP status codes.
+
+Provides a type-safe, ergonomic way to create HTTP errors with: - Numeric status code presets (400, 401, 404, 500, etc.) - Automatic httpStatus from preset key - Full `instanceof` support - Typed metadata for HTTP context
+
+
+</td></tr>
+<tr><td>
+
+[ValidationErrorX](./error-x.validationerrorx.md)
+
+
+</td><td>
+
+Validation Error class designed for Zod integration.
+
+This class demonstrates how to map external library data (Zod) to ErrorX. Instead of using presets, it dynamically creates errors from Zod's validation output.
+
+Key features: - `fromZodError()` - Primary factory method for Zod integration - Dynamic code mapping from Zod issue codes - Full `instanceof` support for catch blocks - Typed metadata capturing all Zod context
 
 
 </td></tr>
@@ -56,79 +97,6 @@ Configuration interface for ErrorX global settings
 </td></tr>
 </tbody></table>
 
-## Variables
-
-<table><thead><tr><th>
-
-Variable
-
-
-</th><th>
-
-Description
-
-
-</th></tr></thead>
-<tbody><tr><td>
-
-[http](./error-x.http.md)
-
-
-</td><td>
-
-HTTP error presets for common HTTP status codes.
-
-These presets provide pre-configured error options for standard HTTP error responses, including appropriate status codes, error codes, names, messages (sentence case), and user-friendly UI messages.
-
-\#\# Usage Patterns
-
-\#\#\# 1. Use Preset Directly Create an error with all preset values:
-
-```typescript
-throw new ErrorX(http[404])
-// Result: 404 error with message "Not found.", code, name, uiMessage, and type
-```
-\#\#\# 2. Override Specific Fields Customize the error while keeping other preset values:
-
-```typescript
-throw new ErrorX({
-  ...http[404],
-  message: 'User not found',
-  metadata: { userId: 123 }
-})
-// Result: 404 error with custom message but keeps httpStatus, code, name, uiMessage, type
-```
-\#\#\# 3. Add Metadata Enhance presets with additional context:
-
-```typescript
-throw new ErrorX({
-  ...http[401],
-  metadata: { attemptedAction: 'viewProfile', userId: 456 }
-})
-```
-\#\#\# 4. Add Error Cause Chain errors by adding a cause:
-
-```typescript
-try {
-  // some operation
-} catch (originalError) {
-  throw new ErrorX({
-    ...http[500],
-    cause: originalError,
-    metadata: { operation: 'database-query' }
-  })
-}
-```
-\#\# Common HTTP Presets
-
-\#\#\# 4xx Client Errors - `400` - Bad Request - Invalid request data - `401` - Unauthorized - Authentication required - `403` - Forbidden - Insufficient permissions - `404` - Not Found - Resource not found - `405` - Method Not Allowed - HTTP method not allowed - `409` - Conflict - Resource conflict - `422` - Unprocessable Entity - Validation failed - `429` - Too Many Requests - Rate limit exceeded
-
-\#\#\# 5xx Server Errors - `500` - Internal Server Error - Unexpected server error - `501` - Not Implemented - Feature not implemented - `502` - Bad Gateway - Upstream server error - `503` - Service Unavailable - Service temporarily down - `504` - Gateway Timeout - Upstream timeout
-
-
-</td></tr>
-</tbody></table>
-
 ## Type Aliases
 
 <table><thead><tr><th>
@@ -143,6 +111,28 @@ Description
 
 </th></tr></thead>
 <tbody><tr><td>
+
+[DBErrorPreset](./error-x.dberrorpreset.md)
+
+
+</td><td>
+
+Valid preset keys for DBErrorX.create() Derived from the presets object. Provides autocomplete for known presets while allowing any string for flexibility.
+
+
+</td></tr>
+<tr><td>
+
+[DBErrorXMetadata](./error-x.dberrorxmetadata.md)
+
+
+</td><td>
+
+Metadata type for database errors. Provides context about the database operation that failed.
+
+
+</td></tr>
+<tr><td>
 
 [ErrorXCause](./error-x.errorxcause.md)
 
@@ -197,6 +187,72 @@ Configuration options for creating an ErrorX instance. All properties are option
 </td><td>
 
 JSON-serializable representation of an ErrorX instance. Used for transmitting errors over network or storing in databases.
+
+
+</td></tr>
+<tr><td>
+
+[ErrorXTransform](./error-x.errorxtransform.md)
+
+
+</td><td>
+
+Transform function signature for custom error classes. Transforms options after merge but before instantiation.
+
+
+</td></tr>
+<tr><td>
+
+[ErrorXTransformContext](./error-x.errorxtransformcontext.md)
+
+
+</td><td>
+
+Context passed to the transform function when creating errors via `.create()`<!-- -->. Contains information about the preset being used.
+
+
+</td></tr>
+<tr><td>
+
+[HTTPErrorXMetadata](./error-x.httperrorxmetadata.md)
+
+
+</td><td>
+
+Metadata type for HTTP errors. Provides context about the HTTP request that failed.
+
+
+</td></tr>
+<tr><td>
+
+[HTTPStatusCode](./error-x.httpstatuscode.md)
+
+
+</td><td>
+
+Valid HTTP status codes for HTTPErrorX.create() Derived from the presets object. Provides autocomplete for known codes while allowing any number for flexibility.
+
+
+</td></tr>
+<tr><td>
+
+[ValidationErrorXMetadata](./error-x.validationerrorxmetadata.md)
+
+
+</td><td>
+
+Metadata type for validation errors. Designed to capture all relevant Zod validation context.
+
+
+</td></tr>
+<tr><td>
+
+[ZodIssue](./error-x.zodissue.md)
+
+
+</td><td>
+
+Zod issue structure for type compatibility. Matches the shape of Zod's ZodIssue type.
 
 
 </td></tr>

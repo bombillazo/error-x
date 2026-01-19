@@ -32,9 +32,7 @@ export const ERROR_X_OPTION_FIELDS = [
   'uiMessage',
   'cause',
   'metadata',
-  'type',
-  'docsUrl',
-  'source',
+  'httpStatus',
 ] as const;
 
 /**
@@ -90,12 +88,8 @@ export type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
   cause?: ErrorXCause | Error | unknown;
   /** Additional context and debugging information */
   metadata?: TMetadata | undefined;
-  /** Error type for categorization */
-  type?: string | undefined;
-  /** Documentation URL for this specific error */
-  docsUrl?: string | undefined;
-  /** Where the error originated (service name, module, component) */
-  source?: string | undefined;
+  /** HTTP status code associated with this error */
+  httpStatus?: number | undefined;
 };
 
 /**
@@ -114,12 +108,34 @@ export type ErrorXCause = {
 };
 
 /**
+ * Context passed to the transform function when creating errors via `.create()`.
+ * Contains information about the preset being used.
+ *
+ * @public
+ */
+export type ErrorXTransformContext = {
+  /** The preset key used (if any) */
+  presetKey: string | number | undefined;
+};
+
+/**
+ * Transform function signature for custom error classes.
+ * Transforms options after merge but before instantiation.
+ *
+ * @public
+ */
+export type ErrorXTransform<TMetadata extends ErrorXMetadata = ErrorXMetadata> = (
+  opts: ErrorXOptions<ErrorXMetadata>,
+  ctx: ErrorXTransformContext
+) => ErrorXOptions<TMetadata>;
+
+/**
  * JSON-serializable representation of an ErrorX instance.
  * Used for transmitting errors over network or storing in databases.
  *
  * @example
  * ```typescript
- * const serialized: SerializableError = {
+ * const serialized: ErrorXSerialized = {
  *   name: 'AuthError',
  *   message: 'Authentication failed.',
  *   code: 'AUTH_FAILED',
@@ -127,13 +143,16 @@ export type ErrorXCause = {
  *   stack: 'Error: Authentication failed.\n    at login (auth.ts:42:15)',
  *   metadata: { userId: 123, loginAttempt: 3 },
  *   timestamp: 1705315845123,
- *   cause: {
+ *   httpStatus: 401,
+ *   original: {
  *     name: 'NetworkError',
  *     message: 'Request timeout.',
  *     stack: '...'
  *   },
- *   docsUrl: 'https://docs.example.com/errors#auth-failed',
- *   source: 'auth-service'
+ *   chain: [
+ *     { name: 'AuthError', message: 'Authentication failed.' },
+ *     { name: 'NetworkError', message: 'Request timeout.' }
+ *   ]
  * }
  * ```
  *
@@ -154,12 +173,18 @@ export type ErrorXSerialized = {
   metadata: ErrorXMetadata | undefined;
   /** Unix epoch timestamp (milliseconds) when error was created */
   timestamp: number;
-  /** Simplified cause error (for error chaining) */
-  cause?: ErrorXCause;
-  /** Error type for categorization */
-  type?: string;
-  /** Documentation URL for this error */
-  docsUrl?: string;
-  /** Where the error originated */
-  source?: string;
+  /** HTTP status code associated with this error */
+  httpStatus?: number;
+  /** Serialized non-ErrorX entity this was wrapped from (if created via ErrorX.from()) */
+  original?: ErrorXCause;
+  /** Serialized error chain timeline (this error and all ancestors) */
+  chain?: ErrorXCause[];
 };
+
+/**
+ * Type representing valid preset keys for error creation.
+ * Allows both string and number keys while preventing accidental misuse.
+ *
+ * @public
+ */
+export type ErrorXBasePresetKey = (number & {}) | (string & {});

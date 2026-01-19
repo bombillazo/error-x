@@ -57,12 +57,7 @@ void
 
 ```typescript
 ErrorX.configure({
-  source: 'my-api-service',
-  docsBaseURL: 'https://docs.example.com/errors',
-  docsMap: {
-    'AUTH_FAILED': 'authentication-errors',
-    'DB_ERROR': 'database-errors'
-  },
+  cleanStack: true, // Enable stack trace cleaning
   cleanStackDelimiter: 'app-entry-point' // Trim stack traces after this line
 })
 ```

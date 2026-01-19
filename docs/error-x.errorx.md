@@ -19,12 +19,6 @@ declare class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends 
 ```typescript
 // Configure globally (optional)
 ErrorX.configure({
-  source: 'my-service',
-  docsBaseURL: 'https://docs.example.com',
-  docsMap: {
-    'AUTH_FAILED': 'errors/authentication',
-    'DB_ERROR': 'errors/database'
-  },
   cleanStackDelimiter: 'my-app-entry' // Clean stack traces after this line
 })
 
@@ -108,20 +102,22 @@ Description
 </th></tr></thead>
 <tbody><tr><td>
 
-[cause](./error-x.errorx.cause.md)
+[chain](./error-x.errorx.chain.md)
 
 
 </td><td>
 
-
-</td><td>
-
-[ErrorXCause](./error-x.errorxcause.md) \| undefined
+`readonly`
 
 
 </td><td>
 
-Original error that caused this error (preserves error chain)
+readonly [ErrorX](./error-x.errorx.md)<!-- -->\[\]
+
+
+</td><td>
+
+Gets the full error chain timeline.
 
 
 </td></tr>
@@ -146,7 +142,7 @@ Error identifier code, auto-generated from name if not provided
 </td></tr>
 <tr><td>
 
-[docsUrl](./error-x.errorx.docsurl.md)
+[httpStatus](./error-x.errorx.httpstatus.md)
 
 
 </td><td>
@@ -154,12 +150,12 @@ Error identifier code, auto-generated from name if not provided
 
 </td><td>
 
-string \| undefined
+number \| undefined
 
 
 </td><td>
 
-Documentation URL for this specific error
+HTTP status code associated with this error
 
 
 </td></tr>
@@ -184,7 +180,7 @@ Additional context and metadata associated with the error
 </td></tr>
 <tr><td>
 
-[source](./error-x.errorx.source.md)
+[original](./error-x.errorx.original.md)
 
 
 </td><td>
@@ -192,12 +188,54 @@ Additional context and metadata associated with the error
 
 </td><td>
 
-string \| undefined
+[ErrorXCause](./error-x.errorxcause.md) \| undefined
 
 
 </td><td>
 
-Where the error originated (service name, module, component)
+Serialized non-ErrorX entity this was wrapped from (if created via ErrorX.from())
+
+
+</td></tr>
+<tr><td>
+
+[parent](./error-x.errorx.parent.md)
+
+
+</td><td>
+
+`readonly`
+
+
+</td><td>
+
+[ErrorX](./error-x.errorx.md) \| undefined
+
+
+</td><td>
+
+Gets the immediate parent ErrorX in the chain (if any).
+
+
+</td></tr>
+<tr><td>
+
+[root](./error-x.errorx.root.md)
+
+
+</td><td>
+
+`readonly`
+
+
+</td><td>
+
+[ErrorX](./error-x.errorx.md) \| undefined
+
+
+</td><td>
+
+Gets the deepest ErrorX in the chain (the original root cause).
 
 
 </td></tr>
@@ -217,25 +255,6 @@ number
 </td><td>
 
 Unix epoch timestamp (milliseconds) when the error was created
-
-
-</td></tr>
-<tr><td>
-
-[type](./error-x.errorx.type.md)
-
-
-</td><td>
-
-
-</td><td>
-
-string \| undefined
-
-
-</td><td>
-
-Error type for categorization
 
 
 </td></tr>
@@ -312,7 +331,27 @@ Configure global ErrorX settings. This method allows you to set defaults for all
 </td></tr>
 <tr><td>
 
-[from(error)](./error-x.errorx.from.md)
+[create(this, presetKeyOrOverrides, overrides)](./error-x.errorx.create.md)
+
+
+</td><td>
+
+`static`
+
+
+</td><td>
+
+Creates a new instance of this error class using optional presets and overrides. This is a factory method that supports preset-based error creation with full TypeScript autocomplete for preset keys.
+
+Define static properties on your subclass to customize behavior: - `presets`<!-- -->: Record of preset configurations keyed by identifier - `defaultPreset`<!-- -->: Key of preset to use as fallback - `defaults`<!-- -->: Default values for all errors of this class - `transform`<!-- -->: Function to transform options before instantiation
+
+Supported call signatures: - `create()` - uses defaultPreset - `create(presetKey)` - uses specified preset - `create(presetKey, overrides)` - preset with overrides - `create(overrides)` - just overrides, uses defaultPreset
+
+
+</td></tr>
+<tr><td>
+
+[from(error, overrides)](./error-x.errorx.from.md)
 
 
 </td><td>
@@ -324,11 +363,13 @@ Configure global ErrorX settings. This method allows you to set defaults for all
 
 Converts unknown input into an ErrorX instance with intelligent property extraction. Handles strings, regular Error objects, API response objects, and unknown values. Extracts metadata directly from objects if present.
 
+This is a "wrapping" operation - the resulting ErrorX represents the same error in ErrorX form. The original source is stored in the `original` property.
+
 
 </td></tr>
 <tr><td>
 
-[from(error)](./error-x.errorx.from_1.md)
+[from(payload, overrides)](./error-x.errorx.from_1.md)
 
 
 </td><td>
@@ -342,7 +383,7 @@ Converts unknown input into an ErrorX instance with intelligent property extract
 </td></tr>
 <tr><td>
 
-[from(error)](./error-x.errorx.from_2.md)
+[from(payload, overrides)](./error-x.errorx.from_2.md)
 
 
 </td><td>
@@ -356,7 +397,7 @@ Converts unknown input into an ErrorX instance with intelligent property extract
 </td></tr>
 <tr><td>
 
-[from(error)](./error-x.errorx.from_3.md)
+[from(payload, overrides)](./error-x.errorx.from_3.md)
 
 
 </td><td>

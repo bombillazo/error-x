@@ -16,9 +16,7 @@ type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
     uiMessage?: string | undefined;
     cause?: ErrorXCause | Error | unknown;
     metadata?: TMetadata | undefined;
-    type?: string | undefined;
-    docsUrl?: string | undefined;
-    source?: string | undefined;
+    httpStatus?: number | undefined;
 };
 ```
 **References:** [ErrorXMetadata](./error-x.errorxmetadata.md)<!-- -->, [ErrorXCause](./error-x.errorxcause.md)
