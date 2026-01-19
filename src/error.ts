@@ -774,19 +774,29 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       serialized.original = this.original;
     }
 
-    // Serialize the chain (excluding self, as the main object represents this error)
+    // Serialize the chain with full properties (excluding nested chains - chains are flattened)
     if (this._chain.length > 1) {
       serialized.chain = this._chain.map((err) => {
-        const snapshotEntry: ErrorXSnapshot = {
+        let safeMetadata: ErrorXMetadata | undefined;
+        if (err.metadata) {
+          safeMetadata = JSON.parse(safeStringify(err.metadata));
+        }
+
+        const chainEntry: ErrorXSerialized = {
+          name: err.name,
           message: err.message,
+          code: err.code,
+          uiMessage: err.uiMessage,
+          metadata: safeMetadata,
+          timestamp: err.timestamp,
         };
-        if (err.name) {
-          snapshotEntry.name = err.name;
-        }
-        if (err.stack) {
-          snapshotEntry.stack = err.stack;
-        }
-        return snapshotEntry;
+
+        if (err.httpStatus !== undefined) chainEntry.httpStatus = err.httpStatus;
+        if (err.stack) chainEntry.stack = err.stack;
+        if (err.original) chainEntry.original = err.original;
+        // Note: chain property omitted - chains are flattened
+
+        return chainEntry;
       });
     }
 
@@ -843,26 +853,46 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       error.original = serialized.original;
     }
 
-    // Restore chain from serialized ErrorXSnapshot array
+    // Restore chain from serialized array (supports both new ErrorXSerialized and old ErrorXSnapshot formats)
     if (serialized.chain && serialized.chain.length > 0) {
       // Reconstruct chain: first element is this error, rest are ancestors
       const chainErrors: ErrorX[] = [error];
       for (let i = 1; i < serialized.chain.length; i++) {
         const causeData = serialized.chain[i];
         if (!causeData) continue;
+
         const chainErrorOptions: ErrorXOptions = {
           message: causeData.message,
         };
-        if (causeData.name) {
-          chainErrorOptions.name = causeData.name;
-        }
+
+        // Restore all properties (new format has these, old format doesn't)
+        if (causeData.name) chainErrorOptions.name = causeData.name;
+        if ('code' in causeData && causeData.code !== undefined)
+          chainErrorOptions.code = causeData.code;
+        if ('uiMessage' in causeData && causeData.uiMessage !== undefined)
+          chainErrorOptions.uiMessage = causeData.uiMessage;
+        if ('metadata' in causeData && causeData.metadata !== undefined)
+          chainErrorOptions.metadata = causeData.metadata;
+        if ('httpStatus' in causeData && causeData.httpStatus !== undefined)
+          chainErrorOptions.httpStatus = causeData.httpStatus;
+
         const chainError = new ErrorX(chainErrorOptions);
-        if (causeData.stack) {
-          chainError.stack = causeData.stack;
-        }
+
+        if (causeData.stack) chainError.stack = causeData.stack;
+        if ('timestamp' in causeData && causeData.timestamp !== undefined)
+          chainError.timestamp = causeData.timestamp;
+        if ('original' in causeData && causeData.original) chainError.original = causeData.original;
+
         chainErrors.push(chainError);
       }
-      error._chain = chainErrors;
+
+      // Set up each chain member's _chain to preserve navigation from any point
+      for (let i = 0; i < chainErrors.length; i++) {
+        const chainError = chainErrors[i];
+        if (chainError) {
+          chainError._chain = chainErrors.slice(i);
+        }
+      }
     }
 
     return error;
