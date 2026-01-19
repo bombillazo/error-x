@@ -3,26 +3,15 @@
   "description": "A simple and consistent error handling library for TypeScript applications. Provides type-safe error handling with great DX, solving common pain points like unknown error types, lost stack traces, async error handling, and error serialization. Isomorphic and framework-agnostic.",
   "version": "0.4.5",
   "author": "Hector Ayala <hran@bombillazo.com>",
-  "config": {
-    "commitizen": {
-      "path": "cz-customizable"
-    },
-    "cz-customizable": {
-      "config": ".cz-config.cjs"
-    }
-  },
   "dependencies": {
+    "deepmerge-ts": "^7.1.5",
     "safe-stringify": "^1.2.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
-    "@commitlint/cli": "^19.8.1",
-    "@commitlint/config-conventional": "^19.8.1",
     "@microsoft/api-extractor": "^7.52.13",
     "@types/node": "^24.6.0",
     "@vitest/coverage-v8": "^3.2.4",
-    "commitizen": "^4.3.1",
-    "cz-customizable": "^7.5.1",
     "husky": "^9.1.7",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
@@ -65,8 +54,6 @@
     "api-docs:markdown": "npx @microsoft/api-documenter markdown -i temp -o docs",
     "build": "tsup",
     "check": "biome check .",
-    "commit": "cz",
-    "commit:lint": "commitlint --edit",
     "dev": "tsup --watch",
     "format": "biome format --write .",
     "lint": "biome lint .",

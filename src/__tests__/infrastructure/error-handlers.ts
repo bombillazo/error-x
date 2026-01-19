@@ -74,8 +74,6 @@ export function tryCatchWithAdditionalProcessing(): never {
   try {
     errorSources.throwErrorXWithCause();
   } catch (error) {
-    // Some processing that might affect stack trace
-    console.log('Processing error...'); // Side effect
     const processed = error instanceof ErrorX ? error : ErrorX.from(error);
 
     throw processed.withMetadata({

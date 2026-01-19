@@ -1,3 +1,4 @@
+import { deepmerge } from 'deepmerge-ts';
 import safeStringify from 'safe-stringify';
 import type {
   ErrorXCause,
@@ -5,6 +6,8 @@ import type {
   ErrorXOptionField,
   ErrorXOptions,
   ErrorXSerialized,
+  ErrorXTransform,
+  ErrorXTransformContext,
 } from './types.js';
 import { ERROR_X_OPTION_FIELDS } from './types.js';
 
@@ -17,12 +20,6 @@ const acceptedFields = new Set(ERROR_X_OPTION_FIELDS);
  * @public
  */
 export interface ErrorXConfig {
-  /** Default source identifier for all errors (e.g., service name, module name) */
-  source?: string;
-  /** Base URL for error documentation */
-  docsBaseURL?: string;
-  /** Mapping of error codes to documentation paths */
-  docsMap?: Record<string, string>;
   /**
    * Control stack trace cleaning behavior
    * - true: Enable automatic stack trace cleaning (default)
@@ -44,12 +41,6 @@ export interface ErrorXConfig {
  * ```typescript
  * // Configure globally (optional)
  * ErrorX.configure({
- *   source: 'my-service',
- *   docsBaseURL: 'https://docs.example.com',
- *   docsMap: {
- *     'AUTH_FAILED': 'errors/authentication',
- *     'DB_ERROR': 'errors/database'
- *   },
  *   cleanStackDelimiter: 'my-app-entry' // Clean stack traces after this line
  * })
  *
@@ -88,14 +79,36 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
   public metadata: TMetadata | undefined;
   /** Unix epoch timestamp (milliseconds) when the error was created */
   public timestamp: number;
-  /** Error type for categorization */
-  public type: string | undefined;
-  /** Documentation URL for this specific error */
-  public docsUrl: string | undefined;
-  /** Where the error originated (service name, module, component) */
-  public source: string | undefined;
-  /** Original error that caused this error (preserves error chain) */
-  public cause: ErrorXCause | undefined;
+  /** HTTP status code associated with this error */
+  public httpStatus: number | undefined;
+  /** Serialized non-ErrorX entity this was wrapped from (if created via ErrorX.from()) */
+  public original: ErrorXCause | undefined;
+  /** Error chain timeline: [this, parent, grandparent, ...] - single source of truth */
+  private _chain: ErrorX[] = [];
+
+  /**
+   * Gets the immediate parent ErrorX in the chain (if any).
+   * @returns The ErrorX that caused this error, or undefined if this is the root
+   */
+  public get parent(): ErrorX | undefined {
+    return this._chain[1];
+  }
+
+  /**
+   * Gets the deepest ErrorX in the chain (the original root cause).
+   * @returns The root cause ErrorX, or undefined if chain has only this error
+   */
+  public get root(): ErrorX | undefined {
+    return this._chain.length > 1 ? this._chain[this._chain.length - 1] : undefined;
+  }
+
+  /**
+   * Gets the full error chain timeline.
+   * @returns Array of ErrorX instances: [this, parent, grandparent, ...]
+   */
+  public get chain(): readonly ErrorX[] {
+    return this._chain;
+  }
 
   /**
    * Creates a new ErrorX instance with enhanced error handling capabilities.
@@ -144,56 +157,40 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     }
     // else: undefined/null - use empty options object
 
-    // Read environment config for defaults
-    const envConfig = ErrorX.getConfig();
-
     // Use default message if not provided or if it's empty/whitespace-only
     const message = options.message?.trim() ? options.message : 'An error occurred';
 
-    // Convert cause to ErrorXCause format
-    const convertedCause = ErrorX.toErrorXCause(options.cause);
-
-    // Call super without cause since we'll set it manually in ErrorXCause format
+    // Call super
     super(message);
-
-    // Set cause in ErrorXCause format
-    this.cause = convertedCause;
 
     this.name = options.name ?? ErrorX.getDefaultName();
     this.code =
       options.code != null ? String(options.code) : ErrorX.generateDefaultCode(options.name);
     this.uiMessage = options.uiMessage;
     this.metadata = options.metadata;
-    this.type = ErrorX.validateType(options.type);
     this.timestamp = Date.now();
+    this.httpStatus = options.httpStatus;
 
-    // Set new fields
-    this.source = options.source ?? envConfig?.source;
-
-    // Auto-generate docsUrl from environment config if available
-    let generatedDocsUrl: string | undefined;
-    if (envConfig?.docsBaseURL && envConfig?.docsMap && this.code) {
-      const docPath = envConfig.docsMap[this.code];
-      if (docPath) {
-        // Normalize URL construction to avoid double slashes
-        const base = envConfig.docsBaseURL.replace(/\/+$/, ''); // Remove trailing slashes
-        const path = docPath.replace(/^\/+/, ''); // Remove leading slashes
-        generatedDocsUrl = `${base}/${path}`;
+    // Build the error chain
+    if (options.cause != null) {
+      if (options.cause instanceof ErrorX) {
+        // Cause is already ErrorX - flatten its chain into ours
+        this._chain = [this, ...options.cause._chain];
+      } else {
+        // Cause is not ErrorX - wrap it via from() then chain
+        const wrappedCause = ErrorX.from(options.cause);
+        this._chain = [this, ...wrappedCause._chain];
       }
-    }
-    this.docsUrl = options.docsUrl ?? generatedDocsUrl;
-
-    // Handle stack trace
-    if (convertedCause?.stack) {
-      // Preserve the original stack from cause
-      this.stack = ErrorX.preserveOriginalStackFromCause(convertedCause, this);
     } else {
-      // Capture new stack trace
-      if (typeof Error.captureStackTrace === 'function') {
-        Error.captureStackTrace(this, this.constructor);
-      }
+      // No cause - this is the root of the chain
+      this._chain = [this];
     }
-    // Always clean the stack
+
+    // Capture stack trace for this error (each error stores its own stack)
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, this.constructor);
+    }
+    // Clean internal frames from stack
     this.stack = ErrorX.cleanStack(this.stack);
   }
 
@@ -257,12 +254,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    * @example
    * ```typescript
    * ErrorX.configure({
-   *   source: 'my-api-service',
-   *   docsBaseURL: 'https://docs.example.com/errors',
-   *   docsMap: {
-   *     'AUTH_FAILED': 'authentication-errors',
-   *     'DB_ERROR': 'database-errors'
-   *   },
+   *   cleanStack: true, // Enable stack trace cleaning
    *   cleanStackDelimiter: 'app-entry-point' // Trim stack traces after this line
    * })
    * ```
@@ -291,27 +283,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    */
   public static resetConfig(): void {
     ErrorX._config = null;
-  }
-
-  /**
-   * Validates and normalizes the type field
-   *
-   * @param type - Type value to validate
-   * @returns Validated type string or undefined if invalid/empty
-   */
-  private static validateType(type?: string): string | undefined {
-    if (type === undefined || type === null) {
-      return undefined;
-    }
-
-    const typeStr = String(type).trim();
-
-    // Return undefined for empty strings
-    if (typeStr === '') {
-      return undefined;
-    }
-
-    return typeStr;
   }
 
   /**
@@ -370,28 +341,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
   }
 
   /**
-   * Preserves the original error's stack trace while updating the error message.
-   * Combines the new error's message with the original error's stack trace from ErrorXCause.
-   *
-   * @param cause - The ErrorXCause containing the original stack to preserve
-   * @param newError - The new error whose message to use
-   * @returns Combined stack trace with new error message and original stack
-   */
-  private static preserveOriginalStackFromCause(cause: ErrorXCause, newError: Error): string {
-    if (!cause.stack) return newError.stack || '';
-
-    // Get the new error's first line (error name + message)
-    const newErrorFirstLine = `${newError.name}: ${newError.message}`;
-
-    // Get original stack lines (skip the first line which is the original error message)
-    const originalStackLines = cause.stack.split('\n');
-    const originalStackTrace = originalStackLines.slice(1);
-
-    // Combine new error message with original stack trace
-    return [newErrorFirstLine, ...originalStackTrace].join('\n');
-  }
-
-  /**
    * Cleans a stack trace by removing ErrorX internal method calls and optionally trimming after a delimiter.
    * This provides cleaner stack traces that focus on user code.
    *
@@ -423,12 +372,12 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     const stackLines = stack.split('\n');
     const cleanedLines: string[] = [];
 
-    // Default patterns to remove
+    // Default patterns to remove - only internal ErrorX frames
     const defaultPatterns = [
       'new ErrorX',
       'ErrorX.constructor',
       'ErrorX.from',
-      'error-x/dist/',
+      'error-x/dist/error.js',
       'error-x/src/error.ts',
     ];
 
@@ -482,19 +431,23 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
   public withMetadata<TAdditionalMetadata extends Record<string, unknown> = ErrorXMetadata>(
     additionalMetadata: TAdditionalMetadata
   ): ErrorX<TMetadata & TAdditionalMetadata> {
+    // Create new error without cause (we'll copy the chain directly)
     const options: ErrorXOptions<TMetadata & TAdditionalMetadata> = {
       message: this.message,
       name: this.name,
       code: this.code,
       uiMessage: this.uiMessage,
-      cause: this.cause,
       metadata: { ...(this.metadata ?? {}), ...additionalMetadata } as TMetadata &
         TAdditionalMetadata,
-      type: this.type,
-      docsUrl: this.docsUrl,
-      source: this.source,
+      httpStatus: this.httpStatus,
     };
     const newError = new ErrorX<TMetadata & TAdditionalMetadata>(options);
+
+    // Preserve the chain with new error at front
+    newError._chain = [newError, ...this._chain.slice(1)];
+
+    // Preserve original
+    newError.original = this.original;
 
     // Preserve the original stack trace and timestamp
     if (this.stack) {
@@ -545,9 +498,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     let uiMessage = '';
     let cause: unknown;
     let metadata: ErrorXMetadata = {};
-    let type: string | undefined;
-    let href: string | undefined;
-    let source: string | undefined;
+    let httpStatus: number | undefined;
 
     if (error) {
       if (typeof error === 'string') {
@@ -578,32 +529,18 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
         if ('uiMessage' in error && error.uiMessage) uiMessage = String(error.uiMessage);
         else if ('userMessage' in error && error.userMessage) uiMessage = String(error.userMessage);
 
-        // Extract type
-        if ('type' in error && error.type) {
-          type = ErrorX.validateType(String(error.type));
-        }
-
-        // Extract docsUrl
-        if ('docsUrl' in error && error.docsUrl) {
-          href = String(error.docsUrl);
-        } else if ('href' in error && error.href) {
-          href = String(error.href);
-        } else if ('documentationUrl' in error && error.documentationUrl) {
-          href = String(error.documentationUrl);
-        }
-
-        // Extract source
-        if ('source' in error && error.source) {
-          source = String(error.source);
-        } else if ('service' in error && error.service) {
-          source = String(error.service);
-        } else if ('component' in error && error.component) {
-          source = String(error.component);
-        }
-
         // Extract metadata directly if present
         if ('metadata' in error && typeof error.metadata === 'object' && error.metadata !== null) {
           metadata = error.metadata as ErrorXMetadata;
+        }
+
+        // Extract httpStatus
+        if ('httpStatus' in error && typeof error.httpStatus === 'number') {
+          httpStatus = error.httpStatus;
+        } else if ('status' in error && typeof error.status === 'number') {
+          httpStatus = error.status;
+        } else if ('statusCode' in error && typeof error.statusCode === 'number') {
+          httpStatus = error.statusCode;
         }
       }
     }
@@ -617,9 +554,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     if (uiMessage) options.uiMessage = uiMessage;
     if (cause) options.cause = cause;
     if (Object.keys(metadata).length > 0) options.metadata = metadata;
-    if (type) options.type = type;
-    if (href) options.docsUrl = href;
-    if (source) options.source = source;
+    if (httpStatus !== undefined) options.httpStatus = httpStatus;
 
     return options;
   }
@@ -629,8 +564,12 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    * Handles strings, regular Error objects, API response objects, and unknown values.
    * Extracts metadata directly from objects if present.
    *
-   * @param error - Value to convert to ErrorX
-   * @returns ErrorX instance with extracted properties
+   * This is a "wrapping" operation - the resulting ErrorX represents the same error
+   * in ErrorX form. The original source is stored in the `original` property.
+   *
+   * @param payload - Value to convert to ErrorX
+   * @param overrides - Optional overrides to deep-merge with extracted properties
+   * @returns ErrorX instance with extracted properties and `original` set
    *
    * @example
    * ```typescript
@@ -648,19 +587,87 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    * }
    * const error3 = ErrorX.from(apiError)
    * // error3.metadata = { userId: 123, endpoint: '/api/users' }
+   * // error3.original = { message: 'User not found', name: undefined, stack: undefined }
+   *
+   * // With overrides
+   * const error4 = ErrorX.from(new Error('Connection failed'), {
+   *   httpStatus: 500,
+   *   metadata: { context: 'db-layer' }
+   * })
    * ```
    */
   public static from<TMetadata extends ErrorXMetadata = ErrorXMetadata>(
-    error: ErrorX<TMetadata>
+    error: ErrorX<TMetadata>,
+    overrides?: Partial<ErrorXOptions<TMetadata>>
   ): ErrorX<TMetadata>;
-  public static from(error: Error): ErrorX;
-  public static from(error: string): ErrorX;
-  public static from(error: unknown): ErrorX;
-  public static from(error: unknown): ErrorX {
-    if (error instanceof ErrorX) return error;
+  public static from<TMetadata extends ErrorXMetadata = ErrorXMetadata>(
+    payload: Error,
+    overrides?: Partial<ErrorXOptions<TMetadata>>
+  ): ErrorX<TMetadata>;
+  public static from<TMetadata extends ErrorXMetadata = ErrorXMetadata>(
+    payload: string,
+    overrides?: Partial<ErrorXOptions<TMetadata>>
+  ): ErrorX<TMetadata>;
+  public static from<TMetadata extends ErrorXMetadata = ErrorXMetadata>(
+    payload: unknown,
+    overrides?: Partial<ErrorXOptions<TMetadata>>
+  ): ErrorX<TMetadata>;
+  public static from<TMetadata extends ErrorXMetadata = ErrorXMetadata>(
+    payload: unknown,
+    overrides?: Partial<ErrorXOptions<TMetadata>>
+  ): ErrorX<TMetadata> {
+    // If already ErrorX, apply overrides if provided, otherwise return as-is
+    if (payload instanceof ErrorX) {
+      if (overrides && Object.keys(overrides).length > 0) {
+        // Create new ErrorX with merged options
+        const mergedOptions: ErrorXOptions<TMetadata> = {
+          message: overrides.message ?? payload.message,
+          name: overrides.name ?? payload.name,
+          code: overrides.code ?? payload.code,
+          uiMessage: overrides.uiMessage ?? payload.uiMessage,
+          httpStatus: overrides.httpStatus ?? payload.httpStatus,
+          metadata: overrides.metadata
+            ? (deepmerge(payload.metadata ?? {}, overrides.metadata) as TMetadata)
+            : (payload.metadata as TMetadata | undefined),
+        };
+        const newError = new ErrorX<TMetadata>(mergedOptions);
+        newError.original = payload.original;
+        newError._chain = [newError]; // from() creates root of chain
+        return newError;
+      }
+      return payload as ErrorX<TMetadata>;
+    }
 
-    const options = ErrorX.convertUnknownToOptions(error);
-    return new ErrorX(options);
+    // Convert unknown to options and create ErrorX
+    const extractedOptions = ErrorX.convertUnknownToOptions(payload);
+
+    // Deep merge overrides if provided
+    const finalOptions: ErrorXOptions<TMetadata> = overrides
+      ? {
+          ...extractedOptions,
+          ...overrides,
+          metadata:
+            extractedOptions.metadata || overrides.metadata
+              ? (deepmerge(extractedOptions.metadata ?? {}, overrides.metadata ?? {}) as TMetadata)
+              : undefined,
+        }
+      : (extractedOptions as ErrorXOptions<TMetadata>);
+
+    // Create ErrorX without cause (from() is wrapping, not chaining)
+    const error = new ErrorX<TMetadata>(finalOptions);
+
+    // Set original to serialized form of the source
+    error.original = ErrorX.toErrorXCause(payload);
+
+    // Preserve the original error's stack if it's an Error instance
+    if (payload instanceof Error && payload.stack) {
+      error.stack = payload.stack;
+    }
+
+    // Chain is just [this] for wrapped errors (from() doesn't chain)
+    error._chain = [error];
+
+    return error;
   }
 
   /**
@@ -750,19 +757,9 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       timestamp: this.timestamp,
     };
 
-    // Include type if present
-    if (this.type !== undefined) {
-      serialized.type = this.type;
-    }
-
-    // Include href if present
-    if (this.docsUrl !== undefined) {
-      serialized.docsUrl = this.docsUrl;
-    }
-
-    // Include source if present
-    if (this.source !== undefined) {
-      serialized.source = this.source;
+    // Include httpStatus if present
+    if (this.httpStatus !== undefined) {
+      serialized.httpStatus = this.httpStatus;
     }
 
     // Include stack if available
@@ -770,9 +767,25 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       serialized.stack = this.stack;
     }
 
-    // Include cause if present (already in ErrorXCause format)
-    if (this.cause) {
-      serialized.cause = this.cause;
+    // Include original if present (for wrapped errors)
+    if (this.original) {
+      serialized.original = this.original;
+    }
+
+    // Serialize the chain (excluding self, as the main object represents this error)
+    if (this._chain.length > 1) {
+      serialized.chain = this._chain.map((err) => {
+        const causeEntry: ErrorXCause = {
+          message: err.message,
+        };
+        if (err.name) {
+          causeEntry.name = err.name;
+        }
+        if (err.stack) {
+          causeEntry.stack = err.stack;
+        }
+        return causeEntry;
+      });
     }
 
     return serialized;
@@ -803,15 +816,13 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
   public static fromJSON<TMetadata extends ErrorXMetadata = ErrorXMetadata>(
     serialized: ErrorXSerialized
   ): ErrorX<TMetadata> {
+    // Create the main error without cause (we'll restore chain directly)
     const options: ErrorXOptions = {
       message: serialized.message,
       name: serialized.name,
       code: serialized.code,
       uiMessage: serialized.uiMessage,
-      type: serialized.type,
-      docsUrl: serialized.docsUrl,
-      source: serialized.source,
-      cause: serialized.cause,
+      httpStatus: serialized.httpStatus,
     };
     if (serialized.metadata !== undefined) {
       options.metadata = serialized.metadata;
@@ -825,6 +836,146 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     }
     error.timestamp = serialized.timestamp;
 
+    // Restore original if present
+    if (serialized.original) {
+      error.original = serialized.original;
+    }
+
+    // Restore chain from serialized ErrorXCause array
+    if (serialized.chain && serialized.chain.length > 0) {
+      // Reconstruct chain: first element is this error, rest are ancestors
+      const chainErrors: ErrorX[] = [error];
+      for (let i = 1; i < serialized.chain.length; i++) {
+        const causeData = serialized.chain[i];
+        if (!causeData) continue;
+        const chainErrorOptions: ErrorXOptions = {
+          message: causeData.message,
+        };
+        if (causeData.name) {
+          chainErrorOptions.name = causeData.name;
+        }
+        const chainError = new ErrorX(chainErrorOptions);
+        if (causeData.stack) {
+          chainError.stack = causeData.stack;
+        }
+        chainErrors.push(chainError);
+      }
+      error._chain = chainErrors;
+    }
+
     return error;
+  }
+
+  /**
+   * Creates a new instance of this error class using optional presets and overrides.
+   * This is a factory method that supports preset-based error creation with
+   * full TypeScript autocomplete for preset keys.
+   *
+   * Define static properties on your subclass to customize behavior:
+   * - `presets`: Record of preset configurations keyed by identifier
+   * - `defaultPreset`: Key of preset to use as fallback
+   * - `defaults`: Default values for all errors of this class
+   * - `transform`: Function to transform options before instantiation
+   *
+   * Supported call signatures:
+   * - `create()` - uses defaultPreset
+   * - `create(presetKey)` - uses specified preset
+   * - `create(presetKey, overrides)` - preset with overrides
+   * - `create(overrides)` - just overrides, uses defaultPreset
+   *
+   * @param presetKeyOrOverrides - Preset key (string/number) or overrides object
+   * @param overrides - Optional overrides when first arg is preset key
+   * @returns New instance of this error class
+   *
+   * @example
+   * ```typescript
+   * class DBError extends ErrorX<{ query?: string }> {
+   *   static presets = {
+   *     9333: { message: 'Connection timeout', code: 'TIMEOUT' },
+   *     CONN_REFUSED: { message: 'Connection refused', code: 'CONN_REFUSED' },
+   *     GENERIC: { message: 'A database error occurred', code: 'ERROR' },
+   *   }
+   *   static defaultPreset = 'GENERIC'
+   *   static defaults = { httpStatus: 500 }
+   *   static transform = (opts, ctx) => ({
+   *     ...opts,
+   *     code: `DB_${opts.code}`,
+   *   })
+   * }
+   *
+   * DBError.create()                           // uses defaultPreset
+   * DBError.create(9333)                       // uses preset 9333
+   * DBError.create('CONN_REFUSED')             // uses preset CONN_REFUSED
+   * DBError.create(9333, { message: 'Custom' }) // preset + overrides
+   * DBError.create({ message: 'Custom' })      // just overrides
+   * ```
+   */
+  public static create<T extends ErrorXMetadata = ErrorXMetadata>(
+    this: new (
+      options?: ErrorXOptions<T>
+    ) => ErrorX<T>,
+    presetKeyOrOverrides?: string | number | Partial<ErrorXOptions<ErrorXMetadata>>,
+    overrides?: Partial<ErrorXOptions<ErrorXMetadata>>
+  ): ErrorX<T> {
+    // Detect call signature: create(overrides) vs create(presetKey) vs create(presetKey, overrides)
+    let presetKey: string | number | undefined;
+    let finalOverrides: Partial<ErrorXOptions<ErrorXMetadata>> | undefined;
+
+    if (typeof presetKeyOrOverrides === 'object' && presetKeyOrOverrides !== null) {
+      // create(overrides) - first arg is an object
+      presetKey = undefined;
+      finalOverrides = presetKeyOrOverrides;
+    } else {
+      // create(), create(presetKey), or create(presetKey, overrides)
+      presetKey = presetKeyOrOverrides;
+      finalOverrides = overrides;
+    }
+
+    // Access static properties from the constructor (this refers to the class)
+    // biome-ignore lint/complexity/noThisInStatic: Required for polymorphic factory pattern
+    const ctor = this as unknown as {
+      presets?: Record<string | number, Partial<ErrorXOptions<ErrorXMetadata>>>;
+      defaultPreset?: string | number;
+      defaults?: Partial<ErrorXOptions<ErrorXMetadata>>;
+      transform?: ErrorXTransform<T>;
+    };
+
+    const presets = ctor.presets ?? {};
+    const defaultPreset = ctor.defaultPreset;
+    const defaults = ctor.defaults ?? {};
+    const transform = ctor.transform;
+
+    // Step 1: Resolve preset
+    let resolvedPreset: Partial<ErrorXOptions<ErrorXMetadata>> = {};
+
+    if (presetKey !== undefined) {
+      // Preset key provided - look it up
+      if (presetKey in presets) {
+        resolvedPreset = presets[presetKey] ?? {};
+      } else if (defaultPreset !== undefined && defaultPreset in presets) {
+        // Not found, fall back to defaultPreset
+        resolvedPreset = presets[defaultPreset] ?? {};
+      }
+    } else if (defaultPreset !== undefined && defaultPreset in presets) {
+      // No preset key provided, use defaultPreset
+      resolvedPreset = presets[defaultPreset] ?? {};
+    }
+
+    // Step 2: Deep merge layers: defaults → preset → overrides
+    const mergedOptions = deepmerge(
+      defaults,
+      resolvedPreset,
+      finalOverrides ?? {}
+    ) as ErrorXOptions<ErrorXMetadata>;
+
+    // Step 3: Apply transform if defined
+    const transformContext: ErrorXTransformContext = { presetKey };
+    const finalOptions = transform
+      ? transform(mergedOptions, transformContext)
+      : (mergedOptions as ErrorXOptions<T>);
+
+    // Step 4: Create instance
+    // biome-ignore lint/complexity/noThisInStatic: Required for polymorphic factory pattern
+    return new this(finalOptions);
   }
 }

@@ -40,7 +40,7 @@ describe('Stack Trace Preservation', () => {
       }
     });
 
-    it('should preserve native error in cause when wrapping', () => {
+    it('should preserve native error in parent when wrapping', () => {
       try {
         errorHandlers.tryCatchRethrowAsErrorX();
       } catch (error: unknown) {
@@ -50,13 +50,15 @@ describe('Stack Trace Preservation', () => {
         // Check the main error message
         expect(errorX.message).toContain('Caught and rethrown from error-handlers.ts');
 
-        // Check that the cause is preserved
-        expect(errorX.cause).toBeDefined();
-        expect(errorX.cause?.message).toContain('Native error from error-sources.ts');
+        // Check that the parent is preserved
+        expect(errorX.parent).toBeDefined();
+        expect(errorX.parent?.message).toContain('Native error from error-sources.ts');
 
-        // Stack should reference both files
-        expect(errorX.stack).toContain('error-sources.ts');
+        // Each error has its own stack - current error shows where it was created
         expect(errorX.stack).toContain('error-handlers.ts');
+
+        // Parent's original stack shows where the native error was thrown
+        expect(errorX.parent?.original?.stack).toContain('error-sources.ts');
       }
     });
 
@@ -70,12 +72,12 @@ describe('Stack Trace Preservation', () => {
         // Should be the outermost error
         expect(errorX.message).toContain('Outer catch in error-handlers.ts');
 
-        // With single-level cause storage, we just check that cause exists
-        expect(errorX.cause).toBeDefined();
+        // With single-level parent storage, we just check that parent exists
+        expect(errorX.parent).toBeDefined();
 
         // Verify the error has meaningful information
         expect(errorX.message).toBeTruthy();
-        expect(errorX.cause?.message).toBeTruthy();
+        expect(errorX.parent?.message).toBeTruthy();
       }
     });
   });
@@ -89,11 +91,13 @@ describe('Stack Trace Preservation', () => {
         const errorX = error as ErrorX;
 
         expect(errorX.message).toContain('Async catch and rethrow from error-handlers.ts');
-        expect(errorX.stack).toContain('error-sources.ts');
+        // Each error has its own stack - current error shows where it was created
         expect(errorX.stack).toContain('error-handlers.ts');
 
-        // Should preserve async context
-        expect(errorX.cause).toBeDefined();
+        // Should preserve async context - parent error is in the chain
+        expect(errorX.parent).toBeDefined();
+        // Parent's stack shows where it was created (or original if it wrapped a native Error)
+        expect(errorX.parent?.stack ?? errorX.parent?.original?.stack).toBeDefined();
       }
     });
 
@@ -106,13 +110,13 @@ describe('Stack Trace Preservation', () => {
 
         expect(errorX.message).toContain('Promise chain catch from async-operations.ts');
 
-        // Should have the current error location
-        expect(errorX.stack).toContain('error-sources.ts'); // Original timeout location
+        // Each error has its own stack - current error shows where it was created
+        expect(errorX.stack).toContain('async-operations.ts');
 
-        // Check that the cause chain preserves error information
-        expect(errorX.cause).toBeDefined();
-        const cause = errorX.cause as ErrorXCause;
-        expect(cause.message).toContain('Async catch with delay from error-handlers.ts');
+        // Check that the parent chain preserves error information
+        expect(errorX.parent).toBeDefined();
+        const parent = errorX.parent as ErrorXCause;
+        expect(parent.message).toContain('Async catch with delay from error-handlers.ts');
       }
     });
 
@@ -127,7 +131,7 @@ describe('Stack Trace Preservation', () => {
         expect(errorX.stack).toContain('async-operations.ts');
 
         // Should preserve the entire error chain
-        expect(errorX.cause).toBeDefined();
+        expect(errorX.parent).toBeDefined();
       }
     });
   });
@@ -144,11 +148,11 @@ describe('Stack Trace Preservation', () => {
         expect(errorX.name).toBe('DeepChainError');
         expect(errorX.code).toBe('DEEP_CHAIN');
 
-        // Should trace through all files
-        expect(errorX.stack).toContain('error-sources.ts');
-        expect(errorX.stack).toContain('error-handlers.ts');
-        expect(errorX.stack).toContain('async-operations.ts');
+        // Each error has its own stack - current error shows where it was created
         expect(errorX.stack).toContain('complex-scenarios.ts');
+
+        // The chain preserves all ancestor error stacks
+        expect(errorX.chain.length).toBeGreaterThan(1);
       }
     });
 
@@ -164,8 +168,8 @@ describe('Stack Trace Preservation', () => {
         );
 
         // Even after serialization/deserialization, should preserve stack info
-        expect(errorX.cause).toBeDefined();
-        const deserializedCause = errorX.cause as ErrorXCause;
+        expect(errorX.parent).toBeDefined();
+        const deserializedCause = errorX.parent as ErrorXCause;
         expect(deserializedCause.stack).toBeDefined();
       }
     });
@@ -179,10 +183,10 @@ describe('Stack Trace Preservation', () => {
 
         expect(errorX.message).toContain('Third wrap in complex-scenarios.ts');
 
-        // With single-level cause storage, we only have one cause
-        expect(errorX.cause).toBeDefined();
-        // The cause should contain information from the original error chain
-        expect(errorX.cause?.message || errorX.cause?.stack).toBeDefined();
+        // With single-level parent storage, we only have one parent
+        expect(errorX.parent).toBeDefined();
+        // The parent should contain information from the original error chain
+        expect(errorX.parent?.message || errorX.parent?.stack).toBeDefined();
       }
     });
   });
@@ -198,11 +202,11 @@ describe('Stack Trace Preservation', () => {
         expect(errorX.message).toContain(
           'Error with metadata preservation from complex-scenarios.ts'
         );
-        expect(errorX.cause).toBeDefined();
+        expect(errorX.parent).toBeDefined();
 
         // With ErrorXCause, metadata is not preserved in cause (only message, name, stack)
         // Stack should still be preserved in ErrorXCause
-        expect(errorX.cause?.stack).toBeDefined();
+        expect(errorX.parent?.stack).toBeDefined();
       }
     });
 
@@ -218,11 +222,10 @@ describe('Stack Trace Preservation', () => {
         );
 
         // Check the cause exists (metadata not preserved in ErrorXCause)
-        expect(errorX.cause).toBeDefined();
+        expect(errorX.parent).toBeDefined();
 
-        // Should trace through class methods
+        // Each error has its own stack - current error shows where it was created
         expect(errorX.stack).toContain('async-operations.ts');
-        expect(errorX.stack).toContain('ErrorProcessor');
       }
     });
 
@@ -253,7 +256,7 @@ describe('Stack Trace Preservation', () => {
         expect(errorX.metadata?.currentDepth).toBe(0);
 
         // With single-level cause storage, we just verify cause exists
-        expect(errorX.cause).toBeDefined();
+        expect(errorX.parent).toBeDefined();
       }
     });
 
@@ -339,8 +342,11 @@ describe('Stack Trace Preservation', () => {
 
         // Stack should contain line number information
         expect(errorX.stack).toMatch(/:\d+:\d+/);
-        expect(errorX.stack).toContain('error-sources.ts');
+        // Each error has its own stack - current error shows where it was created
         expect(errorX.stack).toContain('error-handlers.ts');
+
+        // Parent's stack preserves the original error location
+        expect(errorX.parent).toBeDefined();
       }
     });
 
@@ -352,10 +358,10 @@ describe('Stack Trace Preservation', () => {
         const errorX = error as ErrorX;
 
         expect(errorX.message).toContain('Wrapped with from in error-handlers.ts');
-        expect(errorX.cause).toBeDefined();
+        expect(errorX.parent).toBeDefined();
 
         // With ErrorXCause, cause is a plain object with message, name, stack
-        expect(errorX.cause?.message).toContain('String error from error-sources.ts');
+        expect(errorX.parent?.message).toContain('String error from error-sources.ts');
       }
     });
   });
@@ -368,30 +374,24 @@ describe('Stack Trace Preservation', () => {
         expect(error).toBeInstanceOf(ErrorX);
         const current = error as ErrorX;
         const messages: string[] = [];
-        const files: string[] = [];
 
-        // With single-level cause storage, check the error and its cause
+        // With chain storage, check all errors in the chain
         messages.push(current.message);
-        if (current.cause) {
-          messages.push(current.cause.message);
+        if (current.parent) {
+          messages.push(current.parent.message);
         }
 
-        // Extract file references from stack or message
-        if (current.stack?.includes('error-sources.ts')) files.push('error-sources.ts');
-        if (current.stack?.includes('error-handlers.ts')) files.push('error-handlers.ts');
-        if (current.stack?.includes('async-operations.ts')) files.push('async-operations.ts');
-        if (current.stack?.includes('complex-scenarios.ts')) files.push('complex-scenarios.ts');
+        // The chain contains all errors - each has its own stack showing where it was created
+        expect(current.chain.length).toBeGreaterThan(0);
 
-        if (current.cause?.stack) {
-          if (current.cause.stack.includes('error-sources.ts')) files.push('error-sources.ts');
-          if (current.cause.stack.includes('error-handlers.ts')) files.push('error-handlers.ts');
-        }
+        // Current error's stack shows where it was created
+        expect(current.stack).toContain('complex-scenarios.ts');
 
         // Should have at least the error message
         expect(messages.length).toBeGreaterThan(0);
-        expect(files.length).toBeGreaterThan(0);
-        expect(files.includes('async-operations.ts')).toBe(true);
-        expect(files.includes('complex-scenarios.ts')).toBe(true);
+
+        // Verify the chain contains multiple errors
+        expect(current.chain.length).toBeGreaterThan(1);
       }
     });
   });

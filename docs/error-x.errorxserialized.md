@@ -17,10 +17,9 @@ type ErrorXSerialized = {
     stack?: string;
     metadata: ErrorXMetadata | undefined;
     timestamp: number;
-    cause?: ErrorXCause;
-    type?: string;
-    docsUrl?: string;
-    source?: string;
+    httpStatus?: number;
+    original?: ErrorXCause;
+    chain?: ErrorXCause[];
 };
 ```
 **References:** [ErrorXMetadata](./error-x.errorxmetadata.md)<!-- -->, [ErrorXCause](./error-x.errorxcause.md)
@@ -29,7 +28,7 @@ type ErrorXSerialized = {
 
 
 ```typescript
-const serialized: SerializableError = {
+const serialized: ErrorXSerialized = {
   name: 'AuthError',
   message: 'Authentication failed.',
   code: 'AUTH_FAILED',
@@ -37,13 +36,16 @@ const serialized: SerializableError = {
   stack: 'Error: Authentication failed.\n    at login (auth.ts:42:15)',
   metadata: { userId: 123, loginAttempt: 3 },
   timestamp: 1705315845123,
-  cause: {
+  httpStatus: 401,
+  original: {
     name: 'NetworkError',
     message: 'Request timeout.',
     stack: '...'
   },
-  docsUrl: 'https://docs.example.com/errors#auth-failed',
-  source: 'auth-service'
+  chain: [
+    { name: 'AuthError', message: 'Authentication failed.' },
+    { name: 'NetworkError', message: 'Request timeout.' }
+  ]
 }
 ```
 
