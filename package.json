@@ -55,7 +55,7 @@
     "build": "tsup",
     "check": "biome check .",
     "dev": "tsup --watch",
-    "format": "biome format --write .",
+    "format": "biome format --write . && biome check . --write",
     "lint": "biome lint .",
     "prepare": "husky",
     "prepublishOnly": "pnpm run build && pnpm run test && pnpm run check",

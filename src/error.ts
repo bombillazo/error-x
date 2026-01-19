@@ -1,11 +1,11 @@
 import { deepmerge } from 'deepmerge-ts';
 import safeStringify from 'safe-stringify';
 import type {
-  ErrorXSnapshot,
   ErrorXMetadata,
   ErrorXOptionField,
   ErrorXOptions,
   ErrorXSerialized,
+  ErrorXSnapshot,
   ErrorXTransform,
   ErrorXTransformContext,
 } from './types.js';
@@ -437,8 +437,10 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       name: this.name,
       code: this.code,
       uiMessage: this.uiMessage,
-      metadata: { ...(this.metadata ?? {}), ...additionalMetadata } as TMetadata &
-        TAdditionalMetadata,
+      metadata: {
+        ...(this.metadata ?? {}),
+        ...additionalMetadata,
+      } as TMetadata & TAdditionalMetadata,
       httpStatus: this.httpStatus,
     };
     const newError = new ErrorX<TMetadata & TAdditionalMetadata>(options);
