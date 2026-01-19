@@ -642,7 +642,11 @@ describe('ErrorX', () => {
 
       it('should flatten chain when cause is ErrorX', () => {
         const root = new ErrorX({ message: 'root', code: 'ROOT' });
-        const middle = new ErrorX({ message: 'middle', code: 'MIDDLE', cause: root });
+        const middle = new ErrorX({
+          message: 'middle',
+          code: 'MIDDLE',
+          cause: root,
+        });
         const top = new ErrorX({ message: 'top', code: 'TOP', cause: middle });
 
         expect(top.chain).toHaveLength(3);
@@ -895,7 +899,11 @@ describe('ErrorX', () => {
     describe('accessing chain information', () => {
       it('should find specific error in chain by code', () => {
         const dbError = new ErrorX({ message: 'DB error', code: 'DB_ERROR' });
-        const repoError = new ErrorX({ message: 'Repo error', code: 'REPO_ERROR', cause: dbError });
+        const repoError = new ErrorX({
+          message: 'Repo error',
+          code: 'REPO_ERROR',
+          cause: dbError,
+        });
         const serviceError = new ErrorX({
           message: 'Service error',
           code: 'SERVICE_ERROR',
@@ -912,7 +920,10 @@ describe('ErrorX', () => {
         const nativeError = new Error('ECONNREFUSED');
         nativeError.name = 'NetworkError';
         const dbError = ErrorX.from(nativeError, { code: 'DB_CONNECTION' });
-        const serviceError = new ErrorX({ message: 'Service failed', cause: dbError });
+        const serviceError = new ErrorX({
+          message: 'Service failed',
+          cause: dbError,
+        });
 
         expect(serviceError.root?.original?.message).toBe('ECONNREFUSED');
         expect(serviceError.root?.original?.name).toBe('NetworkError');
@@ -1094,11 +1105,19 @@ describe('ErrorX', () => {
               name: 'WrapperError',
               message: 'Wrapped error.',
               stack: 'Error: Wrapped error.\n    at wrapper (file.js:5:1)',
+              code: 'WRAPPER',
+              uiMessage: 'Something went wrong. Please try again.',
+              metadata: {},
+              timestamp: 1705314645123,
             },
             {
               name: 'RootError',
               message: 'Root cause.',
               stack: 'Error: Root cause.\n    at test (file.js:1:1)',
+              code: 'ROOT_CAUSE',
+              uiMessage: 'The root error occurred.',
+              metadata: { detail: 'root detail' },
+              timestamp: 1705314645120,
             },
           ],
         };
@@ -1163,6 +1182,159 @@ describe('ErrorX', () => {
         expect(deserialized.parent?.name).toBe(root.name);
         expect(deserialized.parent?.message).toBe(root.message);
         expect(deserialized.parent?.stack).toBeDefined();
+      });
+
+      it('should preserve ALL properties for chain members (not just message, name, stack)', () => {
+        const root = new ErrorX({
+          message: 'root error',
+          name: 'RootError',
+          code: 'ROOT_CODE',
+          uiMessage: 'Root UI message',
+          httpStatus: 500,
+          metadata: { rootKey: 'rootValue', nested: { deep: true } },
+        });
+
+        const middle = new ErrorX({
+          message: 'middle error',
+          name: 'MiddleError',
+          code: 'MIDDLE_CODE',
+          uiMessage: 'Middle UI message',
+          httpStatus: 502,
+          metadata: { middleKey: 'middleValue' },
+          cause: root,
+        });
+
+        const top = new ErrorX({
+          message: 'top error',
+          name: 'TopError',
+          code: 'TOP_CODE',
+          uiMessage: 'Top UI message',
+          httpStatus: 503,
+          metadata: { topKey: 'topValue' },
+          cause: middle,
+        });
+
+        const serialized = top.toJSON();
+        const restored = ErrorX.fromJSON(serialized);
+
+        // Verify top-level error (already covered)
+        expect(restored.message).toBe('top error');
+        expect(restored.code).toBe('TOP_CODE');
+        expect(restored.httpStatus).toBe(503);
+
+        // Verify middle error preserves ALL properties
+        const restoredMiddle = restored.parent;
+        expect(restoredMiddle).toBeInstanceOf(ErrorX);
+        expect(restoredMiddle?.message).toBe('middle error');
+        expect(restoredMiddle?.name).toBe('MiddleError');
+        expect(restoredMiddle?.code).toBe('MIDDLE_CODE');
+        expect(restoredMiddle?.uiMessage).toBe('Middle UI message');
+        expect(restoredMiddle?.httpStatus).toBe(502);
+        expect(restoredMiddle?.metadata).toEqual({ middleKey: 'middleValue' });
+        expect(restoredMiddle?.timestamp).toBe(middle.timestamp);
+
+        // Verify root error preserves ALL properties
+        const restoredRoot = restored.parent?.parent;
+        expect(restoredRoot).toBeInstanceOf(ErrorX);
+        expect(restoredRoot?.message).toBe('root error');
+        expect(restoredRoot?.name).toBe('RootError');
+        expect(restoredRoot?.code).toBe('ROOT_CODE');
+        expect(restoredRoot?.uiMessage).toBe('Root UI message');
+        expect(restoredRoot?.httpStatus).toBe(500);
+        expect(restoredRoot?.metadata).toEqual({
+          rootKey: 'rootValue',
+          nested: { deep: true },
+        });
+        expect(restoredRoot?.timestamp).toBe(root.timestamp);
+      });
+
+      it('should preserve chain navigation from any point (parent.parent, parent.root)', () => {
+        const root = new ErrorX({
+          message: 'root',
+          code: 'ROOT',
+        });
+
+        const middle = new ErrorX({
+          message: 'middle',
+          code: 'MIDDLE',
+          cause: root,
+        });
+
+        const top = new ErrorX({
+          message: 'top',
+          code: 'TOP',
+          cause: middle,
+        });
+
+        const serialized = top.toJSON();
+        const restored = ErrorX.fromJSON(serialized);
+
+        // Chain navigation from top
+        expect(restored.parent?.parent).toBeDefined();
+        expect(restored.parent?.parent?.message).toBe('root');
+        expect(restored.root?.message).toBe('root');
+
+        // Chain navigation from middle (parent)
+        expect(restored.parent?.root).toBeDefined();
+        expect(restored.parent?.root?.message).toBe('root');
+        expect(restored.parent?.root).toBe(restored.root);
+
+        // parent.parent should equal root
+        expect(restored.parent?.parent).toBe(restored.root);
+      });
+
+      it('should handle backward compatibility with old ErrorXSnapshot format (only message, name, stack)', () => {
+        // Simulate old serialized format that only has message, name, stack in chain
+        const oldFormatSerialized = {
+          name: 'TopError',
+          message: 'Top error',
+          code: 'TOP_CODE',
+          uiMessage: 'Top UI',
+          metadata: { key: 'value' },
+          timestamp: Date.now(),
+          chain: [
+            {
+              name: 'TopError',
+              message: 'Top error',
+              stack: 'Error: Top error\n    at test',
+            },
+            {
+              name: 'RootError',
+              message: 'Root error',
+              stack: 'Error: Root error\n    at test',
+              // Note: no code, uiMessage, metadata, httpStatus, timestamp
+            },
+          ],
+        };
+
+        // Should not throw when deserializing old format
+        const restored = ErrorX.fromJSON(oldFormatSerialized as unknown as ErrorXSerialized);
+
+        expect(restored.message).toBe('Top error');
+        expect(restored.parent).toBeInstanceOf(ErrorX);
+        expect(restored.parent?.message).toBe('Root error');
+        expect(restored.parent?.name).toBe('RootError');
+        // These should be defaults for old format
+        expect(restored.parent?.code).toBeDefined(); // Auto-generated from name
+      });
+
+      it('should preserve original property in chain members', () => {
+        const nativeError = new Error('Native error');
+        const wrapped = ErrorX.from(nativeError, { code: 'WRAPPED' });
+
+        const top = new ErrorX({
+          message: 'top error',
+          code: 'TOP',
+          cause: wrapped,
+        });
+
+        const serialized = top.toJSON();
+        const restored = ErrorX.fromJSON(serialized);
+
+        // The wrapped error should have its original preserved
+        expect(restored.parent?.original).toBeDefined();
+        expect(restored.parent?.original?.message).toBe('Native error');
+        expect(restored.parent?.original?.name).toBe('Error');
       });
     });
   });

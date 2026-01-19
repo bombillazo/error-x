@@ -178,7 +178,7 @@ export type ErrorXSerialized = {
   /** Serialized non-ErrorX entity this was wrapped from (if created via ErrorX.from()) */
   original?: ErrorXSnapshot;
   /** Serialized error chain timeline (this error and all ancestors) */
-  chain?: ErrorXSnapshot[];
+  chain?: ErrorXSerialized[];
 };
 
 /**
