@@ -11,7 +11,7 @@ export {
   type ZodIssue,
 } from './presets/index';
 export type {
-  ErrorXCause,
+  ErrorXSnapshot,
   ErrorXMetadata,
   ErrorXOptions,
   ErrorXSerialized,

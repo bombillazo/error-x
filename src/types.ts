@@ -84,8 +84,8 @@ export type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
   code?: string | number;
   /** User-friendly message for UI display */
   uiMessage?: string | undefined;
-  /** Original error that caused this error (preserves error chain, will be converted to ErrorXCause format) */
-  cause?: ErrorXCause | Error | unknown;
+  /** Original error that caused this error (preserves error chain, will be converted to ErrorXSnapshot format) */
+  cause?: unknown;
   /** Additional context and debugging information */
   metadata?: TMetadata | undefined;
   /** HTTP status code associated with this error */
@@ -98,7 +98,7 @@ export type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
  *
  * @public
  */
-export type ErrorXCause = {
+export type ErrorXSnapshot = {
   /** Error message */
   message: string;
   /** Error name (optional) */
@@ -176,9 +176,9 @@ export type ErrorXSerialized = {
   /** HTTP status code associated with this error */
   httpStatus?: number;
   /** Serialized non-ErrorX entity this was wrapped from (if created via ErrorX.from()) */
-  original?: ErrorXCause;
+  original?: ErrorXSnapshot;
   /** Serialized error chain timeline (this error and all ancestors) */
-  chain?: ErrorXCause[];
+  chain?: ErrorXSnapshot[];
 };
 
 /**

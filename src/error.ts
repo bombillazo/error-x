@@ -1,7 +1,7 @@
 import { deepmerge } from 'deepmerge-ts';
 import safeStringify from 'safe-stringify';
 import type {
-  ErrorXCause,
+  ErrorXSnapshot,
   ErrorXMetadata,
   ErrorXOptionField,
   ErrorXOptions,
@@ -82,7 +82,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
   /** HTTP status code associated with this error */
   public httpStatus: number | undefined;
   /** Serialized non-ErrorX entity this was wrapped from (if created via ErrorX.from()) */
-  public original: ErrorXCause | undefined;
+  public original: ErrorXSnapshot | undefined;
   /** Error chain timeline: [this, parent, grandparent, ...] - single source of truth */
   private _chain: ErrorX[] = [];
 
@@ -203,40 +203,40 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
   }
 
   /**
-   * Converts any value to ErrorXCause format.
-   * @param value - Value to convert to ErrorXCause
-   * @returns ErrorXCause object or undefined if value is null/undefined
+   * Converts any value to ErrorXSnapshot format.
+   * @param value - Value to convert to ErrorXSnapshot
+   * @returns ErrorXSnapshot object or undefined if value is null/undefined
    */
-  private static toErrorXCause(value: unknown): ErrorXCause | undefined {
+  private static toErrorXSnapshot(value: unknown): ErrorXSnapshot | undefined {
     if (value === undefined || value === null) {
       return undefined;
     }
 
     if (value instanceof Error) {
-      const cause: ErrorXCause = {
+      const snapshot: ErrorXSnapshot = {
         message: value.message,
       };
       if (value.name) {
-        cause.name = value.name;
+        snapshot.name = value.name;
       }
       if (value.stack) {
-        cause.stack = value.stack;
+        snapshot.stack = value.stack;
       }
-      return cause;
+      return snapshot;
     }
 
     if (typeof value === 'object') {
       const obj = value as Record<string, unknown>;
-      const cause: ErrorXCause = {
+      const snapshot: ErrorXSnapshot = {
         message: String(obj.message || obj),
       };
       if (obj.name) {
-        cause.name = String(obj.name);
+        snapshot.name = String(obj.name);
       }
       if (obj.stack) {
-        cause.stack = String(obj.stack);
+        snapshot.stack = String(obj.stack);
       }
-      return cause;
+      return snapshot;
     }
 
     // Handle primitives
@@ -657,7 +657,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     const error = new ErrorX<TMetadata>(finalOptions);
 
     // Set original to serialized form of the source
-    error.original = ErrorX.toErrorXCause(payload);
+    error.original = ErrorX.toErrorXSnapshot(payload);
 
     // Preserve the original error's stack if it's an Error instance
     if (payload instanceof Error && payload.stack) {
@@ -775,16 +775,16 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     // Serialize the chain (excluding self, as the main object represents this error)
     if (this._chain.length > 1) {
       serialized.chain = this._chain.map((err) => {
-        const causeEntry: ErrorXCause = {
+        const snapshotEntry: ErrorXSnapshot = {
           message: err.message,
         };
         if (err.name) {
-          causeEntry.name = err.name;
+          snapshotEntry.name = err.name;
         }
         if (err.stack) {
-          causeEntry.stack = err.stack;
+          snapshotEntry.stack = err.stack;
         }
-        return causeEntry;
+        return snapshotEntry;
       });
     }
 
@@ -841,7 +841,7 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       error.original = serialized.original;
     }
 
-    // Restore chain from serialized ErrorXCause array
+    // Restore chain from serialized ErrorXSnapshot array
     if (serialized.chain && serialized.chain.length > 0) {
       // Reconstruct chain: first element is this error, rest are ancestors
       const chainErrors: ErrorX[] = [error];

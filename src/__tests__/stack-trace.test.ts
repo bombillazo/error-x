@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ErrorX, type ErrorXCause } from '../index.js';
+import { ErrorX, type ErrorXSnapshot } from '../index.js';
 import * as asyncOperations from './infrastructure/async-operations.js';
 import * as complexScenarios from './infrastructure/complex-scenarios.js';
 import * as errorHandlers from './infrastructure/error-handlers.js';
@@ -115,7 +115,7 @@ describe('Stack Trace Preservation', () => {
 
         // Check that the parent chain preserves error information
         expect(errorX.parent).toBeDefined();
-        const parent = errorX.parent as ErrorXCause;
+        const parent = errorX.parent as ErrorXSnapshot;
         expect(parent.message).toContain('Async catch with delay from error-handlers.ts');
       }
     });
@@ -169,7 +169,7 @@ describe('Stack Trace Preservation', () => {
 
         // Even after serialization/deserialization, should preserve stack info
         expect(errorX.parent).toBeDefined();
-        const deserializedCause = errorX.parent as ErrorXCause;
+        const deserializedCause = errorX.parent as ErrorXSnapshot;
         expect(deserializedCause.stack).toBeDefined();
       }
     });
@@ -204,8 +204,8 @@ describe('Stack Trace Preservation', () => {
         );
         expect(errorX.parent).toBeDefined();
 
-        // With ErrorXCause, metadata is not preserved in cause (only message, name, stack)
-        // Stack should still be preserved in ErrorXCause
+        // With ErrorXSnapshot, metadata is not preserved in cause (only message, name, stack)
+        // Stack should still be preserved in ErrorXSnapshot
         expect(errorX.parent?.stack).toBeDefined();
       }
     });
@@ -221,7 +221,7 @@ describe('Stack Trace Preservation', () => {
           'Chained processing by processor-async-operations in async-operations.ts'
         );
 
-        // Check the cause exists (metadata not preserved in ErrorXCause)
+        // Check the cause exists (metadata not preserved in ErrorXSnapshot)
         expect(errorX.parent).toBeDefined();
 
         // Each error has its own stack - current error shows where it was created
@@ -360,7 +360,7 @@ describe('Stack Trace Preservation', () => {
         expect(errorX.message).toContain('Wrapped with from in error-handlers.ts');
         expect(errorX.parent).toBeDefined();
 
-        // With ErrorXCause, cause is a plain object with message, name, stack
+        // With ErrorXSnapshot, cause is a plain object with message, name, stack
         expect(errorX.parent?.message).toContain('String error from error-sources.ts');
       }
     });

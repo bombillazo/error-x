@@ -134,17 +134,6 @@ Metadata type for database errors. Provides context about the database operation
 </td></tr>
 <tr><td>
 
-[ErrorXCause](./error-x.errorxcause.md)
-
-
-</td><td>
-
-Simplified representation of an error cause for serialization. Used to store error chain information without circular references.
-
-
-</td></tr>
-<tr><td>
-
 [ErrorXMetadata](./error-x.errorxmetadata.md)
 
 
@@ -187,6 +176,17 @@ Configuration options for creating an ErrorX instance. All properties are option
 </td><td>
 
 JSON-serializable representation of an ErrorX instance. Used for transmitting errors over network or storing in databases.
+
+
+</td></tr>
+<tr><td>
+
+[ErrorXSnapshot](./error-x.errorxsnapshot.md)
+
+
+</td><td>
+
+Simplified representation of an error cause for serialization. Used to store error chain information without circular references.
 
 
 </td></tr>

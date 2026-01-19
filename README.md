@@ -100,7 +100,7 @@ The base error class that extends the native `Error` with enhanced capabilities.
 | `chain`      | `readonly ErrorX[]`        | Full error sequence: `[this, parent, grandparent, ..., root]`  |
 | `root`       | `ErrorX \| undefined`      | Error that started the whole error chain                       |
 | `parent`     | `ErrorX \| undefined`      | Error that immediately precedes this error in the chain        |
-| `original`   | `ErrorXCause \| undefined` | Stores the original non-ErrorX error used to create this error |
+| `original`   | `ErrorXSnapshot \| undefined` | Stores the original non-ErrorX error used to create this error |
 
 #### Static Methods
 
@@ -158,15 +158,79 @@ new ErrorX<UserMeta>({
 
 ### ErrorXOptions
 
-| Property   | Type                              | Default               | Description                               |
-| ---------- | --------------------------------- | --------------------- | ----------------------------------------- |
-| message    | `string`                          | `'An error occurred'` | Technical error message                   |
-| name       | `string`                          | `'Error'`             | Error type/name                           |
-| code       | `string \| number`                | Auto-generated        | Error identifier (UPPER_SNAKE_CASE)       |
-| uiMessage  | `string`                          | `undefined`           | User-friendly message                     |
-| httpStatus | `number`                          | `undefined`           | HTTP status code                          |
-| metadata   | `TMetadata`                       | `undefined`           | Additional context                        |
-| cause      | `ErrorXCause \| Error \| unknown` | `undefined`           | Error that caused this (builds the chain) |
+| Property   | Type               | Default               | Description                               |
+| ---------- | ------------------ | --------------------- | ----------------------------------------- |
+| message    | `string`           | `'An error occurred'` | Technical error message                   |
+| name       | `string`           | `'Error'`             | Error type/name                           |
+| code       | `string \| number` | Auto-generated        | Error identifier (UPPER_SNAKE_CASE)       |
+| uiMessage  | `string`           | `undefined`           | User-friendly message                     |
+| httpStatus | `number`           | `undefined`           | HTTP status code                          |
+| metadata   | `TMetadata`        | `undefined`           | Additional context                        |
+| cause      | `unknown`          | `undefined`           | Error that caused this (builds the chain) |
+
+## Global Configuration
+
+Configure stack trace cleaning and other global settings.
+
+```typescript
+import { ErrorX } from "@bombillazo/error-x";
+
+// Enable stack cleaning with custom delimiter
+ErrorX.configure({
+  cleanStack: true,
+  cleanStackDelimiter: "my-app-entry",
+});
+
+// Custom patterns to remove from stack traces
+ErrorX.configure({
+  cleanStack: ["node_modules", "internal/"],
+});
+
+// Disable stack cleaning
+ErrorX.configure({ cleanStack: false });
+
+// Get current config
+const config = ErrorX.getConfig();
+
+// Reset to defaults
+ErrorX.resetConfig();
+```
+
+### Auto Code Generation
+
+Error codes are automatically generated from names in UPPER_SNAKE_CASE when not provided:
+
+```typescript
+new ErrorX({ name: "DatabaseError" });
+// → code: 'DATABASE_ERROR'
+
+new ErrorX({ name: "userAuthError" });
+// → code: 'USER_AUTH_ERROR'
+
+new ErrorX({ name: "API Timeout" });
+// → code: 'API_TIMEOUT'
+```
+
+### Message Formatting
+
+ErrorX does NOT auto-format messages. Messages are passed through as-is:
+
+```typescript
+new ErrorX({ message: "test error" });
+// → message: 'test error'
+
+new ErrorX({ message: "Test error." });
+// → message: 'Test error.'
+```
+
+Empty or whitespace-only messages default to `'An error occurred'`:
+
+```typescript
+new ErrorX({ message: "" });
+// → message: 'An error occurred'
+```
+
+Preset messages in specialized classes (HTTPErrorX, DBErrorX) are properly formatted with sentence casing and periods.
 
 ---
 
@@ -288,7 +352,7 @@ try {
 if (ErrorX.isErrorX(error)) {
   console.log(
     "Error chain:",
-    error.chain.map((e) => e.name)
+    error.chain.map((e) => e.name),
   );
   console.log("Root cause:", error.root?.original);
 }
@@ -492,12 +556,12 @@ export class PaymentErrorX extends ErrorX<PaymentMetadata> {
   // Override create for proper typing
   static override create(
     presetKey?: PaymentPresetKey,
-    overrides?: Partial<ErrorXOptions<PaymentMetadata>>
+    overrides?: Partial<ErrorXOptions<PaymentMetadata>>,
   ): PaymentErrorX {
     return ErrorX.create.call(
       PaymentErrorX,
       presetKey,
-      overrides
+      overrides,
     ) as PaymentErrorX;
   }
 }
@@ -513,76 +577,6 @@ if (error instanceof PaymentErrorX) {
   console.log(error.metadata?.transactionId);
 }
 ```
-
----
-
-## Other Usage
-
-### Global Configuration
-
-Configure stack trace cleaning and other global settings.
-
-```typescript
-import { ErrorX } from "@bombillazo/error-x";
-
-// Enable stack cleaning with custom delimiter
-ErrorX.configure({
-  cleanStack: true,
-  cleanStackDelimiter: "my-app-entry",
-});
-
-// Custom patterns to remove from stack traces
-ErrorX.configure({
-  cleanStack: ["node_modules", "internal/"],
-});
-
-// Disable stack cleaning
-ErrorX.configure({ cleanStack: false });
-
-// Get current config
-const config = ErrorX.getConfig();
-
-// Reset to defaults
-ErrorX.resetConfig();
-```
-
-### Auto Code Generation
-
-Error codes are automatically generated from names in UPPER_SNAKE_CASE when not provided:
-
-```typescript
-new ErrorX({ name: "DatabaseError" });
-// → code: 'DATABASE_ERROR'
-
-new ErrorX({ name: "userAuthError" });
-// → code: 'USER_AUTH_ERROR'
-
-new ErrorX({ name: "API Timeout" });
-// → code: 'API_TIMEOUT'
-```
-
-### Message Formatting
-
-ErrorX does NOT auto-format messages. Messages are passed through as-is:
-
-```typescript
-new ErrorX({ message: "test error" });
-// → message: 'test error'
-
-new ErrorX({ message: "Test error." });
-// → message: 'Test error.'
-```
-
-Empty or whitespace-only messages default to `'An error occurred'`:
-
-```typescript
-new ErrorX({ message: "" });
-// → message: 'An error occurred'
-```
-
-Preset messages in specialized classes (HTTPErrorX, DBErrorX) are properly formatted with sentence casing and periods.
-
----
 
 ## License
 
