@@ -18,6 +18,7 @@ A smart, isomorphic, and type-safe error library for TypeScript applications. Pr
 - **Custom metadata** with type-safe generics for additional context
 - **Global configuration** for stack cleaning and defaults
 - **Serialization/deserialization** for network transfer and storage
+- **ErrorXResolver** for i18n, documentation URLs, and custom presentation logic
 - **Custom ErrorX class** examples:
   - `HTTPErrorX` - HTTP status code presets (400-511)
   - `DBErrorX` - Database error presets (connection, query, constraints)
@@ -60,7 +61,6 @@ throw new ErrorX({
   message: "User authentication failed",
   name: "AuthError",
   code: "AUTH_FAILED",
-  uiMessage: "Please check your credentials",
   httpStatus: 401,
   metadata: { userId: 123 },
 });
@@ -87,19 +87,18 @@ The base error class that extends the native `Error` with enhanced capabilities.
 
 #### Properties
 
-| Property     | Type                       | Description                                                    |
-| ------------ | -------------------------- | -------------------------------------------------------------- |
-| `message`    | `string`                   | Technical error message                                        |
-| `name`       | `string`                   | Error type/name                                                |
-| `code`       | `string`                   | Error identifier code (auto-generated from name if not set)    |
-| `uiMessage`  | `string \| undefined`      | User-friendly message for UI display                           |
-| `httpStatus` | `number \| undefined`      | HTTP status code associated with this error                    |
-| `metadata`   | `TMetadata \| undefined`   | Additional context (type-safe with generics)                   |
-| `timestamp`  | `number`                   | Unix epoch timestamp (ms) when error was created               |
-| `stack`      | `string \| undefined`      | Stack trace (inherited from Error)                             |
-| `chain`      | `readonly ErrorX[]`        | Full error sequence: `[this, parent, grandparent, ..., root]`  |
-| `root`       | `ErrorX \| undefined`      | Error that started the whole error chain                       |
-| `parent`     | `ErrorX \| undefined`      | Error that immediately precedes this error in the chain        |
+| Property     | Type                          | Description                                                    |
+| ------------ | ----------------------------- | -------------------------------------------------------------- |
+| `message`    | `string`                      | Technical error message                                        |
+| `name`       | `string`                      | Error type/name                                                |
+| `code`       | `string`                      | Error identifier code (auto-generated from name if not set)    |
+| `httpStatus` | `number \| undefined`         | HTTP status code associated with this error                    |
+| `metadata`   | `TMetadata \| undefined`      | Additional context (type-safe with generics)                   |
+| `timestamp`  | `number`                      | Unix epoch timestamp (ms) when error was created               |
+| `stack`      | `string \| undefined`         | Stack trace (inherited from Error)                             |
+| `chain`      | `readonly ErrorX[]`           | Full error sequence: `[this, parent, grandparent, ..., root]`  |
+| `root`       | `ErrorX \| undefined`         | Error that started the whole error chain                       |
+| `parent`     | `ErrorX \| undefined`         | Error that immediately precedes this error in the chain        |
 | `original`   | `ErrorXSnapshot \| undefined` | Stores the original non-ErrorX error used to create this error |
 
 #### Static Methods
@@ -143,7 +142,6 @@ new ErrorX({
   message: "User not found",
   name: "NotFoundError",
   code: "USER_NOT_FOUND",
-  uiMessage: "The requested user does not exist",
   httpStatus: 404,
   metadata: { userId: 123 },
 });
@@ -163,7 +161,6 @@ new ErrorX<UserMeta>({
 | message    | `string`           | `'An error occurred'` | Technical error message                   |
 | name       | `string`           | `'Error'`             | Error type/name                           |
 | code       | `string \| number` | Auto-generated        | Error identifier (UPPER_SNAKE_CASE)       |
-| uiMessage  | `string`           | `undefined`           | User-friendly message                     |
 | httpStatus | `number`           | `undefined`           | HTTP status code                          |
 | metadata   | `TMetadata`        | `undefined`           | Additional context                        |
 | cause      | `unknown`          | `undefined`           | Error that caused this (builds the chain) |
@@ -311,7 +308,7 @@ Serialize ErrorX instances for network transfer or storage.
 ```typescript
 // Serialize
 const json = error.toJSON();
-// { name, message, code, uiMessage, stack, metadata, timestamp, httpStatus, original, chain }
+// { name, message, code, stack, metadata, timestamp, httpStatus, original, chain }
 
 // Deserialize
 const restored = ErrorX.fromJSON(json);
@@ -474,7 +471,6 @@ try {
 
 // With overrides
 ValidationErrorX.fromZodError(zodError, {
-  uiMessage: "Please check your input",
   httpStatus: 422,
 });
 
@@ -519,24 +515,28 @@ const paymentPresets = {
     code: "INSUFFICIENT_FUNDS",
     name: "PaymentError",
     message: "Insufficient funds.",
-    uiMessage: "Your payment method has insufficient funds.",
     httpStatus: 402,
   },
   CARD_DECLINED: {
     code: "CARD_DECLINED",
     name: "PaymentError",
     message: "Card declined.",
-    uiMessage: "Your card was declined. Please try another payment method.",
     httpStatus: 402,
   },
   EXPIRED_CARD: {
     code: "EXPIRED_CARD",
     name: "PaymentError",
     message: "Card expired.",
-    uiMessage: "Your card has expired. Please update your payment method.",
     httpStatus: 402,
   },
 } as const satisfies Record<string, ErrorXOptions>;
+
+// Optional: Define user-friendly messages separately
+export const paymentErrorUiMessages: Record<keyof typeof paymentPresets, string> = {
+  INSUFFICIENT_FUNDS: "Your payment method has insufficient funds.",
+  CARD_DECLINED: "Your card was declined. Please try another payment method.",
+  EXPIRED_CARD: "Your card has expired. Please update your payment method.",
+};
 
 // 3. Derive preset key type
 type PaymentPresetKey = keyof typeof paymentPresets | (string & {});
@@ -576,6 +576,158 @@ throw PaymentErrorX.create("CARD_DECLINED", {
 if (error instanceof PaymentErrorX) {
   console.log(error.metadata?.transactionId);
 }
+```
+
+---
+
+## ErrorXResolver
+
+The `ErrorXResolver` class resolves `ErrorX` instances to enhanced presentation objects with i18n support, documentation URLs, and custom properties.
+
+### Basic Usage
+
+```typescript
+import { ErrorXResolver, HTTPErrorX } from "@bombillazo/error-x";
+
+const resolver = new ErrorXResolver({
+  // Required: determine error type from error instance
+  onResolveType: (error) => {
+    if (error instanceof HTTPErrorX) return "http";
+    return "general";
+  },
+  // Per-type configuration
+  configs: {
+    http: { namespace: "errors.http" },
+    general: { namespace: "errors" },
+  },
+});
+
+const error = HTTPErrorX.create(404);
+const result = resolver.resolve(error);
+// → { uiMessage: undefined, docsUrl: '', i18nKey: 'errors.http.NOT_FOUND', errorType: 'http', config: {...} }
+```
+
+### With i18n Integration
+
+```typescript
+import i18next from "i18next";
+
+const resolver = new ErrorXResolver({
+  i18n: {
+    resolver: (key, params) => i18next.t(key, params),
+    keyTemplate: "{namespace}.{code}", // default
+  },
+  docs: {
+    baseUrl: "https://docs.example.com/errors",
+  },
+  onResolveType: (error) => (error.code.startsWith("HTTP_") ? "http" : "general"),
+  configs: {
+    http: { namespace: "errors.http", docsPath: "/http" },
+    general: { namespace: "errors.general" },
+  },
+});
+
+const result = resolver.resolve(error);
+// → { uiMessage: 'Not found', docsUrl: 'https://docs.example.com/errors/http#NOT_FOUND', ... }
+```
+
+### Custom Config Properties
+
+Extend the resolver with custom properties for your domain:
+
+```typescript
+import { ErrorXResolver, type ErrorXResolverConfig } from "@bombillazo/error-x";
+
+// Define custom config with additional properties
+type MyConfig = ErrorXResolverConfig<{
+  severity: "error" | "warning" | "info";
+  retryable: boolean;
+}>;
+
+const resolver = new ErrorXResolver<MyConfig>({
+  onResolveType: (error) => "api",
+  defaults: {
+    namespace: "errors",
+    severity: "error",
+    retryable: false,
+  },
+  configs: {
+    api: {
+      namespace: "errors.api",
+      severity: "warning",
+      retryable: true,
+      // Per-code overrides
+      presets: {
+        NOT_FOUND: { severity: "info", retryable: false },
+      },
+    },
+  },
+});
+```
+
+### Custom Result Type
+
+Transform the resolve output to match your API:
+
+```typescript
+type MyResult = { message: string; docs: string; canRetry: boolean };
+
+const resolver = new ErrorXResolver<MyConfig, MyResult>({
+  onResolveType: (error) => "api",
+  onResolve: (error, context) => ({
+    message: context.uiMessage ?? error.message,
+    docs: context.docsUrl,
+    canRetry: context.config.retryable,
+  }),
+  configs: { api: { namespace: "errors.api", retryable: true } },
+});
+```
+
+---
+
+## UI Messages
+
+User-friendly messages are provided separately from error presets. This allows errors to remain technical while UI messages can be managed independently (e.g., for i18n).
+
+### Available Exports
+
+```typescript
+import {
+  httpErrorUiMessages,
+  dbErrorUiMessages,
+  validationErrorUiMessage,
+} from "@bombillazo/error-x";
+
+// HTTP error messages keyed by status code
+httpErrorUiMessages[404]; // "The requested resource could not be found."
+httpErrorUiMessages[500]; // "An unexpected error occurred. Please try again later."
+
+// Database error messages keyed by preset name
+dbErrorUiMessages.CONNECTION_FAILED; // "Unable to connect to the database. Please try again later."
+dbErrorUiMessages.UNIQUE_VIOLATION; // "This record already exists."
+
+// Validation error default message
+validationErrorUiMessage; // "The provided input is invalid. Please check your data."
+```
+
+### Usage with ErrorXResolver
+
+```typescript
+import { ErrorXResolver, HTTPErrorX, httpErrorUiMessages } from "@bombillazo/error-x";
+
+const resolver = new ErrorXResolver({
+  onResolveType: () => "http",
+  configs: {
+    http: {
+      namespace: "errors.http",
+      presets: {
+        // Use provided UI messages as static fallbacks
+        NOT_FOUND: { uiMessage: httpErrorUiMessages[404] },
+        UNAUTHORIZED: { uiMessage: httpErrorUiMessages[401] },
+      },
+    },
+  },
+});
 ```
 
 ## License
