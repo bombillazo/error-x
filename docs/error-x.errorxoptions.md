@@ -13,7 +13,6 @@ type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
     message?: string;
     name?: string;
     code?: string | number;
-    uiMessage?: string | undefined;
     cause?: unknown;
     metadata?: TMetadata | undefined;
     httpStatus?: number | undefined;

@@ -1,15 +1,15 @@
 import { deepmerge } from 'deepmerge-ts';
 import safeStringify from 'safe-stringify';
-import type {
-  ErrorXMetadata,
-  ErrorXOptionField,
-  ErrorXOptions,
-  ErrorXSerialized,
-  ErrorXSnapshot,
-  ErrorXTransform,
-  ErrorXTransformContext,
-} from './types.js';
-import { ERROR_X_OPTION_FIELDS } from './types.js';
+import {
+  ERROR_X_OPTION_FIELDS,
+  type ErrorXMetadata,
+  type ErrorXOptionField,
+  type ErrorXOptions,
+  type ErrorXSerialized,
+  type ErrorXSnapshot,
+  type ErrorXTransform,
+  type ErrorXTransformContext,
+} from './types';
 
 // Use the single source of truth for accepted fields
 const acceptedFields = new Set(ERROR_X_OPTION_FIELDS);
@@ -52,7 +52,6 @@ export interface ErrorXConfig {
  *   message: 'User authentication failed',
  *   name: 'AuthError',
  *   code: 'AUTH_FAILED',
- *   uiMessage: 'Please check your credentials',
  *   metadata: { userId: 123, loginAttempt: 3 }
  * })
  *
@@ -73,8 +72,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
 
   /** Error identifier code, auto-generated from name if not provided */
   public code: string;
-  /** User-friendly message suitable for display in UI */
-  public uiMessage: string | undefined;
   /** Additional context and metadata associated with the error */
   public metadata: TMetadata | undefined;
   /** Unix epoch timestamp (milliseconds) when the error was created */
@@ -128,7 +125,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    *   message: 'Database query failed',
    *   name: 'DatabaseError',
    *   code: 'DB_QUERY_FAILED',
-   *   uiMessage: 'Unable to load data. Please try again.',
    *   metadata: { query: 'SELECT * FROM users', timeout: 5000 }
    * })
    *
@@ -166,7 +162,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     this.name = options.name ?? ErrorX.getDefaultName();
     this.code =
       options.code != null ? String(options.code) : ErrorX.generateDefaultCode(options.name);
-    this.uiMessage = options.uiMessage;
     this.metadata = options.metadata;
     this.timestamp = Date.now();
     this.httpStatus = options.httpStatus;
@@ -436,7 +431,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       message: this.message,
       name: this.name,
       code: this.code,
-      uiMessage: this.uiMessage,
       metadata: {
         ...(this.metadata ?? {}),
         ...additionalMetadata,
@@ -497,7 +491,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     let name = '';
     let message = '';
     let code = '';
-    let uiMessage = '';
     let cause: unknown;
     let metadata: ErrorXMetadata = {};
     let httpStatus: number | undefined;
@@ -527,10 +520,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
         // Extract code
         if ('code' in error && error.code) code = String(error.code);
 
-        // Extract UI message
-        if ('uiMessage' in error && error.uiMessage) uiMessage = String(error.uiMessage);
-        else if ('userMessage' in error && error.userMessage) uiMessage = String(error.userMessage);
-
         // Extract metadata directly if present
         if ('metadata' in error && typeof error.metadata === 'object' && error.metadata !== null) {
           metadata = error.metadata as ErrorXMetadata;
@@ -553,7 +542,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
 
     if (name) options.name = name;
     if (code) options.code = code;
-    if (uiMessage) options.uiMessage = uiMessage;
     if (cause) options.cause = cause;
     if (Object.keys(metadata).length > 0) options.metadata = metadata;
     if (httpStatus !== undefined) options.httpStatus = httpStatus;
@@ -626,7 +614,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
           message: overrides.message ?? payload.message,
           name: overrides.name ?? payload.name,
           code: overrides.code ?? payload.code,
-          uiMessage: overrides.uiMessage ?? payload.uiMessage,
           httpStatus: overrides.httpStatus ?? payload.httpStatus,
           metadata: overrides.metadata
             ? (deepmerge(payload.metadata ?? {}, overrides.metadata) as TMetadata)
@@ -754,7 +741,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       name: this.name,
       message: this.message,
       code: this.code,
-      uiMessage: this.uiMessage,
       metadata: safeMetadata,
       timestamp: this.timestamp,
     };
@@ -786,7 +772,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
           name: err.name,
           message: err.message,
           code: err.code,
-          uiMessage: err.uiMessage,
           metadata: safeMetadata,
           timestamp: err.timestamp,
         };
@@ -816,7 +801,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
    *   name: 'DatabaseError',
    *   message: 'Connection failed.',
    *   code: 'DB_CONN_FAILED',
-   *   uiMessage: 'Database is temporarily unavailable',
    *   metadata: { host: 'localhost' },
    *   timestamp: 1705315845123
    * }
@@ -833,7 +817,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
       message: serialized.message,
       name: serialized.name,
       code: serialized.code,
-      uiMessage: serialized.uiMessage,
       httpStatus: serialized.httpStatus,
     };
     if (serialized.metadata !== undefined) {
@@ -869,8 +852,6 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
         if (causeData.name) chainErrorOptions.name = causeData.name;
         if ('code' in causeData && causeData.code !== undefined)
           chainErrorOptions.code = causeData.code;
-        if ('uiMessage' in causeData && causeData.uiMessage !== undefined)
-          chainErrorOptions.uiMessage = causeData.uiMessage;
         if ('metadata' in causeData && causeData.metadata !== undefined)
           chainErrorOptions.metadata = causeData.metadata;
         if ('httpStatus' in causeData && causeData.httpStatus !== undefined)

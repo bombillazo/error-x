@@ -14,97 +14,82 @@ static presets: {
             readonly code: "CONNECTION_FAILED";
             readonly name: "DBConnectionError";
             readonly message: "Failed to connect to database.";
-            readonly uiMessage: "Unable to connect to the database. Please try again later.";
         };
         readonly CONNECTION_TIMEOUT: {
             readonly code: "CONNECTION_TIMEOUT";
             readonly name: "DBConnectionTimeoutError";
             readonly message: "Database connection timed out.";
-            readonly uiMessage: "The database connection timed out. Please try again.";
         };
         readonly CONNECTION_REFUSED: {
             readonly code: "CONNECTION_REFUSED";
             readonly name: "DBConnectionRefusedError";
             readonly message: "Database connection refused.";
-            readonly uiMessage: "Unable to connect to the database. Please try again later.";
         };
         readonly CONNECTION_LOST: {
             readonly code: "CONNECTION_LOST";
             readonly name: "DBConnectionLostError";
             readonly message: "Database connection lost.";
-            readonly uiMessage: "The database connection was lost. Please try again.";
         };
         readonly QUERY_FAILED: {
             readonly code: "QUERY_FAILED";
             readonly name: "DBQueryError";
             readonly message: "Database query failed.";
-            readonly uiMessage: "The database operation failed. Please try again.";
         };
         readonly QUERY_TIMEOUT: {
             readonly code: "QUERY_TIMEOUT";
             readonly name: "DBQueryTimeoutError";
             readonly message: "Database query timed out.";
-            readonly uiMessage: "The database operation took too long. Please try again.";
         };
         readonly SYNTAX_ERROR: {
             readonly code: "SYNTAX_ERROR";
             readonly name: "DBSyntaxError";
             readonly message: "Invalid query syntax.";
-            readonly uiMessage: "An internal error occurred. Please contact support.";
         };
         readonly UNIQUE_VIOLATION: {
             readonly code: "UNIQUE_VIOLATION";
             readonly name: "DBUniqueViolationError";
             readonly message: "Unique constraint violation.";
-            readonly uiMessage: "This record already exists.";
             readonly httpStatus: 409;
         };
         readonly FOREIGN_KEY_VIOLATION: {
             readonly code: "FOREIGN_KEY_VIOLATION";
             readonly name: "DBForeignKeyError";
             readonly message: "Foreign key constraint violation.";
-            readonly uiMessage: "This operation references a record that does not exist.";
             readonly httpStatus: 400;
         };
         readonly NOT_NULL_VIOLATION: {
             readonly code: "NOT_NULL_VIOLATION";
             readonly name: "DBNotNullError";
             readonly message: "Not null constraint violation.";
-            readonly uiMessage: "A required field is missing.";
             readonly httpStatus: 400;
         };
         readonly CHECK_VIOLATION: {
             readonly code: "CHECK_VIOLATION";
             readonly name: "DBCheckViolationError";
             readonly message: "Check constraint violation.";
-            readonly uiMessage: "The provided data is invalid.";
             readonly httpStatus: 400;
         };
         readonly TRANSACTION_FAILED: {
             readonly code: "TRANSACTION_FAILED";
             readonly name: "DBTransactionError";
             readonly message: "Database transaction failed.";
-            readonly uiMessage: "The operation failed. Please try again.";
         };
         readonly DEADLOCK: {
             readonly code: "DEADLOCK";
             readonly name: "DBDeadlockError";
             readonly message: "Database deadlock detected.";
-            readonly uiMessage: "The operation encountered a conflict. Please try again.";
             readonly httpStatus: 409;
         };
         readonly NOT_FOUND: {
             readonly code: "NOT_FOUND";
             readonly name: "DBNotFoundError";
             readonly message: "Record not found.";
-            readonly uiMessage: "The requested record was not found.";
             readonly httpStatus: 404;
         };
         readonly UNKNOWN: {
             readonly code: "UNKNOWN";
             readonly name: "DBErrorX";
             readonly message: "An unknown database error occurred.";
-            readonly uiMessage: "A database error occurred. Please try again later.";
         };
     };
 ```

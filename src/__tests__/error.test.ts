@@ -30,7 +30,6 @@ describe('ErrorX', () => {
       expect(error.message).toBe('test error');
       expect(error.name).toBe('Error');
       expect(error.code).toBe('ERROR');
-      expect(error.uiMessage).toBeUndefined();
       expect(error.metadata).toBeUndefined();
       expect(error.timestamp).toEqual(mockDate.getTime());
       expect(error).toBeInstanceOf(Error);
@@ -44,14 +43,12 @@ describe('ErrorX', () => {
         message: 'authentication failed',
         name: 'AuthError',
         code: 'AUTH_FAILED',
-        uiMessage: 'Please check your credentials',
         metadata,
       });
 
       expect(error.message).toBe('authentication failed');
       expect(error.name).toBe('AuthError');
       expect(error.code).toBe('AUTH_FAILED');
-      expect(error.uiMessage).toBe('Please check your credentials');
       expect(error.metadata).toEqual(metadata);
       expect(error.timestamp).toEqual(mockDate.getTime());
     });
@@ -62,7 +59,6 @@ describe('ErrorX', () => {
       expect(error.message).toBe('test error');
       expect(error.name).toBe('Error');
       expect(error.code).toBe('ERROR');
-      expect(error.uiMessage).toBeUndefined();
       expect(error.metadata).toBeUndefined();
       expect(error.timestamp).toEqual(mockDate.getTime());
       expect(error).toBeInstanceOf(Error);
@@ -77,7 +73,6 @@ describe('ErrorX', () => {
         message: 'authentication failed',
         name: 'AuthError',
         code: 'AUTH_FAILED',
-        uiMessage: 'Please check your credentials',
         cause,
         metadata,
       });
@@ -85,7 +80,6 @@ describe('ErrorX', () => {
       expect(error.message).toBe('authentication failed');
       expect(error.name).toBe('AuthError');
       expect(error.code).toBe('AUTH_FAILED');
-      expect(error.uiMessage).toBe('Please check your credentials');
       expect(error.metadata).toEqual(metadata);
       // cause is now an ErrorX instance (wrapped native error)
       expect(error.parent).toBeInstanceOf(ErrorX);
@@ -103,13 +97,11 @@ describe('ErrorX', () => {
         message: 'HTTP error',
         name: 'HTTPError',
         code: 404,
-        uiMessage: 'Page not found',
       });
 
       expect(error.message).toBe('HTTP error');
       expect(error.name).toBe('HTTPError');
       expect(error.code).toBe('404');
-      expect(error.uiMessage).toBe('Page not found');
     });
 
     it('should create error', () => {
@@ -130,7 +122,6 @@ describe('ErrorX', () => {
       expect(error.message).toBe('An error occurred');
       expect(error.name).toBe('Error');
       expect(error.code).toBe('ERROR');
-      expect(error.uiMessage).toBeUndefined();
       expect(error.metadata).toBeUndefined();
       expect(error.timestamp).toEqual(mockDate.getTime());
       expect(error).toBeInstanceOf(Error);
@@ -143,7 +134,6 @@ describe('ErrorX', () => {
       expect(error.message).toBe('An error occurred');
       expect(error.name).toBe('Error');
       expect(error.code).toBe('ERROR');
-      expect(error.uiMessage).toBeUndefined();
       expect(error.metadata).toBeUndefined();
       expect(error.timestamp).toEqual(mockDate.getTime());
     });
@@ -154,7 +144,6 @@ describe('ErrorX', () => {
       expect(error.message).toBe('An error occurred');
       expect(error.name).toBe('CustomError');
       expect(error.code).toBe('CUSTOM_ERROR');
-      expect(error.uiMessage).toBeUndefined();
       expect(error.metadata).toBeUndefined();
     });
 
@@ -242,7 +231,6 @@ describe('ErrorX', () => {
         message: 'user not found',
         name: 'NotFoundError',
         code: 'USER_404',
-        uiMessage: 'User does not exist',
       };
 
       const error = new ErrorX(apiError);
@@ -250,7 +238,6 @@ describe('ErrorX', () => {
       expect(error.message).toBe('user not found');
       expect(error.name).toBe('NotFoundError');
       expect(error.code).toBe('USER_404');
-      expect(error.uiMessage).toBe('User does not exist');
       // When object has ErrorX properties, it's treated as ErrorXOptions directly
       expect(error.metadata).toBeUndefined();
     });
@@ -330,11 +317,6 @@ describe('ErrorX', () => {
       expect(error.name).toBe('Error');
     });
 
-    it('should use correct default UI message', () => {
-      const error = new ErrorX({ message: 'test' });
-      expect(error.uiMessage).toBeUndefined();
-    });
-
     it('should generate default code when no name provided', () => {
       const error = new ErrorX({ message: 'test' });
       expect(error.code).toBe('ERROR');
@@ -397,7 +379,6 @@ describe('ErrorX', () => {
           message: 'user not found',
           name: 'NotFoundError',
           code: 'USER_404',
-          uiMessage: 'User does not exist',
           statusText: 'Not Found',
           endpoint: '/api/users/123',
         };
@@ -407,7 +388,6 @@ describe('ErrorX', () => {
         expect(converted.message).toBe('user not found');
         expect(converted.name).toBe('NotFoundError');
         expect(converted.code).toBe('USER_404');
-        expect(converted.uiMessage).toBe('User does not exist');
         expect(converted.metadata).toBeUndefined();
       });
 
@@ -986,7 +966,6 @@ describe('ErrorX', () => {
           message: 'test error',
           name: 'TestError',
           code: 'TEST_CODE',
-          uiMessage: 'User message',
           metadata: { key: 'value' },
         });
 
@@ -996,7 +975,6 @@ describe('ErrorX', () => {
           name: 'TestError',
           message: 'test error',
           code: 'TEST_CODE',
-          uiMessage: 'User message',
           metadata: { key: 'value' },
           timestamp: mockDate.getTime(),
           stack: error.stack,
@@ -1075,7 +1053,6 @@ describe('ErrorX', () => {
           name: 'TestError',
           message: 'Test error.',
           code: 'TEST_CODE',
-          uiMessage: 'User message',
           metadata: { key: 'value' },
           timestamp: 1705314645123,
           stack: 'Error: Test error.\n    at someFunction (file.js:10:5)',
@@ -1086,7 +1063,6 @@ describe('ErrorX', () => {
         expect(error.name).toBe('TestError');
         expect(error.message).toBe('Test error.');
         expect(error.code).toBe('TEST_CODE');
-        expect(error.uiMessage).toBe('User message');
         expect(error.metadata).toEqual({ key: 'value' });
         expect(error.timestamp).toEqual(1705314645123);
         expect(error.stack).toBe('Error: Test error.\n    at someFunction (file.js:10:5)');
@@ -1097,7 +1073,6 @@ describe('ErrorX', () => {
           name: 'WrapperError',
           message: 'Wrapped error.',
           code: 'WRAPPER',
-          uiMessage: 'Something went wrong. Please try again.',
           metadata: {},
           timestamp: 1705314645123,
           chain: [
@@ -1106,7 +1081,6 @@ describe('ErrorX', () => {
               message: 'Wrapped error.',
               stack: 'Error: Wrapped error.\n    at wrapper (file.js:5:1)',
               code: 'WRAPPER',
-              uiMessage: 'Something went wrong. Please try again.',
               metadata: {},
               timestamp: 1705314645123,
             },
@@ -1115,7 +1089,6 @@ describe('ErrorX', () => {
               message: 'Root cause.',
               stack: 'Error: Root cause.\n    at test (file.js:1:1)',
               code: 'ROOT_CAUSE',
-              uiMessage: 'The root error occurred.',
               metadata: { detail: 'root detail' },
               timestamp: 1705314645120,
             },
@@ -1136,7 +1109,6 @@ describe('ErrorX', () => {
           name: 'TestError',
           message: 'Test error.',
           code: 'TEST_CODE',
-          uiMessage: 'User message',
           metadata: {},
           timestamp: 1705314645123,
         };
@@ -1162,7 +1134,6 @@ describe('ErrorX', () => {
           message: 'wrapper error',
           name: 'WrapperError',
           code: 'WRAPPER',
-          uiMessage: 'Custom UI message',
           cause: root,
           metadata: { userId: 123, action: 'test' },
         });
@@ -1173,7 +1144,6 @@ describe('ErrorX', () => {
         expect(deserialized.name).toBe(original.name);
         expect(deserialized.message).toBe(original.message);
         expect(deserialized.code).toBe(original.code);
-        expect(deserialized.uiMessage).toBe(original.uiMessage);
         expect(deserialized.metadata).toEqual(original.metadata);
         expect(deserialized.timestamp).toEqual(original.timestamp);
 
@@ -1189,7 +1159,6 @@ describe('ErrorX', () => {
           message: 'root error',
           name: 'RootError',
           code: 'ROOT_CODE',
-          uiMessage: 'Root UI message',
           httpStatus: 500,
           metadata: { rootKey: 'rootValue', nested: { deep: true } },
         });
@@ -1198,7 +1167,6 @@ describe('ErrorX', () => {
           message: 'middle error',
           name: 'MiddleError',
           code: 'MIDDLE_CODE',
-          uiMessage: 'Middle UI message',
           httpStatus: 502,
           metadata: { middleKey: 'middleValue' },
           cause: root,
@@ -1208,7 +1176,6 @@ describe('ErrorX', () => {
           message: 'top error',
           name: 'TopError',
           code: 'TOP_CODE',
-          uiMessage: 'Top UI message',
           httpStatus: 503,
           metadata: { topKey: 'topValue' },
           cause: middle,
@@ -1228,7 +1195,6 @@ describe('ErrorX', () => {
         expect(restoredMiddle?.message).toBe('middle error');
         expect(restoredMiddle?.name).toBe('MiddleError');
         expect(restoredMiddle?.code).toBe('MIDDLE_CODE');
-        expect(restoredMiddle?.uiMessage).toBe('Middle UI message');
         expect(restoredMiddle?.httpStatus).toBe(502);
         expect(restoredMiddle?.metadata).toEqual({ middleKey: 'middleValue' });
         expect(restoredMiddle?.timestamp).toBe(middle.timestamp);
@@ -1239,7 +1205,6 @@ describe('ErrorX', () => {
         expect(restoredRoot?.message).toBe('root error');
         expect(restoredRoot?.name).toBe('RootError');
         expect(restoredRoot?.code).toBe('ROOT_CODE');
-        expect(restoredRoot?.uiMessage).toBe('Root UI message');
         expect(restoredRoot?.httpStatus).toBe(500);
         expect(restoredRoot?.metadata).toEqual({
           rootKey: 'rootValue',
@@ -1289,7 +1254,6 @@ describe('ErrorX', () => {
           name: 'TopError',
           message: 'Top error',
           code: 'TOP_CODE',
-          uiMessage: 'Top UI',
           metadata: { key: 'value' },
           timestamp: Date.now(),
           chain: [
@@ -1302,7 +1266,7 @@ describe('ErrorX', () => {
               name: 'RootError',
               message: 'Root error',
               stack: 'Error: Root error\n    at test',
-              // Note: no code, uiMessage, metadata, httpStatus, timestamp
+              // Note: no code, metadata, httpStatus, timestamp
             },
           ],
         };

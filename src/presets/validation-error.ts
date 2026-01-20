@@ -44,6 +44,11 @@ export type ValidationErrorXMetadata = {
 };
 
 /**
+ * Default user-friendly message for validation errors.
+ */
+export const validationErrorUiMessage = 'The provided input is invalid. Please check your data.';
+
+/**
  * Validation Error class designed for Zod integration.
  *
  * This class demonstrates how to map external library data (Zod) to ErrorX.
@@ -80,7 +85,6 @@ export type ValidationErrorXMetadata = {
  *
  * // With overrides
  * ValidationErrorX.fromZodError(zodError, {
- *   uiMessage: 'Please check your input',
  *   httpStatus: 422,
  * })
  *
@@ -98,7 +102,7 @@ export type ValidationErrorXMetadata = {
  *   if (err instanceof ValidationErrorX) {
  *     return res.status(err.httpStatus).json({
  *       error: err.code,
- *       message: err.uiMessage,
+ *       message: err.message,
  *       field: err.metadata?.field,
  *     })
  *   }
@@ -114,7 +118,6 @@ export class ValidationErrorX extends ErrorX<ValidationErrorXMetadata> {
     name: 'ValidationErrorX',
     code: 'VALIDATION_ERROR',
     message: 'Validation failed.',
-    uiMessage: 'The provided input is invalid. Please check your data.',
   };
 
   /**
@@ -152,9 +155,9 @@ export class ValidationErrorX extends ErrorX<ValidationErrorXMetadata> {
    *   }
    * }
    *
-   * // With custom uiMessage
+   * // With custom message
    * ValidationErrorX.fromZodError(zodError, {
-   *   uiMessage: 'Please fix the form errors',
+   *   message: 'Please fix the form errors',
    * })
    *
    * // Access all issues
