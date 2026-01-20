@@ -44,7 +44,6 @@ try {
 
 // With overrides
 ValidationErrorX.fromZodError(zodError, {
-  uiMessage: 'Please check your input',
   httpStatus: 422,
 })
 
@@ -62,7 +61,7 @@ try {
   if (err instanceof ValidationErrorX) {
     return res.status(err.httpStatus).json({
       error: err.code,
-      message: err.uiMessage,
+      message: err.message,
       field: err.metadata?.field,
     })
   }
@@ -104,7 +103,7 @@ Description
 
 </td><td>
 
-{ httpStatus: number; name: string; code: string; message: string; uiMessage: string; }
+{ httpStatus: number; name: string; code: string; message: string; }
 
 
 </td><td>

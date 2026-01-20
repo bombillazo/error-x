@@ -9,7 +9,6 @@ describe('HTTPErrorX', () => {
       expect(error.code).toBe('NOT_FOUND');
       expect(error.name).toBe('NotFoundError');
       expect(error.message).toBe('Not found.');
-      expect(error.uiMessage).toBe('The requested resource could not be found.');
       expect(error.httpStatus).toBe(404);
     });
 
@@ -19,7 +18,6 @@ describe('HTTPErrorX', () => {
       expect(error.code).toBe('UNAUTHORIZED');
       expect(error.name).toBe('UnauthorizedError');
       expect(error.message).toBe('Unauthorized.');
-      expect(error.uiMessage).toBe('Authentication required. Please log in to continue.');
       expect(error.httpStatus).toBe(401);
     });
 
@@ -29,7 +27,6 @@ describe('HTTPErrorX', () => {
       expect(error.code).toBe('INTERNAL_SERVER_ERROR');
       expect(error.name).toBe('InternalServerError');
       expect(error.message).toBe('Internal server error.');
-      expect(error.uiMessage).toBe('An unexpected error occurred. Please try again later.');
       expect(error.httpStatus).toBe(500);
     });
 
@@ -115,15 +112,6 @@ describe('HTTPErrorX', () => {
 
       expect(error.metadata).toEqual({ endpoint: '/api/users/123', method: 'GET' });
       expect(error.httpStatus).toBe(404);
-    });
-
-    it('should override uiMessage', () => {
-      const error = HTTPErrorX.create(401, {
-        uiMessage: 'Custom message: Please log in',
-      });
-
-      expect(error.uiMessage).toBe('Custom message: Please log in');
-      expect(error.httpStatus).toBe(401);
     });
   });
 
@@ -212,7 +200,6 @@ describe('HTTPErrorX', () => {
         code: 'NOT_FOUND',
         name: 'NotFoundError',
         message: 'Not found.',
-        uiMessage: 'The requested resource could not be found.',
         httpStatus: 404,
         metadata: { userId: 123 },
       });
@@ -313,11 +300,11 @@ describe('ValidationErrorX', () => {
       };
 
       const error = ValidationErrorX.fromZodError(zodError, {
-        uiMessage: 'Please fix the form errors',
+        message: 'Please fix the form errors',
         code: 'FORM_INVALID',
       });
 
-      expect(error.uiMessage).toBe('Please fix the form errors');
+      expect(error.message).toBe('Please fix the form errors');
       // Transform still applies the VALIDATION_ prefix
       expect(error.code).toBe('VALIDATION_FORM_INVALID');
     });

@@ -29,7 +29,6 @@ export const ERROR_X_OPTION_FIELDS = [
   'message',
   'name',
   'code',
-  'uiMessage',
   'cause',
   'metadata',
   'httpStatus',
@@ -82,8 +81,6 @@ export type ErrorXOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
   name?: string;
   /** Error identifier code (auto-generated from name if not provided) */
   code?: string | number;
-  /** User-friendly message for UI display */
-  uiMessage?: string | undefined;
   /** Original error that caused this error (preserves error chain, will be converted to ErrorXSnapshot format) */
   cause?: unknown;
   /** Additional context and debugging information */
@@ -105,80 +102,6 @@ export type ErrorXSnapshot = {
   name?: string;
   /** Stack trace (optional) */
   stack?: string;
-};
-
-/**
- * Context passed to the transform function when creating errors via `.create()`.
- * Contains information about the preset being used.
- *
- * @public
- */
-export type ErrorXTransformContext = {
-  /** The preset key used (if any) */
-  presetKey: string | number | undefined;
-};
-
-/**
- * Transform function signature for custom error classes.
- * Transforms options after merge but before instantiation.
- *
- * @public
- */
-export type ErrorXTransform<TMetadata extends ErrorXMetadata = ErrorXMetadata> = (
-  opts: ErrorXOptions<ErrorXMetadata>,
-  ctx: ErrorXTransformContext
-) => ErrorXOptions<TMetadata>;
-
-/**
- * JSON-serializable representation of an ErrorX instance.
- * Used for transmitting errors over network or storing in databases.
- *
- * @example
- * ```typescript
- * const serialized: ErrorXSerialized = {
- *   name: 'AuthError',
- *   message: 'Authentication failed.',
- *   code: 'AUTH_FAILED',
- *   uiMessage: 'Please check your credentials',
- *   stack: 'Error: Authentication failed.\n    at login (auth.ts:42:15)',
- *   metadata: { userId: 123, loginAttempt: 3 },
- *   timestamp: 1705315845123,
- *   httpStatus: 401,
- *   original: {
- *     name: 'NetworkError',
- *     message: 'Request timeout.',
- *     stack: '...'
- *   },
- *   chain: [
- *     { name: 'AuthError', message: 'Authentication failed.' },
- *     { name: 'NetworkError', message: 'Request timeout.' }
- *   ]
- * }
- * ```
- *
- * @public
- */
-export type ErrorXSerialized = {
-  /** Error type/name */
-  name: string;
-  /** Technical error message */
-  message: string;
-  /** Error identifier code */
-  code: string;
-  /** User-friendly message for UI display */
-  uiMessage: string | undefined;
-  /** Stack trace (optional) */
-  stack?: string;
-  /** Additional context and debugging information */
-  metadata: ErrorXMetadata | undefined;
-  /** Unix epoch timestamp (milliseconds) when error was created */
-  timestamp: number;
-  /** HTTP status code associated with this error */
-  httpStatus?: number;
-  /** Serialized non-ErrorX entity this was wrapped from (if created via ErrorX.from()) */
-  original?: ErrorXSnapshot;
-  /** Serialized error chain timeline (this error and all ancestors) */
-  chain?: ErrorXSerialized[];
 };
 
 /**

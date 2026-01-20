@@ -43,6 +43,17 @@ Enhanced Error class with rich metadata, type-safe error handling, and intellige
 </td></tr>
 <tr><td>
 
+[ErrorXResolver](./error-x.errorxresolver.md)
+
+
+</td><td>
+
+Resolves ErrorX errors to enhanced presentation objects. Supports i18n translations, documentation URLs, and custom properties.
+
+
+</td></tr>
+<tr><td>
+
 [HTTPErrorX](./error-x.httperrorx.md)
 
 
@@ -134,6 +145,17 @@ Metadata type for database errors. Provides context about the database operation
 </td></tr>
 <tr><td>
 
+[ErrorXBaseConfig](./error-x.errorxbaseconfig.md)
+
+
+</td><td>
+
+Base configuration properties provided by error-x. Users extend this with their custom properties via ErrorXResolverConfig.
+
+
+</td></tr>
+<tr><td>
+
 [ErrorXMetadata](./error-x.errorxmetadata.md)
 
 
@@ -165,6 +187,61 @@ const metadata = {
 </td><td>
 
 Configuration options for creating an ErrorX instance. All properties are optional with sensible defaults.
+
+
+</td></tr>
+<tr><td>
+
+[ErrorXResolverConfig](./error-x.errorxresolverconfig.md)
+
+
+</td><td>
+
+Type helper combining ErrorXBaseConfig with user's custom config properties.
+
+
+</td></tr>
+<tr><td>
+
+[ErrorXResolverDocsConfig](./error-x.errorxresolverdocsconfig.md)
+
+
+</td><td>
+
+Documentation configuration for the resolver.
+
+
+</td></tr>
+<tr><td>
+
+[ErrorXResolverI18nConfig](./error-x.errorxresolveri18nconfig.md)
+
+
+</td><td>
+
+i18n configuration for the resolver.
+
+
+</td></tr>
+<tr><td>
+
+[ErrorXResolverOptions](./error-x.errorxresolveroptions.md)
+
+
+</td><td>
+
+Full configuration options for ErrorXResolver.
+
+
+</td></tr>
+<tr><td>
+
+[ErrorXResolverTypeConfig](./error-x.errorxresolvertypeconfig.md)
+
+
+</td><td>
+
+Per-error-type configuration with optional preset overrides.
 
 
 </td></tr>
@@ -231,6 +308,17 @@ Metadata type for HTTP errors. Provides context about the HTTP request that fail
 </td><td>
 
 Valid HTTP status codes for HTTPErrorX.create() Derived from the presets object. Provides autocomplete for known codes while allowing any number for flexibility.
+
+
+</td></tr>
+<tr><td>
+
+[ResolveContext](./error-x.resolvecontext.md)
+
+
+</td><td>
+
+Context object passed to the onResolve callback. Contains computed values and merged config for the error.
 
 
 </td></tr>

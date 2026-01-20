@@ -11,25 +11,21 @@ const dbPresets = {
     code: 'CONNECTION_FAILED',
     name: 'DBConnectionError',
     message: 'Failed to connect to database.',
-    uiMessage: 'Unable to connect to the database. Please try again later.',
   },
   CONNECTION_TIMEOUT: {
     code: 'CONNECTION_TIMEOUT',
     name: 'DBConnectionTimeoutError',
     message: 'Database connection timed out.',
-    uiMessage: 'The database connection timed out. Please try again.',
   },
   CONNECTION_REFUSED: {
     code: 'CONNECTION_REFUSED',
     name: 'DBConnectionRefusedError',
     message: 'Database connection refused.',
-    uiMessage: 'Unable to connect to the database. Please try again later.',
   },
   CONNECTION_LOST: {
     code: 'CONNECTION_LOST',
     name: 'DBConnectionLostError',
     message: 'Database connection lost.',
-    uiMessage: 'The database connection was lost. Please try again.',
   },
 
   // Query errors
@@ -37,19 +33,16 @@ const dbPresets = {
     code: 'QUERY_FAILED',
     name: 'DBQueryError',
     message: 'Database query failed.',
-    uiMessage: 'The database operation failed. Please try again.',
   },
   QUERY_TIMEOUT: {
     code: 'QUERY_TIMEOUT',
     name: 'DBQueryTimeoutError',
     message: 'Database query timed out.',
-    uiMessage: 'The database operation took too long. Please try again.',
   },
   SYNTAX_ERROR: {
     code: 'SYNTAX_ERROR',
     name: 'DBSyntaxError',
     message: 'Invalid query syntax.',
-    uiMessage: 'An internal error occurred. Please contact support.',
   },
 
   // Constraint errors
@@ -57,28 +50,24 @@ const dbPresets = {
     code: 'UNIQUE_VIOLATION',
     name: 'DBUniqueViolationError',
     message: 'Unique constraint violation.',
-    uiMessage: 'This record already exists.',
     httpStatus: 409,
   },
   FOREIGN_KEY_VIOLATION: {
     code: 'FOREIGN_KEY_VIOLATION',
     name: 'DBForeignKeyError',
     message: 'Foreign key constraint violation.',
-    uiMessage: 'This operation references a record that does not exist.',
     httpStatus: 400,
   },
   NOT_NULL_VIOLATION: {
     code: 'NOT_NULL_VIOLATION',
     name: 'DBNotNullError',
     message: 'Not null constraint violation.',
-    uiMessage: 'A required field is missing.',
     httpStatus: 400,
   },
   CHECK_VIOLATION: {
     code: 'CHECK_VIOLATION',
     name: 'DBCheckViolationError',
     message: 'Check constraint violation.',
-    uiMessage: 'The provided data is invalid.',
     httpStatus: 400,
   },
 
@@ -87,13 +76,11 @@ const dbPresets = {
     code: 'TRANSACTION_FAILED',
     name: 'DBTransactionError',
     message: 'Database transaction failed.',
-    uiMessage: 'The operation failed. Please try again.',
   },
   DEADLOCK: {
     code: 'DEADLOCK',
     name: 'DBDeadlockError',
     message: 'Database deadlock detected.',
-    uiMessage: 'The operation encountered a conflict. Please try again.',
     httpStatus: 409,
   },
 
@@ -102,7 +89,6 @@ const dbPresets = {
     code: 'NOT_FOUND',
     name: 'DBNotFoundError',
     message: 'Record not found.',
-    uiMessage: 'The requested record was not found.',
     httpStatus: 404,
   },
 
@@ -111,9 +97,36 @@ const dbPresets = {
     code: 'UNKNOWN',
     name: 'DBErrorX',
     message: 'An unknown database error occurred.',
-    uiMessage: 'A database error occurred. Please try again later.',
   },
 } as const satisfies Record<string, ErrorXOptions<ErrorXMetadata>>;
+
+/**
+ * User-friendly messages for database error presets.
+ * Keyed by preset name.
+ */
+export const dbErrorUiMessages: Record<keyof typeof dbPresets, string> = {
+  // Connection errors
+  CONNECTION_FAILED: 'Unable to connect to the database. Please try again later.',
+  CONNECTION_TIMEOUT: 'The database connection timed out. Please try again.',
+  CONNECTION_REFUSED: 'Unable to connect to the database. Please try again later.',
+  CONNECTION_LOST: 'The database connection was lost. Please try again.',
+  // Query errors
+  QUERY_FAILED: 'The database operation failed. Please try again.',
+  QUERY_TIMEOUT: 'The database operation took too long. Please try again.',
+  SYNTAX_ERROR: 'An internal error occurred. Please contact support.',
+  // Constraint errors
+  UNIQUE_VIOLATION: 'This record already exists.',
+  FOREIGN_KEY_VIOLATION: 'This operation references a record that does not exist.',
+  NOT_NULL_VIOLATION: 'A required field is missing.',
+  CHECK_VIOLATION: 'The provided data is invalid.',
+  // Transaction errors
+  TRANSACTION_FAILED: 'The operation failed. Please try again.',
+  DEADLOCK: 'The operation encountered a conflict. Please try again.',
+  // Record errors
+  NOT_FOUND: 'The requested record was not found.',
+  // Generic
+  UNKNOWN: 'A database error occurred. Please try again later.',
+};
 
 /**
  * Valid preset keys for DBErrorX.create()
