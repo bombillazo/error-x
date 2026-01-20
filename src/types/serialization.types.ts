@@ -3,7 +3,7 @@ import type { ErrorXMetadata, ErrorXSnapshot } from './core.types';
 /**
  * JSON-serializable representation of an ErrorX instance.
  * Used for transmitting errors over network or storing in databases.
- * 
+ *
  * @public
  */
 export type ErrorXSerialized = {

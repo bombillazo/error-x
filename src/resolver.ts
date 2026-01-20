@@ -111,7 +111,12 @@ export class ErrorXResolver<
    * 4. defaults.uiMessage (fallback)
    * 5. undefined
    */
-  private resolveUiMessage(error: ErrorX, _config: TConfig, i18nKey: string, errorType: string): string | undefined {
+  private resolveUiMessage(
+    error: ErrorX,
+    _config: TConfig,
+    i18nKey: string,
+    errorType: string
+  ): string | undefined {
     const typeConfig = this.options.configs[errorType];
     const presetUiMessage = typeConfig?.presets?.[error.code]?.uiMessage as string | undefined;
 
