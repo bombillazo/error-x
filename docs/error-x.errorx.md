@@ -30,7 +30,6 @@ const error = new ErrorX({
   message: 'User authentication failed',
   name: 'AuthError',
   code: 'AUTH_FAILED',
-  uiMessage: 'Please check your credentials',
   metadata: { userId: 123, loginAttempt: 3 }
 })
 
@@ -255,25 +254,6 @@ number
 </td><td>
 
 Unix epoch timestamp (milliseconds) when the error was created
-
-
-</td></tr>
-<tr><td>
-
-[uiMessage](./error-x.errorx.uimessage.md)
-
-
-</td><td>
-
-
-</td><td>
-
-string \| undefined
-
-
-</td><td>
-
-User-friendly message suitable for display in UI
 
 
 </td></tr>

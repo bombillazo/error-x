@@ -87,9 +87,9 @@ try {
   }
 }
 
-// With custom uiMessage
+// With custom message
 ValidationErrorX.fromZodError(zodError, {
-  uiMessage: 'Please fix the form errors',
+  message: 'Please fix the form errors',
 })
 
 // Access all issues

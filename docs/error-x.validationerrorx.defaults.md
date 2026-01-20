@@ -14,6 +14,5 @@ static defaults: {
         name: string;
         code: string;
         message: string;
-        uiMessage: string;
     };
 ```

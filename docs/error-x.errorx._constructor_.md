@@ -63,7 +63,6 @@ const error3 = new ErrorX({
   message: 'Database query failed',
   name: 'DatabaseError',
   code: 'DB_QUERY_FAILED',
-  uiMessage: 'Unable to load data. Please try again.',
   metadata: { query: 'SELECT * FROM users', timeout: 5000 }
 })
 

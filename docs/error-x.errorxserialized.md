@@ -13,16 +13,15 @@ type ErrorXSerialized = {
     name: string;
     message: string;
     code: string;
-    uiMessage: string | undefined;
     stack?: string;
     metadata: ErrorXMetadata | undefined;
     timestamp: number;
     httpStatus?: number;
     original?: ErrorXSnapshot;
-    chain?: ErrorXSnapshot[];
+    chain?: ErrorXSerialized[];
 };
 ```
-**References:** [ErrorXMetadata](./error-x.errorxmetadata.md)<!-- -->, [ErrorXSnapshot](./error-x.errorxsnapshot.md)
+**References:** [ErrorXMetadata](./error-x.errorxmetadata.md)<!-- -->, [ErrorXSnapshot](./error-x.errorxsnapshot.md)<!-- -->, [ErrorXSerialized](./error-x.errorxserialized.md)
 
 ## Example
 
@@ -32,7 +31,6 @@ const serialized: ErrorXSerialized = {
   name: 'AuthError',
   message: 'Authentication failed.',
   code: 'AUTH_FAILED',
-  uiMessage: 'Please check your credentials',
   stack: 'Error: Authentication failed.\n    at login (auth.ts:42:15)',
   metadata: { userId: 123, loginAttempt: 3 },
   timestamp: 1705315845123,

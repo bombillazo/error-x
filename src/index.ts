@@ -10,11 +10,19 @@ export {
   type ValidationErrorXMetadata,
   type ZodIssue,
 } from './presets/index';
+export { ErrorXResolver } from './resolver';
 export type {
+  ErrorXBaseConfig,
   ErrorXMetadata,
   ErrorXOptions,
+  ErrorXResolverConfig,
+  ErrorXResolverDocsConfig,
+  ErrorXResolverI18nConfig,
+  ErrorXResolverOptions,
+  ErrorXResolverTypeConfig,
   ErrorXSerialized,
   ErrorXSnapshot,
   ErrorXTransform,
   ErrorXTransformContext,
+  ResolveContext,
 } from './types';

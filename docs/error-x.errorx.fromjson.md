@@ -62,7 +62,6 @@ const serializedError = {
   name: 'DatabaseError',
   message: 'Connection failed.',
   code: 'DB_CONN_FAILED',
-  uiMessage: 'Database is temporarily unavailable',
   metadata: { host: 'localhost' },
   timestamp: 1705315845123
 }
