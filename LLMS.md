@@ -5,7 +5,7 @@
 ## Quick Start
 
 ```typescript
-import { ErrorX, HTTPErrorX, DBErrorX, ValidationErrorX } from 'error-x';
+import { ErrorX, HTTPErrorX, DBErrorX, ValidationErrorX } from '@bombillazo/error-x';
 
 // Basic usage
 throw new ErrorX({ message: 'Operation failed', code: 'OP_FAILED' });
