@@ -21,7 +21,7 @@
  *
  * @example
  * ```typescript
- * import { HTTPErrorX, DBErrorX, ValidationErrorX } from 'error-x';
+ * import { HTTPErrorX, DBErrorX, ValidationErrorX } from '@bombillazo/error-x';
  *
  * // HTTP errors
  * throw HTTPErrorX.create(404, { message: 'User not found' });
