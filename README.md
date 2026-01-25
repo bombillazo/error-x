@@ -685,6 +685,64 @@ const resolver = new ErrorXResolver<MyConfig, MyResult>({
 
 ---
 
+## Performance
+
+ErrorX is designed to be fast enough for production use while providing rich error handling capabilities. Here are the key performance characteristics:
+
+### Benchmarks
+
+Run benchmarks locally with `pnpm bench`. Results from a typical run (Apple M2):
+
+| Operation | ops/sec | Notes |
+|-----------|---------|-------|
+| `new Error()` (native) | ~525k | Baseline comparison |
+| `new ErrorX()` | ~38k | ~14x slower than native Error |
+| `new ErrorX(options)` | ~40k | Similar to basic ErrorX |
+| `ErrorX.from(ErrorX)` | ~21M | Passthrough is extremely fast |
+| `ErrorX.from(Error)` | ~32k | Converts native errors |
+| `toJSON()` (simple) | ~5.4M | Very fast serialization |
+| `toJSON()` (with chain) | ~1.4M | Chain adds overhead |
+| `fromJSON()` (simple) | ~32k | Deserialization |
+| `isErrorX()` | ~21M | Near-instant type guard |
+| `aggregate()` (3 errors) | ~30k | Aggregation overhead |
+
+### Performance Characteristics
+
+**Error Creation (~38k ops/sec)**
+- Creating an ErrorX is ~14x slower than native `Error` due to stack cleaning, timestamp generation, and chain management
+- Adding metadata or httpStatus has negligible impact
+- Adding a cause (chaining) reduces performance by ~2x due to chain flattening
+
+**Serialization (toJSON)**
+- Simple errors: ~5.4M ops/sec (extremely fast)
+- With metadata: ~346k ops/sec (JSON serialization overhead)
+- With error chain: ~1.4M ops/sec (iterates chain)
+
+**Deserialization (fromJSON)**
+- ~32k ops/sec regardless of metadata
+- Chain reconstruction adds ~3x overhead per chained error
+
+**Type Guards**
+- `isErrorX()` and `isAggregateErrorX()`: ~21M ops/sec (instant)
+- `isErrorXOptions()`: ~15M ops/sec (object key checking)
+
+**Memory Considerations**
+- Deep chains (50+ levels) process at ~343 ops/sec for full create/serialize/deserialize cycle
+- Large aggregates (100 errors) process at ~135 ops/sec
+- No memory leaks detected in chain or aggregate handling
+
+### When to Use ErrorX
+
+ErrorX is suitable for:
+- Application-level error handling (not hot loops)
+- API error responses
+- Error logging and monitoring
+- Domain error modeling
+
+For performance-critical code paths (>100k errors/sec), consider using native `Error` and converting to `ErrorX` at boundaries.
+
+---
+
 ## UI Messages
 
 User-friendly messages are provided separately from error presets. This allows errors to remain technical while UI messages can be managed independently (e.g., for i18n).
