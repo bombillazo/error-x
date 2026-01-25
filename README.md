@@ -46,11 +46,9 @@ yarn add @bombillazo/error-x
 
 This library uses modern JavaScript features and ES2022 APIs. For browser compatibility, ensure your build tool (e.g., Vite, webpack, esbuild) is configured to target ES2022 or transpile accordingly.
 
-> [!WARNING]
+> [!NOTE]
 >
-> This library is currently in pre-v1.0 development. Breaking changes may occur. We recommend pinning to specific versions and reviewing release notes when updating.
->
-> Once we reach version 1.0, we plan to minimize API changes and follow semantic versioning.
+> This library follows [Semantic Versioning](https://semver.org/). The API is now stable - breaking changes will only occur in major version updates.
 
 ## Quick Start
 
