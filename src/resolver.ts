@@ -69,7 +69,27 @@ export class ErrorXResolver<
   }
 
   /**
-   * Merges config from defaults → type → preset
+   * Merges configuration from multiple layers in priority order.
+   *
+   * Configuration is merged in this order (later values override earlier):
+   * 1. `defaults` - Base configuration for all error types
+   * 2. `configs[errorType]` - Type-specific configuration
+   * 3. `configs[errorType].presets[error.code]` - Per-error-code overrides
+   *
+   * @param error - The ErrorX instance being resolved
+   * @param errorType - The error type key returned by `onResolveType`
+   * @returns Merged configuration object
+   *
+   * @example
+   * ```typescript
+   * // Given this resolver setup:
+   * // defaults: { namespace: 'errors' }
+   * // configs.api: { namespace: 'errors.api', docsPath: '/api' }
+   * // configs.api.presets.AUTH_EXPIRED: { docsPath: '/api/auth' }
+   *
+   * // For an error with code 'AUTH_EXPIRED' and type 'api':
+   * // Result: { namespace: 'errors.api', docsPath: '/api/auth' }
+   * ```
    */
   private mergeConfig(error: ErrorX, errorType: string): TConfig {
     const typeConfig = this.options.configs[errorType] as
@@ -90,7 +110,29 @@ export class ErrorXResolver<
   }
 
   /**
-   * Builds the i18n key from template
+   * Builds the i18n translation key from the configured template.
+   *
+   * Supports these placeholders in the template:
+   * - `{namespace}` - Replaced with `config.namespace`
+   * - `{code}` - Replaced with `error.code`
+   * - `{name}` - Replaced with `error.name`
+   * - `{errorType}` - Replaced with the resolved error type
+   *
+   * @param error - The ErrorX instance being resolved
+   * @param config - The merged configuration for this error
+   * @param errorType - The error type key returned by `onResolveType`
+   * @returns The built translation key string
+   *
+   * @example
+   * ```typescript
+   * // With template '{namespace}.{code}' (default):
+   * // namespace: 'errors.api', code: 'AUTH_EXPIRED'
+   * // Result: 'errors.api.AUTH_EXPIRED'
+   *
+   * // With template '{errorType}.{name}.{code}':
+   * // errorType: 'api', name: 'AuthError', code: 'AUTH_EXPIRED'
+   * // Result: 'api.AuthError.AUTH_EXPIRED'
+   * ```
    */
   private buildI18nKey(error: ErrorX, config: TConfig, errorType: string): string {
     const template = this.options.i18n?.keyTemplate ?? this.defaultKeyTemplate;
@@ -104,12 +146,34 @@ export class ErrorXResolver<
   }
 
   /**
-   * Resolves uiMessage following the priority order:
-   * 1. presets[code].uiMessage (already merged into config if from preset)
-   * 2. i18n resolver result (if configured)
-   * 3. configs[errorType].uiMessage (fallback)
-   * 4. defaults.uiMessage (fallback)
-   * 5. undefined
+   * Resolves the user-friendly message for an error.
+   *
+   * Resolution follows this priority order (first defined value wins):
+   * 1. `configs[errorType].presets[code].uiMessage` - Most specific override
+   * 2. `i18n.resolver(key, params)` - Translation from i18n library (if configured)
+   * 3. `configs[errorType].uiMessage` - Type-level fallback message
+   * 4. `defaults.uiMessage` - Global fallback message
+   * 5. `undefined` - No message available
+   *
+   * When using i18n, the resolver function receives the built i18n key and
+   * the error's metadata as interpolation parameters.
+   *
+   * @param error - The ErrorX instance being resolved
+   * @param _config - The merged configuration (unused, config accessed via options)
+   * @param i18nKey - The pre-built translation key
+   * @param errorType - The error type key returned by `onResolveType`
+   * @returns The resolved user-friendly message, or undefined
+   *
+   * @example
+   * ```typescript
+   * // Priority 1: Preset-specific message
+   * // configs.api.presets.AUTH_EXPIRED.uiMessage: 'Your session has expired'
+   * // Result: 'Your session has expired'
+   *
+   * // Priority 2: i18n translation (if no preset message)
+   * // i18n.resolver('errors.api.AUTH_EXPIRED', { userId: 123 })
+   * // Result: Translation from i18n library
+   * ```
    */
   private resolveUiMessage(
     error: ErrorX,
@@ -151,7 +215,26 @@ export class ErrorXResolver<
   }
 
   /**
-   * Builds the full documentation URL
+   * Builds the full documentation URL for an error.
+   *
+   * Constructs the URL by combining:
+   * - `docs.baseUrl` - The base documentation URL (e.g., 'https://docs.example.com')
+   * - `config.docsPath` - The path segment for this error type (e.g., '/api')
+   * - `#error.code` - Hash fragment for the specific error code
+   *
+   * Returns an empty string if both baseUrl and docsPath are empty.
+   *
+   * @param error - The ErrorX instance being resolved
+   * @param config - The merged configuration for this error
+   * @returns The full documentation URL, or empty string if not configured
+   *
+   * @example
+   * ```typescript
+   * // docs.baseUrl: 'https://docs.example.com'
+   * // config.docsPath: '/api/errors'
+   * // error.code: 'AUTH_EXPIRED'
+   * // Result: 'https://docs.example.com/api/errors#AUTH_EXPIRED'
+   * ```
    */
   private buildDocsUrl(error: ErrorX, config: TConfig): string {
     const baseUrl = this.options.docs?.baseUrl ?? '';
