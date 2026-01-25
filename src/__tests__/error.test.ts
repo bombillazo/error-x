@@ -1045,6 +1045,20 @@ describe('ErrorX', () => {
         expect(json.name).toBe('SimpleError');
         expect(json.code).toBe('SIMPLE_ERROR');
       });
+
+      it('should serialize error with original property', () => {
+        // Create an error from a native Error, which sets the original property
+        const nativeError = new Error('Native error message');
+        nativeError.name = 'NativeError';
+        const wrapped = ErrorX.from(nativeError);
+
+        const json = wrapped.toJSON();
+
+        expect(json.original).toBeDefined();
+        expect(json.original?.name).toBe('NativeError');
+        expect(json.original?.message).toBe('Native error message');
+        expect(json.original?.stack).toBeDefined();
+      });
     });
 
     describe('fromJSON', () => {
@@ -1118,6 +1132,30 @@ describe('ErrorX', () => {
         // Stack will be generated but since no stack was provided in serialized data, it should be the new error's stack
         expect(error.stack).toBeDefined();
         expect(error.parent).toBeUndefined();
+      });
+
+      it('should deserialize error with original property', () => {
+        // Serialized error that was created from wrapping a native Error
+        const serialized: ErrorXSerialized = {
+          name: 'WrappedError',
+          message: 'Wrapped native error.',
+          code: 'WRAPPED',
+          metadata: {},
+          timestamp: 1705314645123,
+          original: {
+            name: 'NativeError',
+            message: 'Original native error',
+            stack: 'Error: Original native error\n    at nativeFunction (native.js:1:1)',
+          },
+        };
+
+        const error = ErrorX.fromJSON(serialized);
+
+        expect(error.name).toBe('WrappedError');
+        expect(error.original).toBeDefined();
+        expect(error.original?.name).toBe('NativeError');
+        expect(error.original?.message).toBe('Original native error');
+        expect(error.original?.stack).toContain('nativeFunction');
       });
     });
 
