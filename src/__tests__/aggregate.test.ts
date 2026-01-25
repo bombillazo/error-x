@@ -102,7 +102,7 @@ describe('AggregateErrorX', () => {
       const aggregate = ErrorX.aggregate([]);
 
       expect(aggregate.errors).toHaveLength(0);
-      expect(aggregate.message).toBe('Multiple errors occurred (0 errors)');
+      expect(aggregate.message).toBe('No errors occurred');
     });
   });
 
