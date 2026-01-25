@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-01-25
+
+### Added
+
+- **Observability module** (`src/observability.ts`) for production error monitoring:
+  - `generateFingerprint()` - Create unique error fingerprints for deduplication
+  - `toLogEntry()` - Convert errors to structured log entries (pino/winston/bunyan compatible)
+  - `toOtelAttributes()` - Generate OpenTelemetry-compatible span attributes
+  - `recordError()` - Helper for recording errors on OTel spans with proper status codes
+- **Framework integration examples**:
+  - Express middleware integration
+  - Hono middleware integration
+  - GraphQL error handling
+  - React error boundaries
+  - tRPC error handling
+  - Zod validation integration
+  - Logging integration patterns
+
+### Changed
+
+- **API is now stable** - This is the first stable release following semantic versioning
+- Package metadata improved with proper `repository` object format and `bugs` field
+
+### Security
+
+- Verified no prototype pollution vulnerabilities (uses `deepmerge-ts`)
+- Safe handling of untrusted input in `ErrorX.from()` (safe property access patterns)
+- Metadata serialization uses `safe-stringify` for circular reference handling
+
 ## [0.6.0] - 2026-01-20
 
 ### Added
@@ -205,7 +234,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite
 - Initial documentation
 
-[Unreleased]: https://github.com/bombillazo/error-x/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/bombillazo/error-x/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/bombillazo/error-x/compare/v0.6.0...v1.0.0
 [0.6.0]: https://github.com/bombillazo/error-x/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/bombillazo/error-x/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/bombillazo/error-x/compare/v0.4.6...v0.5.0
