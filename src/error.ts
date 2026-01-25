@@ -1087,7 +1087,11 @@ export class AggregateErrorX<
   constructor(errors: unknown[], options?: ErrorXAggregateOptions<TMetadata>) {
     const errorCount = errors.length;
     const defaultMessage =
-      errorCount === 1 ? '1 error occurred' : `Multiple errors occurred (${errorCount} errors)`;
+      errorCount === 0
+        ? 'No errors occurred'
+        : errorCount === 1
+            ? '1 error occurred'
+            : `Multiple errors occurred (${errorCount} errors)`;
 
     super({
       message: options?.message ?? defaultMessage,
