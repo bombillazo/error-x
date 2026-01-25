@@ -13,8 +13,11 @@ export default defineConfig({
         'dist/',
         '**/*.test.ts',
         '**/*.spec.ts',
+        '**/*.bench.ts',
         '**/test-infrastructure/**',
         'src/__tests__/**',
+        'src/__benchmarks__/**',
+        'src/types/*.types.ts',
       ],
       thresholds: {
         statements: 90,

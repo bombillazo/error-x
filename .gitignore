@@ -6,3 +6,7 @@ node_modules
 .ralph-tui
 AGENTS.md
 dist
+
+# Coverage
+coverage/
+*.lcov
