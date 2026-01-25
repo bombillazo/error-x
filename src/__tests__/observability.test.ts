@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { ErrorX } from '../error';
 import {
   generateFingerprint,
+  type OtelSpanLike,
   recordError,
   toLogEntry,
   toOtelAttributes,
-  type OtelSpanLike,
 } from '../observability';
 
 describe('generateFingerprint', () => {

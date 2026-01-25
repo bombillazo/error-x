@@ -1,15 +1,15 @@
 export { AggregateErrorX, ErrorX, type ErrorXConfig } from './error';
 export {
-  generateFingerprint,
-  recordError,
-  toLogEntry,
-  toOtelAttributes,
   type ErrorLogEntry,
   type FingerprintOptions,
+  generateFingerprint,
   type LogEntryOptions,
   type OtelAttributeOptions,
   type OtelErrorAttributes,
   type OtelSpanLike,
+  recordError,
+  toLogEntry,
+  toOtelAttributes,
 } from './observability';
 export {
   type DBErrorPreset,

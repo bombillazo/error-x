@@ -239,8 +239,13 @@ export const generateFingerprint = (error: ErrorX, options?: FingerprintOptions)
  * @public
  */
 export const toLogEntry = (error: ErrorX, options?: LogEntryOptions): ErrorLogEntry => {
-  const { level = 'error', includeStack = false, includeFull = false, fingerprintOptions, context } =
-    options ?? {};
+  const {
+    level = 'error',
+    includeStack = false,
+    includeFull = false,
+    fingerprintOptions,
+    context,
+  } = options ?? {};
 
   const fingerprint = generateFingerprint(error, fingerprintOptions);
   const chain = error.chain;
@@ -341,9 +346,7 @@ export const toOtelAttributes = (
 
   // Check if this is an aggregate error by checking for 'errors' property
   const isAggregate = 'errors' in error && Array.isArray((error as { errors?: unknown[] }).errors);
-  const aggregateCount = isAggregate
-    ? (error as { errors: unknown[] }).errors.length
-    : undefined;
+  const aggregateCount = isAggregate ? (error as { errors: unknown[] }).errors.length : undefined;
 
   const attributes: OtelErrorAttributes & Record<string, unknown> = {
     'exception.type': error.name,
