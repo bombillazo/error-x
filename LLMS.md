@@ -162,7 +162,7 @@ JSON.stringify(error);  // Uses toJSON() automatically
 Resolves errors to user-friendly presentations with i18n support:
 
 ```typescript
-import { ErrorXResolver } from 'error-x';
+import { ErrorXResolver } from '@bombillazo/error-x';
 
 const resolver = new ErrorXResolver({
   i18n: {
@@ -227,13 +227,13 @@ import type {
   ErrorXSnapshot,     // Original error snapshot
   ErrorXConfig,       // Global configuration
   ErrorXOptionField,  // Valid option field names
-} from 'error-x';
+} from '@bombillazo/error-x';
 
 // Transform types
 import type {
   ErrorXTransform,        // Transform function signature
   ErrorXTransformContext, // Context passed to transform
-} from 'error-x';
+} from '@bombillazo/error-x';
 
 // Resolver types
 import type {
@@ -254,7 +254,7 @@ import type {
   DBErrorPreset,            // Union of DB preset strings
   ValidationErrorXMetadata, // { field?, path?, zodCode?, expected?, ... }
   ZodIssue,                 // Zod issue structure
-} from 'error-x';
+} from '@bombillazo/error-x';
 ```
 
 ## UI Message Objects
@@ -262,7 +262,7 @@ import type {
 Pre-defined user-friendly messages for presets:
 
 ```typescript
-import { httpErrorUiMessages, dbErrorUiMessages, validationErrorUiMessage } from 'error-x';
+import { httpErrorUiMessages, dbErrorUiMessages, validationErrorUiMessage } from '@bombillazo/error-x';
 
 httpErrorUiMessages[404];  // "The requested resource could not be found."
 dbErrorUiMessages['UNIQUE_VIOLATION'];  // "This record already exists."
@@ -272,12 +272,21 @@ validationErrorUiMessage;  // "The provided input is invalid. Please check your 
 ## Global Configuration
 
 ```typescript
-ErrorX.configure({
-  cleanStack: true,                    // Enable stack cleaning (default)
-  cleanStack: false,                   // Disable stack cleaning
-  cleanStack: ['pattern1', 'pattern2'], // Custom patterns to remove
-  cleanStackDelimiter: 'app-entry',    // Trim stack after this line
-});
+// Enable stack cleaning (default) and trim stack after a delimiter  
+ErrorX.configure({  
+  cleanStack: true,  
+  cleanStackDelimiter: 'app-entry',    // Trim stack after this line  
+});  
+
+// Disable stack cleaning  
+ErrorX.configure({  
+  cleanStack: false,  
+});  
+
+// Use custom patterns to remove from the stack  
+ErrorX.configure({  
+  cleanStack: ['pattern1', 'pattern2'],  
+});  
 
 ErrorX.getConfig();   // Get current config
 ErrorX.resetConfig(); // Reset to null
