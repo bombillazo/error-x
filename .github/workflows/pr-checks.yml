@@ -56,11 +56,8 @@ jobs:
           echo "Test will fail if thresholds are not met."
         if: matrix.node-version == 20
 
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        if: matrix.node-version == 20
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        if: matrix.node-version == 20 && github.ref == 'refs/heads/main'
         with:
-          fail_ci_if_error: false
-          files: ./coverage/lcov.info
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
