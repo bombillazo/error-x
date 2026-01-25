@@ -2,6 +2,8 @@ import { deepmerge } from 'deepmerge-ts';
 import safeStringify from 'safe-stringify';
 import {
   ERROR_X_OPTION_FIELDS,
+  type ErrorXAggregateOptions,
+  type ErrorXAggregateSerialized,
   type ErrorXMetadata,
   type ErrorXOptionField,
   type ErrorXOptions,
@@ -990,5 +992,212 @@ export class ErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata> extends E
     // Step 4: Create instance
     // biome-ignore lint/complexity/noThisInStatic: Required for polymorphic factory pattern
     return new this(finalOptions);
+  }
+
+  /**
+   * Creates an aggregate error that combines multiple errors into a single ErrorX instance.
+   * Useful for batch operations where multiple validations or operations can fail simultaneously.
+   *
+   * Each aggregated error preserves its full error chain, allowing you to trace
+   * the root cause of each individual failure.
+   *
+   * @param errors - Array of errors to aggregate. Can be ErrorX, Error, or unknown values.
+   * @param options - Optional configuration for the aggregate error.
+   * @returns AggregateErrorX instance containing all provided errors.
+   *
+   * @example
+   * ```typescript
+   * // Basic validation aggregation
+   * const validationErrors = [
+   *   new ErrorX({ message: 'Email is required', code: 'VALIDATION_EMAIL' }),
+   *   new ErrorX({ message: 'Password too short', code: 'VALIDATION_PASSWORD' }),
+   * ]
+   * const aggregateError = ErrorX.aggregate(validationErrors)
+   * // aggregateError.errors contains both validation errors
+   * // aggregateError.message = 'Multiple errors occurred (2 errors)'
+   *
+   * @example
+   * // With custom options
+   * const errors = [new Error('First'), new Error('Second')]
+   * const aggregate = ErrorX.aggregate(errors, {
+   *   message: 'Batch operation failed',
+   *   code: 'BATCH_FAILURE',
+   *   httpStatus: 400,
+   *   metadata: { operation: 'user-import' }
+   * })
+   *
+   * @example
+   * // Accessing individual errors
+   * const aggregate = ErrorX.aggregate(errors)
+   * for (const error of aggregate.errors) {
+   *   console.log(error.message, error.code)
+   *   // Each error has its own chain: error.chain, error.root, error.parent
+   * }
+   *
+   * @example
+   * // Type guard for aggregate errors
+   * if (AggregateErrorX.isAggregateErrorX(error)) {
+   *   console.log(`Found ${error.errors.length} errors`)
+   * }
+   * ```
+   */
+  public static aggregate<TMetadata extends ErrorXMetadata = ErrorXMetadata>(
+    errors: unknown[],
+    options?: ErrorXAggregateOptions<TMetadata>
+  ): AggregateErrorX<TMetadata> {
+    return new AggregateErrorX<TMetadata>(errors, options);
+  }
+}
+
+/**
+ * An ErrorX subclass that aggregates multiple errors into a single instance.
+ * Created via `ErrorX.aggregate()` for batch operations with multiple failures.
+ *
+ * @example
+ * ```typescript
+ * const errors = [
+ *   new ErrorX({ message: 'Invalid email', code: 'EMAIL_INVALID' }),
+ *   new ErrorX({ message: 'Invalid phone', code: 'PHONE_INVALID' }),
+ * ]
+ * const aggregate = ErrorX.aggregate(errors)
+ *
+ * // Access all errors
+ * aggregate.errors.forEach(e => console.log(e.code))
+ *
+ * // Check if an error is an aggregate
+ * if (AggregateErrorX.isAggregateErrorX(error)) {
+ *   // TypeScript knows error.errors exists
+ * }
+ * ```
+ *
+ * @public
+ */
+export class AggregateErrorX<
+  TMetadata extends ErrorXMetadata = ErrorXMetadata,
+> extends ErrorX<TMetadata> {
+  /** Array of all aggregated errors, each converted to ErrorX with preserved chains */
+  public readonly errors: readonly ErrorX[];
+
+  /**
+   * Creates a new AggregateErrorX instance containing multiple errors.
+   *
+   * @param errors - Array of errors to aggregate. Non-ErrorX values are converted via ErrorX.from().
+   * @param options - Optional configuration for the aggregate error.
+   */
+  constructor(errors: unknown[], options?: ErrorXAggregateOptions<TMetadata>) {
+    const errorCount = errors.length;
+    const defaultMessage =
+      errorCount === 0
+        ? 'No errors occurred'
+        : errorCount === 1
+          ? '1 error occurred'
+          : `Multiple errors occurred (${errorCount} errors)`;
+
+    super({
+      message: options?.message ?? defaultMessage,
+      name: options?.name ?? 'AggregateError',
+      code: options?.code ?? 'AGGREGATE_ERROR',
+      metadata: options?.metadata,
+      httpStatus: options?.httpStatus,
+    });
+
+    // Convert all errors to ErrorX, preserving existing ErrorX instances
+    this.errors = errors.map((err) => (err instanceof ErrorX ? err : ErrorX.from(err)));
+  }
+
+  /**
+   * Type guard that checks if a value is an AggregateErrorX instance.
+   *
+   * @param value - Value to check
+   * @returns True if value is an AggregateErrorX instance, false otherwise
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   await batchOperation()
+   * } catch (error) {
+   *   if (AggregateErrorX.isAggregateErrorX(error)) {
+   *     // TypeScript knows error.errors exists
+   *     error.errors.forEach(e => console.log(e.message))
+   *   }
+   * }
+   * ```
+   */
+  public static isAggregateErrorX<TMetadata extends ErrorXMetadata = ErrorXMetadata>(
+    value: unknown
+  ): value is AggregateErrorX<TMetadata> {
+    return value instanceof AggregateErrorX;
+  }
+
+  /**
+   * Serializes the AggregateErrorX to a JSON-compatible object.
+   * Includes the errors array with all aggregated errors serialized.
+   *
+   * @returns Serializable object representation including all aggregated errors
+   */
+  public override toJSON(): ErrorXAggregateSerialized {
+    const baseSerialized = super.toJSON();
+    return {
+      ...baseSerialized,
+      errors: this.errors.map((err) => err.toJSON()),
+    };
+  }
+
+  /**
+   * Converts the AggregateErrorX to a detailed string representation.
+   * Includes summary of aggregated errors with their messages and codes.
+   *
+   * @returns Formatted string representation including all aggregated error details
+   */
+  public override toString(): string {
+    const baseStr = super.toString();
+    const errorSummaries = this.errors.map(
+      (err, idx) => `  [${idx + 1}] ${err.name}: ${err.message} [${err.code}]`
+    );
+    return `${baseStr}\nAggregated errors:\n${errorSummaries.join('\n')}`;
+  }
+
+  /**
+   * Deserializes an ErrorXAggregateSerialized object back into an AggregateErrorX instance.
+   *
+   * @param serialized - Serialized aggregate error object
+   * @returns Reconstructed AggregateErrorX instance
+   *
+   * @example
+   * ```typescript
+   * const serialized = aggregateError.toJSON()
+   * const restored = AggregateErrorX.fromJSON(serialized)
+   * // restored.errors is fully reconstructed
+   * ```
+   */
+  public static fromJSON<TMetadata extends ErrorXMetadata = ErrorXMetadata>(
+    serialized: ErrorXAggregateSerialized
+  ): AggregateErrorX<TMetadata> {
+    // Deserialize all aggregated errors
+    const errors = serialized.errors.map((errSerialized) => ErrorX.fromJSON(errSerialized));
+
+    // Build options object, only including defined properties
+    const options: ErrorXAggregateOptions<TMetadata> = {
+      message: serialized.message,
+      name: serialized.name,
+      code: serialized.code,
+    };
+    if (serialized.metadata !== undefined) {
+      options.metadata = serialized.metadata as TMetadata;
+    }
+    if (serialized.httpStatus !== undefined) {
+      options.httpStatus = serialized.httpStatus;
+    }
+
+    // Create aggregate with restored properties
+    const aggregate = new AggregateErrorX<TMetadata>(errors, options);
+
+    // Restore timestamp and stack
+    aggregate.timestamp = serialized.timestamp;
+    if (serialized.stack) {
+      aggregate.stack = serialized.stack;
+    }
+
+    return aggregate;
   }
 }

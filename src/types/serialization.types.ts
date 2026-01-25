@@ -26,3 +26,33 @@ export type ErrorXSerialized = {
   /** Serialized error chain timeline (this error and all ancestors) */
   chain?: ErrorXSerialized[];
 };
+
+/**
+ * Configuration options for creating an aggregated ErrorX instance.
+ * Used when combining multiple errors into a single aggregate error.
+ *
+ * @public
+ */
+export type ErrorXAggregateOptions<TMetadata extends ErrorXMetadata = ErrorXMetadata> = {
+  /** Custom message for the aggregate error (default: 'Multiple errors occurred ({count} errors)') */
+  message?: string;
+  /** Custom name for the aggregate error (default: 'AggregateError') */
+  name?: string;
+  /** Custom code for the aggregate error (default: 'AGGREGATE_ERROR') */
+  code?: string;
+  /** Additional metadata for the aggregate error */
+  metadata?: TMetadata;
+  /** HTTP status code for the aggregate error */
+  httpStatus?: number;
+};
+
+/**
+ * JSON-serializable representation of an aggregated ErrorX instance.
+ * Extends ErrorXSerialized with an errors array containing all aggregated errors.
+ *
+ * @public
+ */
+export type ErrorXAggregateSerialized = ErrorXSerialized & {
+  /** Serialized array of all aggregated errors */
+  errors: ErrorXSerialized[];
+};

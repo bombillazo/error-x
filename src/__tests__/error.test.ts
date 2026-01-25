@@ -436,6 +436,18 @@ describe('ErrorX', () => {
         }
       });
 
+      it('should extract httpStatus directly from objects', () => {
+        const apiError = {
+          message: 'Server error',
+          httpStatus: 503,
+        };
+
+        const converted = ErrorX.from(apiError);
+
+        expect(converted.message).toBe('Server error');
+        expect(converted.httpStatus).toBe(503);
+      });
+
       it('should handle empty objects', () => {
         const converted = ErrorX.from({});
         expect(converted.message).toBe('Unknown error occurred');
@@ -541,6 +553,22 @@ describe('ErrorX', () => {
         const cleaned = ErrorX.cleanStack(error.stack, 'param-delimiter');
 
         expect(cleaned).toBe('    at function2 (file2.js:15:3)');
+
+        // Reset config
+        ErrorX.resetConfig();
+      });
+
+      it('should return original stack when cleanStack is disabled', () => {
+        ErrorX.configure({ cleanStack: false });
+
+        const stack = `Error: test
+    at new ErrorX (/projects/error-x/src/error.ts:150:10)
+    at userFunction (/projects/my-app/src/handler.ts:25:15)`;
+
+        const cleaned = ErrorX.cleanStack(stack);
+
+        // Should return the original stack unchanged when cleanStack is false
+        expect(cleaned).toBe(stack);
 
         // Reset config
         ErrorX.resetConfig();
@@ -725,6 +753,22 @@ describe('ErrorX', () => {
         expect(chained.parent?.original?.message).toBe('original native');
       });
 
+      it('should capture stack from error-like objects', () => {
+        const errorLikeObject = {
+          message: 'error-like',
+          name: 'CustomError',
+          stack: 'Error: error-like\n    at someFunction (file.ts:10:5)',
+        };
+        const wrapped = ErrorX.from(errorLikeObject);
+
+        expect(wrapped.original).toBeDefined();
+        expect(wrapped.original?.message).toBe('error-like');
+        expect(wrapped.original?.name).toBe('CustomError');
+        expect(wrapped.original?.stack).toBe(
+          'Error: error-like\n    at someFunction (file.ts:10:5)'
+        );
+      });
+
       it('should be set when native Error is auto-wrapped as cause', () => {
         const nativeError = new Error('auto-wrapped');
         const errorX = new ErrorX({ message: 'parent', cause: nativeError });
@@ -842,6 +886,24 @@ describe('ErrorX', () => {
         expect(updated).not.toBe(existing); // New instance
         expect(updated.httpStatus).toBe(500);
         expect(updated.metadata).toEqual({ key: 'value', newKey: 'newValue' });
+      });
+
+      it('should preserve metadata when overrides do not include metadata', () => {
+        const existing = new ErrorX({
+          message: 'existing',
+          httpStatus: 400,
+          metadata: { key: 'value', nested: { foo: 'bar' } },
+        });
+        const updated = ErrorX.from(existing, {
+          httpStatus: 500,
+          code: 'UPDATED_CODE',
+        });
+
+        expect(updated).not.toBe(existing); // New instance
+        expect(updated.httpStatus).toBe(500);
+        expect(updated.code).toBe('UPDATED_CODE');
+        // Metadata should be preserved unchanged
+        expect(updated.metadata).toEqual({ key: 'value', nested: { foo: 'bar' } });
       });
 
       it('should return same ErrorX if no overrides provided', () => {
@@ -1045,6 +1107,20 @@ describe('ErrorX', () => {
         expect(json.name).toBe('SimpleError');
         expect(json.code).toBe('SIMPLE_ERROR');
       });
+
+      it('should serialize error with original property', () => {
+        // Create an error from a native Error, which sets the original property
+        const nativeError = new Error('Native error message');
+        nativeError.name = 'NativeError';
+        const wrapped = ErrorX.from(nativeError);
+
+        const json = wrapped.toJSON();
+
+        expect(json.original).toBeDefined();
+        expect(json.original?.name).toBe('NativeError');
+        expect(json.original?.message).toBe('Native error message');
+        expect(json.original?.stack).toBeDefined();
+      });
     });
 
     describe('fromJSON', () => {
@@ -1118,6 +1194,30 @@ describe('ErrorX', () => {
         // Stack will be generated but since no stack was provided in serialized data, it should be the new error's stack
         expect(error.stack).toBeDefined();
         expect(error.parent).toBeUndefined();
+      });
+
+      it('should deserialize error with original property', () => {
+        // Serialized error that was created from wrapping a native Error
+        const serialized: ErrorXSerialized = {
+          name: 'WrappedError',
+          message: 'Wrapped native error.',
+          code: 'WRAPPED',
+          metadata: {},
+          timestamp: 1705314645123,
+          original: {
+            name: 'NativeError',
+            message: 'Original native error',
+            stack: 'Error: Original native error\n    at nativeFunction (native.js:1:1)',
+          },
+        };
+
+        const error = ErrorX.fromJSON(serialized);
+
+        expect(error.name).toBe('WrappedError');
+        expect(error.original).toBeDefined();
+        expect(error.original?.name).toBe('NativeError');
+        expect(error.original?.message).toBe('Original native error');
+        expect(error.original?.stack).toContain('nativeFunction');
       });
     });
 
@@ -1448,6 +1548,51 @@ describe('ErrorX', () => {
 
       ErrorX.configure({ cleanStackDelimiter: 'delimiter-2' });
       expect(ErrorX.getConfig()?.cleanStackDelimiter).toBe('delimiter-2');
+    });
+  });
+
+  describe('isErrorXOptions', () => {
+    it('should return false for null', () => {
+      expect(ErrorX.isErrorXOptions(null)).toBe(false);
+    });
+
+    it('should return false for undefined', () => {
+      expect(ErrorX.isErrorXOptions(undefined)).toBe(false);
+    });
+
+    it('should return false for arrays', () => {
+      expect(ErrorX.isErrorXOptions([])).toBe(false);
+      expect(ErrorX.isErrorXOptions([{ message: 'test' }])).toBe(false);
+    });
+
+    it('should return false for Error instances', () => {
+      expect(ErrorX.isErrorXOptions(new Error('test'))).toBe(false);
+      expect(ErrorX.isErrorXOptions(new ErrorX('test'))).toBe(false);
+    });
+
+    it('should return true for empty object', () => {
+      expect(ErrorX.isErrorXOptions({})).toBe(true);
+    });
+
+    it('should return true for valid ErrorXOptions', () => {
+      expect(ErrorX.isErrorXOptions({ message: 'test' })).toBe(true);
+      expect(ErrorX.isErrorXOptions({ message: 'test', code: 'TEST' })).toBe(true);
+      expect(ErrorX.isErrorXOptions({ message: 'test', name: 'TestError', code: 'TEST' })).toBe(
+        true
+      );
+      expect(
+        ErrorX.isErrorXOptions({
+          message: 'test',
+          metadata: { foo: 'bar' },
+          httpStatus: 500,
+        })
+      ).toBe(true);
+    });
+
+    it('should return false for objects with unknown keys', () => {
+      expect(ErrorX.isErrorXOptions({ message: 'test', unknownKey: 'value' })).toBe(false);
+      expect(ErrorX.isErrorXOptions({ foo: 'bar' })).toBe(false);
+      expect(ErrorX.isErrorXOptions({ message: 'test', customProp: 123 })).toBe(false);
     });
   });
 });

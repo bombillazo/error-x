@@ -46,10 +46,18 @@ jobs:
         run: pnpm run test:coverage
         if: matrix.node-version == 20
 
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
+      - name: Verify coverage thresholds
+        run: |
+          echo "Coverage thresholds are enforced in vitest.config.ts:"
+          echo "  - Statements: 90%"
+          echo "  - Branches: 85%"
+          echo "  - Functions: 90%"
+          echo "  - Lines: 90%"
+          echo "Test will fail if thresholds are not met."
+        if: matrix.node-version == 20
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
         if: matrix.node-version == 20
         with:
-          fail_ci_if_error: false
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}

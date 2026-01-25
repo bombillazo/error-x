@@ -3,6 +3,7 @@
 [![npm downloads](https://img.shields.io/npm/dm/@bombillazo/error-x.svg?style=for-the-badge)](https://www.npmjs.com/package/@bombillazo/error-x)
 [![npm](https://img.shields.io/npm/dt/@bombillazo/error-x.svg?style=for-the-badge)](https://www.npmjs.com/package/@bombillazo/error-x)
 [![npm](https://img.shields.io/npm/l/@bombillazo/error-x?style=for-the-badge)](https://github.com/bombillazo/error-x/blob/master/LICENSE)
+[![codecov](https://img.shields.io/codecov/c/github/bombillazo/error-x?style=for-the-badge)](https://codecov.io/gh/bombillazo/error-x)
 
 🚨❌
 
@@ -14,6 +15,7 @@ A smart, isomorphic, and type-safe error library for TypeScript applications. Pr
 - **Isomorphic** - works in Node.js and browsers
 - **Smart error conversion** from different sources (API responses, strings, Error objects)
 - **Error chaining** for full error sequence
+- **Error aggregation** for batch operations with multiple failures
 - **Factory method** `.create()` for preset-based error creation
 - **Custom metadata** with type-safe generics for additional context
 - **Global configuration** for stack cleaning and defaults
@@ -108,6 +110,7 @@ The base error class that extends the native `Error` with enhanced capabilities.
 | `from(value, opts?)`  | Convert any value to ErrorX with intelligent property extraction    |
 | `fromJSON(json)`      | Deserialize JSON back to ErrorX instance                            |
 | `create(key?, opts?)` | Factory method for preset-based error creation (used by subclasses) |
+| `aggregate(errors, opts?)` | Combine multiple errors into an AggregateErrorX instance       |
 | `isErrorX(value)`     | Type guard to check if value is an ErrorX instance                  |
 | `isErrorXOptions(v)`  | Check if value is a valid ErrorXOptions object                      |
 | `configure(config)`   | Set global configuration (stack cleaning, defaults)                 |
@@ -354,6 +357,65 @@ if (ErrorX.isErrorX(error)) {
   console.log("Root cause:", error.root?.original);
 }
 ```
+
+### Error Aggregation
+
+Combine multiple errors into a single `AggregateErrorX` instance. Useful for batch operations, parallel processing, or validation scenarios where multiple failures can occur.
+
+```typescript
+import { ErrorX, AggregateErrorX } from "@bombillazo/error-x";
+
+// Aggregate multiple validation errors
+const validationErrors = [
+  new ErrorX({ message: "Email is required", code: "EMAIL_REQUIRED" }),
+  new ErrorX({ message: "Password too short", code: "PASSWORD_SHORT" }),
+  new ErrorX({ message: "Invalid phone format", code: "PHONE_INVALID" }),
+];
+
+const aggregate = ErrorX.aggregate(validationErrors);
+// → message: 'Multiple errors occurred (3 errors)'
+// → code: 'AGGREGATE_ERROR'
+// → errors: [ErrorX, ErrorX, ErrorX]
+
+// With custom options
+const batchError = ErrorX.aggregate(errors, {
+  message: "Batch import failed",
+  code: "BATCH_IMPORT_FAILED",
+  httpStatus: 400,
+  metadata: { batchId: "batch_123", failedCount: 3 },
+});
+
+// Access individual errors
+for (const error of aggregate.errors) {
+  console.log(error.code, error.message);
+  // Each error preserves its chain: error.chain, error.root, error.parent
+}
+
+// Type guard
+if (AggregateErrorX.isAggregateErrorX(error)) {
+  console.log(`Found ${error.errors.length} errors`);
+  error.errors.forEach((e) => console.log(e.code));
+}
+
+// Serialization (preserves all aggregated errors)
+const serialized = aggregate.toJSON();
+const restored = AggregateErrorX.fromJSON(serialized);
+```
+
+#### AggregateErrorX Properties
+
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| `errors` | `readonly ErrorX[]` | Array of all aggregated errors |
+| _...inherited_ | | All ErrorX properties (message, code, metadata, etc.) |
+
+#### Static Methods
+
+| Method | Description |
+| ------ | ----------- |
+| `ErrorX.aggregate(errors, opts?)` | Create an AggregateErrorX from an array of errors |
+| `AggregateErrorX.isAggregateErrorX(value)` | Type guard to check if value is an AggregateErrorX |
+| `AggregateErrorX.fromJSON(serialized)` | Deserialize back to AggregateErrorX instance |
 
 ---
 
@@ -682,6 +744,64 @@ const resolver = new ErrorXResolver<MyConfig, MyResult>({
   configs: { api: { namespace: "errors.api", retryable: true } },
 });
 ```
+
+---
+
+## Performance
+
+ErrorX is designed to be fast enough for production use while providing rich error handling capabilities. Here are the key performance characteristics:
+
+### Benchmarks
+
+Run benchmarks locally with `pnpm bench`. Results from a typical run (Apple M2):
+
+| Operation | ops/sec | Notes |
+|-----------|---------|-------|
+| `new Error()` (native) | ~525k | Baseline comparison |
+| `new ErrorX()` | ~38k | ~14x slower than native Error |
+| `new ErrorX(options)` | ~40k | Similar to basic ErrorX |
+| `ErrorX.from(ErrorX)` | ~21M | Passthrough is extremely fast |
+| `ErrorX.from(Error)` | ~32k | Converts native errors |
+| `toJSON()` (simple) | ~5.4M | Very fast serialization |
+| `toJSON()` (with chain) | ~1.4M | Chain adds overhead |
+| `fromJSON()` (simple) | ~32k | Deserialization |
+| `isErrorX()` | ~21M | Near-instant type guard |
+| `aggregate()` (3 errors) | ~30k | Aggregation overhead |
+
+### Performance Characteristics
+
+**Error Creation (~38k ops/sec)**
+- Creating an ErrorX is ~14x slower than native `Error` due to stack cleaning, timestamp generation, and chain management
+- Adding metadata or httpStatus has negligible impact
+- Adding a cause (chaining) reduces performance by ~2x due to chain flattening
+
+**Serialization (toJSON)**
+- Simple errors: ~5.4M ops/sec (extremely fast)
+- With metadata: ~346k ops/sec (JSON serialization overhead)
+- With error chain: ~1.4M ops/sec (iterates chain)
+
+**Deserialization (fromJSON)**
+- ~32k ops/sec regardless of metadata
+- Chain reconstruction adds ~3x overhead per chained error
+
+**Type Guards**
+- `isErrorX()` and `isAggregateErrorX()`: ~21M ops/sec (instant)
+- `isErrorXOptions()`: ~15M ops/sec (object key checking)
+
+**Memory Considerations**
+- Deep chains (50+ levels) process at ~343 ops/sec for full create/serialize/deserialize cycle
+- Large aggregates (100 errors) process at ~135 ops/sec
+- No memory leaks detected in chain or aggregate handling
+
+### When to Use ErrorX
+
+ErrorX is suitable for:
+- Application-level error handling (not hot loops)
+- API error responses
+- Error logging and monitoring
+- Domain error modeling
+
+For performance-critical code paths (>100k errors/sec), consider using native `Error` and converting to `ErrorX` at boundaries.
 
 ---
 

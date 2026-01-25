@@ -13,6 +13,7 @@
     "@types/node": "^24.6.0",
     "@vitest/coverage-v8": "^3.2.4",
     "husky": "^9.1.7",
+    "i18next": "^25.8.0",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
@@ -52,6 +53,7 @@
     "api-docs": "api-extractor run --local",
     "api-docs:build": "pnpm build && mkdir -p ./etc && pnpm api-docs && pnpm api-docs:markdown && rm -rf ./etc ./temp",
     "api-docs:markdown": "npx @microsoft/api-documenter markdown -i temp -o docs",
+    "bench": "vitest bench",
     "build": "tsup",
     "check": "biome check .",
     "dev": "tsup --watch",
