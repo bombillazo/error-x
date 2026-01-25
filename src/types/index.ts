@@ -48,8 +48,14 @@ export type {
  * @remarks
  * {@link ErrorXSerialized} - JSON-serializable representation for network transmission
  * and storage. Used by `toJSON()` and `fromJSON()` methods.
+ * {@link ErrorXAggregateOptions} - Configuration for aggregate error creation.
+ * {@link ErrorXAggregateSerialized} - Serialized representation of aggregate errors.
  */
-export type { ErrorXSerialized } from './serialization.types';
+export type {
+  ErrorXAggregateOptions,
+  ErrorXAggregateSerialized,
+  ErrorXSerialized,
+} from './serialization.types';
 
 /**
  * Transform type definitions for custom error classes.

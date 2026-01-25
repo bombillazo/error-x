@@ -1,4 +1,4 @@
-export { ErrorX, type ErrorXConfig } from './error';
+export { AggregateErrorX, ErrorX, type ErrorXConfig } from './error';
 export {
   type DBErrorPreset,
   DBErrorX,
@@ -15,6 +15,8 @@ export {
 } from './presets/index';
 export { ErrorXResolver } from './resolver';
 export type {
+  ErrorXAggregateOptions,
+  ErrorXAggregateSerialized,
   ErrorXBaseConfig,
   ErrorXMetadata,
   ErrorXOptions,
