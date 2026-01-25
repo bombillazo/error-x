@@ -1090,8 +1090,8 @@ export class AggregateErrorX<
       errorCount === 0
         ? 'No errors occurred'
         : errorCount === 1
-            ? '1 error occurred'
-            : `Multiple errors occurred (${errorCount} errors)`;
+          ? '1 error occurred'
+          : `Multiple errors occurred (${errorCount} errors)`;
 
     super({
       message: options?.message ?? defaultMessage,
