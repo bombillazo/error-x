@@ -15,6 +15,7 @@ A smart, isomorphic, and type-safe error library for TypeScript applications. Pr
 - **Isomorphic** - works in Node.js and browsers
 - **Smart error conversion** from different sources (API responses, strings, Error objects)
 - **Error chaining** for full error sequence
+- **Error aggregation** for batch operations with multiple failures
 - **Factory method** `.create()` for preset-based error creation
 - **Custom metadata** with type-safe generics for additional context
 - **Global configuration** for stack cleaning and defaults
@@ -109,6 +110,7 @@ The base error class that extends the native `Error` with enhanced capabilities.
 | `from(value, opts?)`  | Convert any value to ErrorX with intelligent property extraction    |
 | `fromJSON(json)`      | Deserialize JSON back to ErrorX instance                            |
 | `create(key?, opts?)` | Factory method for preset-based error creation (used by subclasses) |
+| `aggregate(errors, opts?)` | Combine multiple errors into an AggregateErrorX instance       |
 | `isErrorX(value)`     | Type guard to check if value is an ErrorX instance                  |
 | `isErrorXOptions(v)`  | Check if value is a valid ErrorXOptions object                      |
 | `configure(config)`   | Set global configuration (stack cleaning, defaults)                 |
@@ -355,6 +357,65 @@ if (ErrorX.isErrorX(error)) {
   console.log("Root cause:", error.root?.original);
 }
 ```
+
+### Error Aggregation
+
+Combine multiple errors into a single `AggregateErrorX` instance. Useful for batch operations, parallel processing, or validation scenarios where multiple failures can occur.
+
+```typescript
+import { ErrorX, AggregateErrorX } from "@bombillazo/error-x";
+
+// Aggregate multiple validation errors
+const validationErrors = [
+  new ErrorX({ message: "Email is required", code: "EMAIL_REQUIRED" }),
+  new ErrorX({ message: "Password too short", code: "PASSWORD_SHORT" }),
+  new ErrorX({ message: "Invalid phone format", code: "PHONE_INVALID" }),
+];
+
+const aggregate = ErrorX.aggregate(validationErrors);
+// → message: 'Multiple errors occurred (3 errors)'
+// → code: 'AGGREGATE_ERROR'
+// → errors: [ErrorX, ErrorX, ErrorX]
+
+// With custom options
+const batchError = ErrorX.aggregate(errors, {
+  message: "Batch import failed",
+  code: "BATCH_IMPORT_FAILED",
+  httpStatus: 400,
+  metadata: { batchId: "batch_123", failedCount: 3 },
+});
+
+// Access individual errors
+for (const error of aggregate.errors) {
+  console.log(error.code, error.message);
+  // Each error preserves its chain: error.chain, error.root, error.parent
+}
+
+// Type guard
+if (AggregateErrorX.isAggregateErrorX(error)) {
+  console.log(`Found ${error.errors.length} errors`);
+  error.errors.forEach((e) => console.log(e.code));
+}
+
+// Serialization (preserves all aggregated errors)
+const serialized = aggregate.toJSON();
+const restored = AggregateErrorX.fromJSON(serialized);
+```
+
+#### AggregateErrorX Properties
+
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| `errors` | `readonly ErrorX[]` | Array of all aggregated errors |
+| _...inherited_ | | All ErrorX properties (message, code, metadata, etc.) |
+
+#### Static Methods
+
+| Method | Description |
+| ------ | ----------- |
+| `ErrorX.aggregate(errors, opts?)` | Create an AggregateErrorX from an array of errors |
+| `AggregateErrorX.isAggregateErrorX(value)` | Type guard to check if value is an AggregateErrorX |
+| `AggregateErrorX.fromJSON(serialized)` | Deserialize back to AggregateErrorX instance |
 
 ---
 
