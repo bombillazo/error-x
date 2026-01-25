@@ -5,7 +5,7 @@
 ## Quick Start
 
 ```typescript
-import { ErrorX, HTTPErrorX, DBErrorX, ValidationErrorX } from '@bombillazo/error-x';
+import { ErrorX, AggregateErrorX, HTTPErrorX, DBErrorX, ValidationErrorX } from '@bombillazo/error-x';
 
 // Basic usage
 throw new ErrorX({ message: 'Operation failed', code: 'OP_FAILED' });
@@ -21,6 +21,9 @@ throw ValidationErrorX.fromZodError(zodError);
 
 // Error chaining (preserves cause chain)
 throw new ErrorX({ message: 'High-level error', cause: originalError });
+
+// Error aggregation (batch operations)
+const aggregate = ErrorX.aggregate([error1, error2, error3]);
 
 // Type-safe metadata
 const error = new ErrorX<{ userId: number }>({
@@ -62,6 +65,7 @@ new ErrorX<TMetadata>({ metadata: {...} }) // Type-safe metadata
 |--------|-------------|
 | `ErrorX.from(value, overrides?)` | Wraps any value into ErrorX. Stores original in `.original` property. |
 | `ErrorX.fromJSON(serialized)` | Reconstructs ErrorX from serialized form |
+| `ErrorX.aggregate(errors, opts?)` | Combines multiple errors into AggregateErrorX |
 | `ErrorX.isErrorX(value)` | Type guard: `value is ErrorX` |
 | `ErrorX.isErrorXOptions(value)` | Validates if object is valid ErrorXOptions |
 | `ErrorX.configure(config)` | Set global config (cleanStack, cleanStackDelimiter) |
@@ -143,6 +147,50 @@ apiError.chain.length;  // 3
 new ErrorX({ cause: new Error('native') });  // Works, wraps into ErrorX
 ```
 
+## Error Aggregation
+
+Combine multiple errors into a single `AggregateErrorX` for batch operations:
+
+```typescript
+import { ErrorX, AggregateErrorX } from '@bombillazo/error-x';
+
+// Aggregate validation errors
+const errors = [
+  new ErrorX({ message: 'Email required', code: 'EMAIL_REQUIRED' }),
+  new ErrorX({ message: 'Password too short', code: 'PASSWORD_SHORT' }),
+];
+const aggregate = ErrorX.aggregate(errors);
+// message: 'Multiple errors occurred (2 errors)', code: 'AGGREGATE_ERROR'
+
+// With custom options
+const batchError = ErrorX.aggregate(errors, {
+  message: 'Validation failed',
+  code: 'VALIDATION_BATCH',
+  httpStatus: 400,
+  metadata: { formId: 'signup' },
+});
+
+// Access individual errors
+aggregate.errors.forEach(e => console.log(e.code));  // Each preserves its chain
+
+// Type guard
+if (AggregateErrorX.isAggregateErrorX(error)) {
+  console.log(`${error.errors.length} errors`);
+}
+
+// Serialization
+const json = aggregate.toJSON();  // Includes all aggregated errors
+const restored = AggregateErrorX.fromJSON(json);
+```
+
+### AggregateErrorX
+
+| Property/Method | Description |
+|-----------------|-------------|
+| `errors` | `readonly ErrorX[]` - All aggregated errors |
+| `AggregateErrorX.isAggregateErrorX(value)` | Type guard |
+| `AggregateErrorX.fromJSON(serialized)` | Deserialize aggregate |
+
 ## Serialization
 
 ```typescript
@@ -221,12 +269,14 @@ PaymentErrorX.create('DECLINED', { metadata: { transactionId: 'tx_123' } });
 ```typescript
 // Core types
 import type {
-  ErrorXOptions,      // Constructor options
-  ErrorXMetadata,     // Record<string, unknown>
-  ErrorXSerialized,   // Serialized form
-  ErrorXSnapshot,     // Original error snapshot
-  ErrorXConfig,       // Global configuration
-  ErrorXOptionField,  // Valid option field names
+  ErrorXOptions,           // Constructor options
+  ErrorXMetadata,          // Record<string, unknown>
+  ErrorXSerialized,        // Serialized form
+  ErrorXAggregateSerialized, // Serialized aggregate form
+  ErrorXAggregateOptions,  // Aggregate constructor options
+  ErrorXSnapshot,          // Original error snapshot
+  ErrorXConfig,            // Global configuration
+  ErrorXOptionField,       // Valid option field names
 } from '@bombillazo/error-x';
 
 // Transform types
@@ -312,6 +362,9 @@ try {
 } catch (err) {
   if (ErrorX.isErrorX(err)) {
     console.log(err.code, err.metadata);
+  }
+  if (AggregateErrorX.isAggregateErrorX(err)) {
+    err.errors.forEach(e => console.log(e.message));
   }
   if (err instanceof HTTPErrorX) {
     console.log(err.httpStatus);
