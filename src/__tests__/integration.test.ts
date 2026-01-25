@@ -1,6 +1,6 @@
 import i18next from 'i18next';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { ErrorX, ErrorXResolver, HTTPErrorX, DBErrorX } from '../index';
+import { DBErrorX, ErrorX, ErrorXResolver, HTTPErrorX } from '../index';
 
 /**
  * Integration tests with real i18next library.

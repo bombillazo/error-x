@@ -113,7 +113,9 @@ describe('DBErrorX', () => {
 
   describe('Overrides', () => {
     it('should override preset message', () => {
-      const error = DBErrorX.create('CONNECTION_FAILED', { message: 'Cannot connect to PostgreSQL' });
+      const error = DBErrorX.create('CONNECTION_FAILED', {
+        message: 'Cannot connect to PostgreSQL',
+      });
 
       expect(error.code).toBe('DB_CONNECTION_FAILED');
       expect(error.name).toBe('DBConnectionError');

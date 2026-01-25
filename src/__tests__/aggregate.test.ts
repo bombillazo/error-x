@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  AggregateErrorX,
-  ErrorX,
-  type ErrorXAggregateSerialized,
-} from '../index';
+import { AggregateErrorX, ErrorX, type ErrorXAggregateSerialized } from '../index';
 
 describe('AggregateErrorX', () => {
   let mockDate: Date;
@@ -406,9 +402,7 @@ describe('AggregateErrorX', () => {
       expect(aggregate.httpStatus).toBe(422);
 
       // Can find specific field errors
-      const emailError = aggregate.errors.find(
-        (e) => e.metadata?.field === 'email'
-      );
+      const emailError = aggregate.errors.find((e) => e.metadata?.field === 'email');
       expect(emailError).toBeDefined();
       expect(emailError?.code).toBe('REQUIRED');
     });
@@ -479,8 +473,9 @@ describe('AggregateErrorX', () => {
 
   describe('Edge cases', () => {
     it('should handle very large error arrays', () => {
-      const errors = Array.from({ length: 100 }, (_, i) =>
-        new ErrorX({ message: `Error ${i}`, code: `ERR_${i}` })
+      const errors = Array.from(
+        { length: 100 },
+        (_, i) => new ErrorX({ message: `Error ${i}`, code: `ERR_${i}` })
       );
 
       const aggregate = ErrorX.aggregate(errors);

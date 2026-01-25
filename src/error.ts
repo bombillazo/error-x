@@ -1147,7 +1147,9 @@ export class AggregateErrorX<
    */
   public override toString(): string {
     const baseStr = super.toString();
-    const errorSummaries = this.errors.map((err, idx) => `  [${idx + 1}] ${err.name}: ${err.message} [${err.code}]`);
+    const errorSummaries = this.errors.map(
+      (err, idx) => `  [${idx + 1}] ${err.name}: ${err.message} [${err.code}]`
+    );
     return `${baseStr}\nAggregated errors:\n${errorSummaries.join('\n')}`;
   }
 
