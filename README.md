@@ -4,6 +4,7 @@
 [![npm](https://img.shields.io/npm/dt/@bombillazo/error-x.svg?style=for-the-badge)](https://www.npmjs.com/package/@bombillazo/error-x)
 [![npm](https://img.shields.io/npm/l/@bombillazo/error-x?style=for-the-badge)](https://github.com/bombillazo/error-x/blob/master/LICENSE)
 [![codecov](https://img.shields.io/codecov/c/github/bombillazo/error-x?style=for-the-badge)](https://codecov.io/gh/bombillazo/error-x)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@bombillazo/error-x?style=for-the-badge&label=bundle)](https://bundlephobia.com/package/@bombillazo/error-x)
 
 🚨❌
 
@@ -21,6 +22,7 @@ A smart, isomorphic, and type-safe error library for TypeScript applications. Pr
 - **Global configuration** for stack cleaning and defaults
 - **Serialization/deserialization** for network transfer and storage
 - **ErrorXResolver** for i18n, documentation URLs, and custom presentation logic
+- **Observability** - fingerprinting, structured logging, OpenTelemetry integration
 - **Custom ErrorX class** examples:
   - `HTTPErrorX` - HTTP status code presets (400-511)
   - `DBErrorX` - Database error presets (connection, query, constraints)
@@ -849,6 +851,201 @@ const resolver = new ErrorXResolver({
   },
 });
 ```
+
+## Observability
+
+error-x provides built-in observability utilities for error fingerprinting, structured logging, and OpenTelemetry integration.
+
+### Error Fingerprinting
+
+Generate stable fingerprints for error deduplication and grouping:
+
+```typescript
+import { generateFingerprint } from "@bombillazo/error-x";
+
+const error = new ErrorX({
+  message: "Database connection failed",
+  code: "DB_CONN_FAILED",
+  name: "DatabaseError",
+});
+
+const fingerprint = generateFingerprint(error);
+// → "a1b2c3d4" (stable hash based on error properties)
+
+// Same error type always produces the same fingerprint
+const error2 = new ErrorX({
+  message: "Database connection failed",
+  code: "DB_CONN_FAILED",
+  name: "DatabaseError",
+});
+generateFingerprint(error2) === fingerprint; // true
+
+// Customize what's included in the fingerprint
+generateFingerprint(error, {
+  includeCode: true, // default: true
+  includeName: true, // default: true
+  includeMessage: true, // default: true
+  includeMetadataKeys: ["userId", "endpoint"], // specific metadata keys
+  hashFunction: customHashFn, // custom hash function
+});
+```
+
+### Structured Logging
+
+Create structured log entries compatible with pino, winston, and other logging libraries:
+
+```typescript
+import { toLogEntry } from "@bombillazo/error-x";
+
+const error = new ErrorX({
+  message: "User not found",
+  code: "USER_NOT_FOUND",
+  httpStatus: 404,
+  metadata: { userId: 123 },
+});
+
+const logEntry = toLogEntry(error);
+// {
+//   level: 'error',
+//   message: 'User not found',
+//   fingerprint: 'abc123',
+//   errorName: 'Error',
+//   errorCode: 'USER_NOT_FOUND',
+//   timestamp: 1704067200000,
+//   timestampIso: '2024-01-01T00:00:00.000Z',
+//   httpStatus: 404,
+//   metadata: { userId: 123 },
+//   chainDepth: 1,
+// }
+
+// With options
+const debugEntry = toLogEntry(error, {
+  level: "warn", // 'error' | 'warn' | 'info'
+  includeStack: true, // include stack trace
+  includeFull: true, // include full serialized error
+  context: { requestId: "req-123" }, // merge additional context
+});
+
+// Use with pino
+import pino from "pino";
+const logger = pino();
+logger.error(toLogEntry(error, { includeStack: true }));
+```
+
+### OpenTelemetry Integration
+
+Create span attributes following OpenTelemetry semantic conventions:
+
+```typescript
+import { toOtelAttributes, recordError } from "@bombillazo/error-x";
+import { trace, SpanStatusCode } from "@opentelemetry/api";
+
+const tracer = trace.getTracer("my-service");
+const span = tracer.startSpan("operation");
+
+try {
+  await riskyOperation();
+} catch (err) {
+  const error = ErrorX.from(err);
+
+  // Get OTel-compatible attributes
+  const attributes = toOtelAttributes(error);
+  // {
+  //   'exception.type': 'DatabaseError',
+  //   'exception.message': 'Connection failed',
+  //   'exception.stacktrace': '...',
+  //   'error.code': 'DB_CONN_FAILED',
+  //   'error.fingerprint': 'abc123',
+  //   'error.chain_depth': 1,
+  //   'error.is_aggregate': false,
+  //   'error.timestamp': 1704067200000,
+  //   'http.status_code': 500,
+  // }
+
+  span.setAttributes(attributes);
+  span.recordException(error);
+  span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
+}
+
+// Or use the helper function
+const { attributes, applyToSpan } = recordError(error);
+applyToSpan(span, { setStatus: true, recordException: true });
+
+// Include metadata as span attributes
+const attrs = toOtelAttributes(error, {
+  includeStack: true, // default: true
+  includeMetadata: true, // default: false
+  metadataPrefix: "app.error.", // default: 'error.metadata.'
+});
+// Includes: { 'app.error.userId': 123, ... }
+```
+
+### Observability API Reference
+
+| Function | Description |
+| -------- | ----------- |
+| `generateFingerprint(error, opts?)` | Generate stable hash for error deduplication |
+| `toLogEntry(error, opts?)` | Create structured log entry for logging libraries |
+| `toOtelAttributes(error, opts?)` | Create OpenTelemetry span attributes |
+| `recordError(error, opts?)` | Helper to apply error info to OTel spans |
+
+---
+
+## Ecosystem Integrations
+
+error-x includes example integrations with popular frameworks and libraries in the `/examples` directory:
+
+### Server Frameworks
+
+**Hono.js / Express.js** - Error handling middleware with consistent JSON responses, request ID tracking, and structured logging.
+
+```typescript
+// Hono.js
+import { HTTPErrorX } from "@bombillazo/error-x";
+
+app.get("/user/:id", async (c) => {
+  const user = await getUser(c.req.param("id"));
+  if (!user) {
+    throw HTTPErrorX.create(404, { message: "User not found" });
+  }
+  return c.json(user);
+});
+
+app.onError(errorMiddleware()); // Consistent JSON error responses
+```
+
+### Frontend
+
+**React Error Boundaries** - Error boundary components with ErrorX integration, user-friendly error display, and error tracking hooks.
+
+```tsx
+<ErrorBoundary onError={(error, info) => trackError(error)}>
+  <App />
+</ErrorBoundary>
+```
+
+### API Frameworks
+
+**tRPC** - Type-safe error handling with ErrorX-to-TRPCError conversion and custom error formatting.
+
+**GraphQL** - Apollo Server and graphql-yoga integrations with consistent error extensions and user-friendly messages.
+
+### Logging
+
+**Pino / Winston** - Structured error logging with fingerprinting, deduplication, and request context.
+
+```typescript
+import { toLogEntry, generateFingerprint } from "@bombillazo/error-x";
+
+const entry = toLogEntry(error, { includeStack: true });
+logger.error(entry);
+```
+
+### Validation
+
+**Zod** - Advanced validation patterns beyond the built-in `ValidationErrorX.fromZodError()`.
+
+See the [/examples](./examples) directory for complete integration examples with usage documentation.
 
 ## License
 

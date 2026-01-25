@@ -5,7 +5,7 @@
 ## Quick Start
 
 ```typescript
-import { ErrorX, AggregateErrorX, HTTPErrorX, DBErrorX, ValidationErrorX } from '@bombillazo/error-x';
+import { ErrorX, AggregateErrorX, HTTPErrorX, DBErrorX, ValidationErrorX, toLogEntry, generateFingerprint } from '@bombillazo/error-x';
 
 // Basic usage
 throw new ErrorX({ message: 'Operation failed', code: 'OP_FAILED' });
@@ -31,6 +31,10 @@ const error = new ErrorX<{ userId: number }>({
   metadata: { userId: 123 }
 });
 console.log(error.metadata?.userId); // TypeScript knows this is number
+
+// Observability (logging, fingerprinting, OpenTelemetry)
+const logEntry = toLogEntry(error, { includeStack: true });
+const fingerprint = generateFingerprint(error);
 ```
 
 ## Core Concepts
@@ -264,6 +268,68 @@ class PaymentErrorX extends ErrorX<PaymentMetadata> {
 PaymentErrorX.create('DECLINED', { metadata: { transactionId: 'tx_123' } });
 ```
 
+## Observability
+
+Built-in utilities for error fingerprinting, structured logging, and OpenTelemetry integration.
+
+### Functions
+
+```typescript
+import {
+  generateFingerprint,
+  toLogEntry,
+  toOtelAttributes,
+  recordError,
+} from '@bombillazo/error-x';
+
+// Fingerprinting for deduplication
+const fingerprint = generateFingerprint(error);
+generateFingerprint(error, {
+  includeCode: true,
+  includeName: true,
+  includeMessage: true,
+  includeMetadataKeys: ['userId'],
+});
+
+// Structured logging (pino, winston compatible)
+const logEntry = toLogEntry(error);
+// { level, message, fingerprint, errorName, errorCode, timestamp, timestampIso, httpStatus?, metadata?, chainDepth, rootCause? }
+
+toLogEntry(error, {
+  level: 'warn',          // 'error' | 'warn' | 'info'
+  includeStack: true,     // include stack trace
+  includeFull: true,      // include full serialized error
+  context: { requestId: 'req-123' },
+});
+
+// OpenTelemetry span attributes
+const attrs = toOtelAttributes(error);
+// { 'exception.type', 'exception.message', 'exception.stacktrace', 'error.code', 'error.fingerprint', 'error.chain_depth', 'error.is_aggregate', 'error.timestamp', 'http.status_code'? }
+
+toOtelAttributes(error, {
+  includeStack: true,
+  includeMetadata: true,
+  metadataPrefix: 'app.error.',
+});
+
+// Helper to apply error to OTel span
+const { attributes, applyToSpan } = recordError(error);
+applyToSpan(span, { setStatus: true, recordException: true });
+```
+
+### Types
+
+```typescript
+import type {
+  FingerprintOptions,
+  ErrorLogEntry,
+  LogEntryOptions,
+  OtelErrorAttributes,
+  OtelAttributeOptions,
+  OtelSpanLike,
+} from '@bombillazo/error-x';
+```
+
 ## Type Exports
 
 ```typescript
@@ -304,6 +370,16 @@ import type {
   DBErrorPreset,            // Union of DB preset strings
   ValidationErrorXMetadata, // { field?, path?, zodCode?, expected?, ... }
   ZodIssue,                 // Zod issue structure
+} from '@bombillazo/error-x';
+
+// Observability types
+import type {
+  FingerprintOptions,       // Options for generateFingerprint()
+  ErrorLogEntry,            // Structured log entry format
+  LogEntryOptions,          // Options for toLogEntry()
+  OtelErrorAttributes,      // OpenTelemetry span attributes
+  OtelAttributeOptions,     // Options for toOtelAttributes()
+  OtelSpanLike,             // Minimal span interface for compatibility
 } from '@bombillazo/error-x';
 ```
 

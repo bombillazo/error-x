@@ -48,7 +48,13 @@
   "publishConfig": {
     "access": "public"
   },
-  "repository": "bombillazo/error-x.git",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bombillazo/error-x.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bombillazo/error-x/issues"
+  },
   "scripts": {
     "api-docs": "api-extractor run --local",
     "api-docs:build": "pnpm build && mkdir -p ./etc && pnpm api-docs && pnpm api-docs:markdown && rm -rf ./etc ./temp",
